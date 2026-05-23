@@ -16,9 +16,21 @@ public class PlayerController : MonoBehaviour
     public float burstSpeed = 25.0f;     // 初速
     [Range(0f, 1f)]
     public float reflectEfficiency = 0.8f; // ★反射時のスピード維持率（0.8なら毎回20%減速）
+    public int maxBurstCount = 3;       // 最大バースト回数（インスペクターから変更可能）
+    [HideInInspector] public int currentBurstCount = 0; // 現在のバースト回数カウンター
 
     [Header("エイム設定")]
     public Transform aimPivot;
+    public Color[] chargeColors = { Color.white, Color.yellow, Color.red };
+
+    [Header("チャージ設定")]
+    public float[] chargeForceLevels = { 15f, 25f, 40f };
+    public float chargeTimePerLevel = 0.5f;               // 1段階溜まるのに必要な時間
+    public float aimTimeScale = 0.05f;
+
+    [Header("バースト演出設定")]
+    public bool useTrail = true;       // 軌跡を使うかどうか
+    public bool useAfterImage = true;  // 残像を使うかどうか
 
     // 隠しプロパティ（各ステートから楽にアクセスできるようにパブリックにします）
     [HideInInspector] public Rigidbody rb;
@@ -26,6 +38,12 @@ public class PlayerController : MonoBehaviour
     [HideInInspector] public Vector2 moveInput;
     [HideInInspector] public PlayerInputActions inputActions;
     [HideInInspector] public Vector2 mousePositionInput;
+    [HideInInspector] public TrailRenderer trailRenderer;
+    [HideInInspector] public AfterImageEffect afterImageEffect;
+    [HideInInspector] public int currentChargeLevel = 0;   // 0, 1, 2 段階
+    [HideInInspector] public float currentChargeTimer = 0f;
+
+    public IPlayerState CurrentState => currentState;
 
     public System.Action<Collision> OnCollisionEnterEvent;
     // ★現在アクティブな状態を記憶する箱（型がインターフェースなのがミソ！）
@@ -59,6 +77,21 @@ public class PlayerController : MonoBehaviour
         {
             aimPivot.gameObject.SetActive(false);
         }
+
+        // TrailRenderer をプレイヤー自身から自動で取ってくる
+        trailRenderer = GetComponent<TrailRenderer>();
+        if (trailRenderer != null)
+        {
+            trailRenderer.enabled = false; // 最初は絶対にOFF
+        }
+
+        afterImageEffect = GetComponent<AfterImageEffect>();
+        if (afterImageEffect != null)
+        {
+            afterImageEffect.enabled = false;
+        }
+
+        TransitionToState(StateNormal);
 
         // ★最初の状態を「通常状態」にセット
         TransitionToState(StateNormal);
