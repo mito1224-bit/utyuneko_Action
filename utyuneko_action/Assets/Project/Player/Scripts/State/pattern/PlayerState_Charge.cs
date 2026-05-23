@@ -1,86 +1,117 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class PlayerState_Charge : IPlayerState
 {
     private PlayerController p;
-    private Vector3 aimDirection = Vector3.right; // ‘_‚Á‚Ä‚¢‚é•ûŒü‚ğ‹L‰¯‚·‚éƒxƒNƒgƒ‹i‰Šú’l‚Í‰EŒü‚«j
+    private Vector3 aimDirection = Vector3.right; // ç‹™ã£ã¦ã„ã‚‹æ–¹å‘ã‚’è¨˜æ†¶ã™ã‚‹ãƒ™ã‚¯ãƒˆãƒ«
+
+    // â˜…ã€è¿½åŠ ã€‘çŸ¢å°ã®ãƒ¬ãƒ³ãƒ€ãƒ©ãƒ¼ã¨ãƒãƒ†ãƒªã‚¢ãƒ«ã‚’ä¿æŒã™ã‚‹å¤‰æ•°
+    private Renderer arrowRenderer;
+    private Material arrowMaterial;
 
     public void Enter(PlayerController player)
     {
         p = player;
-        Debug.Log("ƒXƒe[ƒg•ÏXFƒ`ƒƒ[ƒWŠJni‹ó’†ƒXƒ[j");
+        Debug.Log("ã‚¹ãƒ†ãƒ¼ãƒˆå¤‰æ›´ï¼šãƒãƒ£ãƒ¼ã‚¸é–‹å§‹ï¼ˆç©ºä¸­ã‚¹ãƒ­ãƒ¼ï¼‰");
 
+        p.currentChargeTimer = 0f;
+        p.currentChargeLevel = 0;
+
+        // ãƒãƒ£ãƒ¼ã‚¸ä¸­ã¯ç©ºä¸­é™æ­¢ã€é‡åŠ›ã‚ªãƒ•
         //p.rb.linearVelocity = Vector3.zero;
         //p.rb.useGravity = false;
 
+        // ã‚¹ãƒ­ãƒ¼ãƒ¢ãƒ¼ã‚·ãƒ§ãƒ³
         Time.timeScale = 0.2f;
         Time.fixedDeltaTime = 0.02f * Time.timeScale;
 
-        // –îˆóƒIƒuƒWƒFƒNƒg‚ğ•\¦
+        // çŸ¢å°ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’è¡¨ç¤º
         if (p.aimPivot != null)
         {
             p.aimPivot.gameObject.SetActive(true);
-            // Å‰‚ÍŒ»İ‚ÌƒvƒŒƒCƒ„[‚ÌŒü‚«iŠÈˆÕ“I‚É‰EŒü‚«‚È‚Çj‚É‚µ‚Ä‚¨‚­
             p.aimPivot.rotation = Quaternion.identity;
+
+            // â˜…ã€è¿½åŠ ã€‘çŸ¢å°ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆï¼ˆã¾ãŸã¯ãã®å­ï¼‰ã‹ã‚‰Rendererã‚’å–å¾—ã—ã¦ãƒãƒ†ãƒªã‚¢ãƒ«ã‚’ç¢ºä¿
+            // æç¤ºã‚³ãƒ¼ãƒ‰ã® FadeOut ã¨åŒã˜ãã€URPãƒãƒ†ãƒªã‚¢ãƒ«ï¼ˆ_BaseColorï¼‰ã«å¯¾å¿œã•ã›ã¾ã™ã€‚
+            arrowRenderer = p.aimPivot.GetComponentInChildren<Renderer>();
+            if (arrowRenderer != null)
+            {
+                // .material ã«ã‚¢ã‚¯ã‚»ã‚¹ã™ã‚‹ã¨ã€ã“ã®ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆå°‚ç”¨ã®ãƒãƒ†ãƒªã‚¢ãƒ«ã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚¹ãŒä½œã‚‰ã‚Œã¾ã™
+                arrowMaterial = arrowRenderer.material;
+                // åˆæœŸã®è‰²ï¼ˆãƒ¬ãƒ™ãƒ«0ã®è‰²ï¼‰ã‚’è¨­å®š
+                SetArrowColor(p.chargeColors[0]);
+            }
         }
     }
 
     public void UpdateState()
     {
-        // šyVEİŒvzWASD‚ÌŒë”š‚ğ–h‚®ƒnƒCƒuƒŠƒbƒhEƒGƒCƒ€ŒvZ
+        // ğŸ”¥ã€æ—¢å­˜ã€‘3æ®µéšã®ãƒãƒ£ãƒ¼ã‚¸è¨ˆç®—
+        p.currentChargeTimer += Time.unscaledDeltaTime;
+        p.currentChargeLevel = Mathf.FloorToInt(p.currentChargeTimer / p.chargeTimePerLevel);
+        p.currentChargeLevel = Mathf.Min(p.currentChargeLevel, p.chargeForceLevels.Length - 1);
 
-        // ¡‚Ì“ü—Í‚ªuƒQ[ƒ€ƒpƒbƒhiƒRƒ“ƒgƒ[ƒ‰[j‚ÌƒXƒeƒBƒbƒNv‚É‚æ‚é‚à‚Ì‚©‚Ç‚¤‚©‚ğ”»’è‚·‚é
-        // activeControl ‚ªƒXƒeƒBƒbƒNiSticky“™j‚Ì‚¾‚¯AƒXƒeƒBƒbƒNƒGƒCƒ€‚Æ‚µ‚Äˆµ‚¤
+        // ğŸŒˆã€æ–°ãƒ‰ãƒƒã‚­ãƒ³ã‚°ã€‘ãƒãƒ£ãƒ¼ã‚¸ãƒ¬ãƒ™ãƒ«ã«åˆã‚ã›ã¦çŸ¢å°ã®è‰²ã‚’å¤‰æ›´
+        if (arrowMaterial != null)
+        {
+            SetArrowColor(p.chargeColors[p.currentChargeLevel]);
+        }
+
+        // â˜…WASDã®èª¤çˆ†ã‚’é˜²ããƒã‚¤ãƒ–ãƒªãƒƒãƒ‰ãƒ»ã‚¨ã‚¤ãƒ è¨ˆç®—ï¼ˆå…ƒã‹ã‚‰ã®å®Œç’§ãªã‚³ãƒ¼ãƒ‰ï¼‰
         var activeControl = p.inputActions.Player.Move.activeControl;
         bool isGamepad = activeControl != null && activeControl.device is Gamepad;
 
-        // 1. –{“–‚ÉƒRƒ“ƒgƒ[ƒ‰[‚ÌƒXƒeƒBƒbƒN‚ªŒX‚¢‚Ä‚¢‚é‚¾‚¯AƒXƒeƒBƒbƒN‚Ì•ûŒü‚ğg‚¤
         if (isGamepad && p.moveInput.sqrMagnitude > 0.01f)
         {
             aimDirection = new Vector3(p.moveInput.x, p.moveInput.y, 0f).normalized;
         }
-        // 2. ƒL[ƒ{[ƒhiWASDj‚ğ‰Ÿ‚µ‚Ä‚¢‚é‚âAƒRƒ“ƒgƒ[ƒ‰[‚ÉG‚ê‚Ä‚¢‚È‚¢‚ÍA‚·‚×‚Äƒ}ƒEƒX‚Ì•ûŒü‚ğ‘_‚¤I
         else
         {
-            // ƒvƒŒƒCƒ„[‚Ì3D¢ŠEÀ•W‚ğ‰æ–Ê‚Ì2DƒsƒNƒZƒ‹À•W‚É•ÏŠ·
             Vector3 playerScreenPos = Camera.main.WorldToScreenPoint(p.transform.position);
-
-            // ƒ}ƒEƒX‚Ì‰æ–ÊÀ•W‚©‚çƒvƒŒƒCƒ„[‚Ì‰æ–ÊÀ•W‚ğˆø‚«Z
             Vector3 mouseScreenPos = new Vector3(p.mousePositionInput.x, p.mousePositionInput.y, 0f);
             Vector3 directionOnScreen = mouseScreenPos - playerScreenPos;
-
-            // 2.5D‚Ì•½–ÊƒxƒNƒgƒ‹‚Æ‚µ‚Ä³‹K‰»
             aimDirection = new Vector3(directionOnScreen.x, directionOnScreen.y, 0f).normalized;
         }
 
-        // 3. –îˆó‚ÌŠp“x‚ğŒvZ‚µ‚Ä‰ñ‚·
+        // çŸ¢å°ã®è§’åº¦ã‚’è¨ˆç®—ã—ã¦å›ã™
         float angle = Mathf.Atan2(aimDirection.y, aimDirection.x) * Mathf.Rad2Deg;
         p.aimPivot.rotation = Quaternion.Euler(0, 0, angle - 90f);
 
-
-        // ƒ{ƒ^ƒ“‚ğ—£‚µ‚½‚çƒo[ƒXƒgI
+        // ãƒœã‚¿ãƒ³ã‚’é›¢ã—ãŸã‚‰ãƒãƒ¼ã‚¹ãƒˆï¼
         if (p.inputActions.Player.Charge.WasReleasedThisFrame())
         {
             p.TransitionToState(p.StateBurst);
         }
     }
 
-    public void FixedUpdateState()
+    // â˜…ã€è¿½åŠ ã€‘è‰²ã‚’è¨­å®šã™ã‚‹ãŸã‚ã®å°‚ç”¨ãƒ¡ã‚½ãƒƒãƒ‰ï¼ˆä»¥å‰ã®FadeOutã®çŸ¥æµã‚’æ´»ç”¨ï¼‰
+    private void SetArrowColor(Color color)
     {
-        // u‚ä‚Á‚­‚è—‰º‚³‚¹‚½‚¢vd—l‚É‚·‚éê‡‚ÍAŒã‚Å‚±‚±‚É­‚µ‚¾‚¯Y²‚Ì‘¬“x‚ğ‘«‚·ƒR[ƒh‚ğ‘‚«‚Ü‚·
+        if (arrowMaterial.HasProperty("_BaseColor"))
+            arrowMaterial.SetColor("_BaseColor", color); // URPãƒãƒ†ãƒªã‚¢ãƒ«ç”¨
+        else
+            arrowMaterial.color = color; // æ¨™æº–ãƒãƒ†ãƒªã‚¢ãƒ«ç”¨
     }
+
+    public void FixedUpdateState() { }
 
     public void Exit()
     {
         Time.timeScale = 1.0f;
         Time.fixedDeltaTime = 0.02f;
-        p.rb.useGravity = true;
+        //p.rb.useGravity = true;
 
-        // šy’Ç‰Ázƒ`ƒƒ[ƒW‚ªI‚í‚Á‚½‚Ì‚ÅA–îˆó‚ğ”ñ•\¦‚É‚µ‚Ä‰B‚·I
+        // çŸ¢å°ã‚’éè¡¨ç¤ºã«ã—ã¦éš ã™
         if (p.aimPivot != null)
         {
             p.aimPivot.gameObject.SetActive(false);
+        }
+
+        // â˜…ã€è¿½åŠ ã€‘ Exitæ™‚ã«ãƒãƒ†ãƒªã‚¢ãƒ«ã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚¹ã‚’ç ´æ£„ã—ã¦ãƒ¡ãƒ¢ãƒªãƒªãƒ¼ã‚¯ã‚’é˜²ãï¼ˆä¸å¯§ãªå‡¦ç†ï¼‰
+        if (arrowMaterial != null)
+        {
+            Object.Destroy(arrowMaterial);
         }
     }
 }

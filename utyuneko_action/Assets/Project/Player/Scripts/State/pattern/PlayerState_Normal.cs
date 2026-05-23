@@ -14,19 +14,34 @@ public class PlayerState_Normal : IPlayerState
     // 2. 毎フレームの入力チェック（Updateの代わり）
     public void UpdateState()
     {
+        if (p.inputActions.Player.Charge.IsPressed() && p.currentBurstCount < p.maxBurstCount)
+        {
+            p.TransitionToState(p.StateCharge);
+            return;
+        }
+
         // ジャンプボタンが押され、かつ地面にいるならジャンプ！
         // （本体が持っているInputSystemや着地判定の関数を借りて使います）
         if (p.inputActions.Player.Jump.triggered && p.IsGrounded())
         {
             p.rb.linearVelocity = new Vector3(p.rb.linearVelocity.x, p.jumpForce, 0.0f);
+
+            if (p.currentBurstCount > 0)
+            {
+                p.currentBurstCount = 0;
+                //UI
+            }
         }
 
-        // ★【追加】空中にいる時に、もし右クリック（またはコントローラーのボタン）が押されたらチャージへ！
-        // ※事前にInput Action画面で「Charge」というButtonトリガーを作っておく必要があります
-        if (p.inputActions.Player.Charge.triggered)
+        if (p.IsGrounded() && p.rb.linearVelocity.y <= 0.01f)
         {
-            // 司令塔に頼んで、ステートを「チャージ」に切り替えてもらう！
-            p.TransitionToState(p.StateCharge);
+            if (p.currentBurstCount > 0)
+            {
+                p.currentBurstCount = 0;
+                Debug.Log("バースト回数がリセット");
+
+                // もしUI（残弾数表示など）があるなら、ここでUI更新（p.burstUI.UpdateDisplay...など）を呼ぶと完璧です！
+            }
         }
     }
 
