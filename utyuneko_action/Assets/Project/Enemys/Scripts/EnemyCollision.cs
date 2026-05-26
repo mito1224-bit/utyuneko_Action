@@ -45,8 +45,6 @@ public class EnemyCollision : MonoBehaviour
 
     // PierceZoneTrigger から操作されるフラグ
     // true の間は OnCollisionEnter での反射処理をスキップする
-    [HideInInspector] public bool isPiercing = false;
-
     [System.Serializable]
     public struct AngleRange
     {
@@ -87,8 +85,7 @@ public class EnemyCollision : MonoBehaviour
     {
         if (!collision.gameObject.CompareTag(playerTag)) return;
 
-        // PierceZoneTrigger が「貫通中」を通知していたらスキップ
-        if (isPiercing) return;
+
 
         float impactSpeed = collision.relativeVelocity.magnitude;
 
