@@ -72,7 +72,12 @@ public class PlayerState_Burst : IPlayerState
 
     private void OnCollisionEnter(Collision collision)
     {
-        if (((1 << collision.gameObject.layer) & p.GetGroundLayerMask()) != 0)
+        // 床・壁（Groundレイヤー）だけでなく、Reflectタイプのエネミーでも壁と同じく反射する
+        bool isGround = ((1 << collision.gameObject.layer) & p.GetGroundLayerMask()) != 0;
+        EnemyCollision enemy = collision.gameObject.GetComponent<EnemyCollision>();
+        bool isReflectEnemy = enemy != null && enemy.collisionType == EnemyCollision.CollisionType.Reflect;
+
+        if (isGround || isReflectEnemy)
         {
             // 激突直前のリアルな速度ベクトルを取り出す
             Vector3 incomingVector = lastVelocity;

@@ -1,38 +1,37 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(Rigidbody), typeof(SphereCollider))]
 public class PlayerController : MonoBehaviour
 {
-    [Header("ˆÚ“®ƒpƒ‰ƒ[ƒ^")]
+    [Header("ç§»å‹•ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿")]
     public float moveSpeed = 5.0f;
     public float jumpForce = 7.0f;
 
-    [Header("’…’n”»’è")]
+    [Header("ç€åœ°åˆ¤å®š")]
     [SerializeField] private LayerMask groundLayer;
     [SerializeField] private float castDistance = 0.2f;
 
-    [Header("ƒo[ƒXƒgE”½Ëİ’è")]
-    public float burstSpeed = 25.0f;     // ‰‘¬
+    [Header("ãƒãƒ¼ã‚¹ãƒˆãƒ»åå°„è¨­å®š")]
+    public float burstSpeed = 25.0f;     // åˆé€Ÿ
     [Range(0f, 1f)]
-    public float reflectEfficiency = 0.8f; // š”½Ë‚ÌƒXƒs[ƒhˆÛ—¦i0.8‚È‚ç–ˆ‰ñ20%Œ¸‘¬j
-    public int maxBurstCount = 3;       // Å‘åƒo[ƒXƒg‰ñ”iƒCƒ“ƒXƒyƒNƒ^[‚©‚ç•ÏX‰Â”\j
-    [HideInInspector] public int currentBurstCount = 0; // Œ»İ‚Ìƒo[ƒXƒg‰ñ”ƒJƒEƒ“ƒ^[
+    public float reflectEfficiency = 0.8f; // â˜…åå°„æ™‚ã®ã‚¹ãƒ”ãƒ¼ãƒ‰ç¶­æŒç‡ï¼ˆ0.8ãªã‚‰æ¯å›20%æ¸›é€Ÿï¼‰
+    public int maxBurstCount = 3;       // æœ€å¤§ãƒãƒ¼ã‚¹ãƒˆå›æ•°ï¼ˆã‚¤ãƒ³ã‚¹ãƒšã‚¯ã‚¿ãƒ¼ã‹ã‚‰å¤‰æ›´å¯èƒ½ï¼‰
+    [HideInInspector] public int currentBurstCount = 0; // ç¾åœ¨ã®ãƒãƒ¼ã‚¹ãƒˆå›æ•°ã‚«ã‚¦ãƒ³ã‚¿ãƒ¼
 
-    [Header("ƒGƒCƒ€İ’è")]
+    [Header("ã‚¨ã‚¤ãƒ è¨­å®š")]
     public Transform aimPivot;
     public Color[] chargeColors = { Color.white, Color.yellow, Color.red };
 
-    [Header("ƒ`ƒƒ[ƒWİ’è")]
+    [Header("ãƒãƒ£ãƒ¼ã‚¸è¨­å®š")]
     public float[] chargeForceLevels = { 15f, 25f, 40f };
-    public float chargeTimePerLevel = 0.5f;               // 1’iŠK—­‚Ü‚é‚Ì‚É•K—v‚ÈŠÔ
+    public float chargeTimePerLevel = 0.5f;               // 1æ®µéšæºœã¾ã‚‹ã®ã«å¿…è¦ãªæ™‚é–“
     public float aimTimeScale = 0.05f;
 
-    [Header("ƒo[ƒXƒg‰‰oİ’è")]
-    public bool useTrail = true;       // ‹OÕ‚ğg‚¤‚©‚Ç‚¤‚©
-    public bool useAfterImage = true;  // c‘œ‚ğg‚¤‚©‚Ç‚¤‚©
+    [Header("ãƒãƒ¼ã‚¹ãƒˆæ¼”å‡ºè¨­å®š")]
+    public bool useTrail = true;       // è»Œè·¡ã‚’ä½¿ã†ã‹ã©ã†ã‹
+    public bool useAfterImage = true;  // æ®‹åƒã‚’ä½¿ã†ã‹ã©ã†ã‹
 
-    // ‰B‚µƒvƒƒpƒeƒBiŠeƒXƒe[ƒg‚©‚çŠy‚ÉƒAƒNƒZƒX‚Å‚«‚é‚æ‚¤‚ÉƒpƒuƒŠƒbƒN‚É‚µ‚Ü‚·j
+    // éš ã—ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ï¼ˆå„ã‚¹ãƒ†ãƒ¼ãƒˆã‹ã‚‰æ¥½ã«ã‚¢ã‚¯ã‚»ã‚¹ã§ãã‚‹ã‚ˆã†ã«ãƒ‘ãƒ–ãƒªãƒƒã‚¯ã«ã—ã¾ã™ï¼‰
     [HideInInspector] public Rigidbody rb;
     [HideInInspector] public SphereCollider sphereCollider;
     [HideInInspector] public Vector2 moveInput;
@@ -40,16 +39,16 @@ public class PlayerController : MonoBehaviour
     [HideInInspector] public Vector2 mousePositionInput;
     [HideInInspector] public TrailRenderer trailRenderer;
     [HideInInspector] public AfterImageEffect afterImageEffect;
-    [HideInInspector] public int currentChargeLevel = 0;   // 0, 1, 2 ’iŠK
+    [HideInInspector] public int currentChargeLevel = 0;   // 0, 1, 2 æ®µéš
     [HideInInspector] public float currentChargeTimer = 0f;
 
     public IPlayerState CurrentState => currentState;
 
     public System.Action<Collision> OnCollisionEnterEvent;
-    // šŒ»İƒAƒNƒeƒBƒu‚Èó‘Ô‚ğ‹L‰¯‚·‚é” iŒ^‚ªƒCƒ“ƒ^[ƒtƒF[ƒX‚È‚Ì‚ªƒ~ƒ\Ij
+    // â˜…ç¾åœ¨ã‚¢ã‚¯ãƒ†ã‚£ãƒ–ãªçŠ¶æ…‹ã‚’è¨˜æ†¶ã™ã‚‹ç®±ï¼ˆå‹ãŒã‚¤ãƒ³ã‚¿ãƒ¼ãƒ•ã‚§ãƒ¼ã‚¹ãªã®ãŒãƒŸã‚½ï¼ï¼‰
     private IPlayerState currentState;
 
-    // š‚ ‚ç‚©‚¶‚ßŠeó‘Ô‚ÌÀ‘Ì‚ğì‚Á‚Äg‚¢‰ñ‚·
+    // â˜…ã‚ã‚‰ã‹ã˜ã‚å„çŠ¶æ…‹ã®å®Ÿä½“ã‚’ä½œã£ã¦ä½¿ã„å›ã™
     public PlayerState_Normal StateNormal { get; private set; }
     public PlayerState_Charge StateCharge { get; private set; }
     public PlayerState_Burst StateBurst { get; private set; }
@@ -58,7 +57,7 @@ public class PlayerController : MonoBehaviour
     {
         inputActions = new PlayerInputActions();
 
-        // ŠeƒXƒe[ƒg‚ÌÀ‘Ì‚ğ¶¬
+        // å„ã‚¹ãƒ†ãƒ¼ãƒˆã®å®Ÿä½“ã‚’ç”Ÿæˆ
         StateNormal = new PlayerState_Normal();
         StateCharge = new PlayerState_Charge();
         StateBurst = new PlayerState_Burst();
@@ -72,17 +71,17 @@ public class PlayerController : MonoBehaviour
         rb.constraints = RigidbodyConstraints.FreezePositionZ | RigidbodyConstraints.FreezeRotation;
         rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
 
-        //ƒGƒCƒ€—p‚ÌPivot‚ªƒZƒbƒg‚³‚ê‚Ä‚¢‚½‚çÅ‰‚Í”ñ•\¦‚É‚µ‚Ä‚¨‚­
+        //ã‚¨ã‚¤ãƒ ç”¨ã®PivotãŒã‚»ãƒƒãƒˆã•ã‚Œã¦ã„ãŸã‚‰æœ€åˆã¯éè¡¨ç¤ºã«ã—ã¦ãŠã
         if (aimPivot != null)
         {
             aimPivot.gameObject.SetActive(false);
         }
 
-        // TrailRenderer ‚ğƒvƒŒƒCƒ„[©g‚©‚ç©“®‚Åæ‚Á‚Ä‚­‚é
+        // TrailRenderer ã‚’ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼è‡ªèº«ã‹ã‚‰è‡ªå‹•ã§å–ã£ã¦ãã‚‹
         trailRenderer = GetComponent<TrailRenderer>();
         if (trailRenderer != null)
         {
-            trailRenderer.enabled = false; // Å‰‚Íâ‘Î‚ÉOFF
+            trailRenderer.enabled = false; // æœ€åˆã¯çµ¶å¯¾ã«OFF
         }
 
         afterImageEffect = GetComponent<AfterImageEffect>();
@@ -93,7 +92,7 @@ public class PlayerController : MonoBehaviour
 
         TransitionToState(StateNormal);
 
-        // šÅ‰‚Ìó‘Ô‚ğu’Êíó‘Ôv‚ÉƒZƒbƒg
+        // â˜…æœ€åˆã®çŠ¶æ…‹ã‚’ã€Œé€šå¸¸çŠ¶æ…‹ã€ã«ã‚»ãƒƒãƒˆ
         TransitionToState(StateNormal);
     }
 
@@ -102,38 +101,38 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        // “ü—Í‚Íí‚É–{‘Ì‚Åó‚¯æ‚Á‚ÄŠeƒXƒe[ƒg‚É”z‚é
+        // å…¥åŠ›ã¯å¸¸ã«æœ¬ä½“ã§å—ã‘å–ã£ã¦å„ã‚¹ãƒ†ãƒ¼ãƒˆã«é…ã‚‹
         moveInput = inputActions.Player.Move.ReadValue<Vector2>();
 
-        //ƒ}ƒEƒX‚ÌˆÊ’u‚ğƒXƒNƒŠ[ƒ“À•W‚Åó‚¯æ‚é
+        //ãƒã‚¦ã‚¹ã®ä½ç½®ã‚’ã‚¹ã‚¯ãƒªãƒ¼ãƒ³åº§æ¨™ã§å—ã‘å–ã‚‹
         if (inputActions.Player.MousePosition != null)
         {
             mousePositionInput = inputActions.Player.MousePosition.ReadValue<Vector2>();
         }
 
-        // š¡‚ÌƒXƒe[ƒg‚ÌUpdateˆ—‚ğg‘ã‚í‚è‚ÉÀs‚µ‚Ä‚à‚ç‚¤
+        // â˜…ä»Šã®ã‚¹ãƒ†ãƒ¼ãƒˆã®Updateå‡¦ç†ã‚’èº«ä»£ã‚ã‚Šã«å®Ÿè¡Œã—ã¦ã‚‚ã‚‰ã†
         currentState?.UpdateState();
     }
 
     void FixedUpdate()
     {
-        // š¡‚ÌƒXƒe[ƒg‚ÌFixedUpdateˆ—‚ğg‘ã‚í‚è‚ÉÀs‚µ‚Ä‚à‚ç‚¤
+        // â˜…ä»Šã®ã‚¹ãƒ†ãƒ¼ãƒˆã®FixedUpdateå‡¦ç†ã‚’èº«ä»£ã‚ã‚Šã«å®Ÿè¡Œã—ã¦ã‚‚ã‚‰ã†
         currentState?.FixedUpdateState();
     }
 
-    // šó‘Ô‚ğuƒKƒ`ƒƒƒ“v‚ÆØ‚è‘Ö‚¦‚é‚½‚ß‚Ì’´d—vŠÖ”
+    // â˜…çŠ¶æ…‹ã‚’ã€Œã‚¬ãƒãƒ£ãƒ³ã€ã¨åˆ‡ã‚Šæ›¿ãˆã‚‹ãŸã‚ã®è¶…é‡è¦é–¢æ•°
     public void TransitionToState(IPlayerState newState)
     {
         if (currentState != null)
         {
-            currentState.Exit(); // ¡‚Ìó‘Ô‚É•Ê‚ê‚ğ‚°‚é
+            currentState.Exit(); // ä»Šã®çŠ¶æ…‹ã«åˆ¥ã‚Œã‚’å‘Šã’ã‚‹
         }
 
-        currentState = newState; // V‚µ‚¢ó‘Ô‚ğ” ‚É“ü‚ê‚é
-        currentState.Enter(this); // V‚µ‚¢ó‘Ô‚Ì€”õ‚ğn‚ß‚é
+        currentState = newState; // æ–°ã—ã„çŠ¶æ…‹ã‚’ç®±ã«å…¥ã‚Œã‚‹
+        currentState.Enter(this); // æ–°ã—ã„çŠ¶æ…‹ã®æº–å‚™ã‚’å§‹ã‚ã‚‹
     }
 
-    // ’…’n”»’èi‘O‰ñì‚Á‚½SphereCast‚ğ‚»‚Ì‚Ü‚Ü‹¤’Ê‹@”\‚Æ‚µ‚Ä‚½‚¹‚éj
+    // ç€åœ°åˆ¤å®šï¼ˆå‰å›ä½œã£ãŸSphereCastã‚’ãã®ã¾ã¾å…±é€šæ©Ÿèƒ½ã¨ã—ã¦æŒãŸã›ã‚‹ï¼‰
     public bool IsGrounded()
     {
         float radius = sphereCollider.radius;
@@ -146,10 +145,10 @@ public class PlayerController : MonoBehaviour
         return groundLayer;
     }
 
-    // Unity•W€‚ÌÕ“ËƒCƒxƒ“ƒg‚ğó‚¯æ‚Á‚½‚çAŒ»İƒAƒNƒeƒBƒu‚ÈƒXƒe[ƒg‚É‚»‚Ì‚Ü‚ÜŠÛ“Š‚°‚·‚é
+    // Unityæ¨™æº–ã®è¡çªã‚¤ãƒ™ãƒ³ãƒˆã‚’å—ã‘å–ã£ãŸã‚‰ã€ç¾åœ¨ã‚¢ã‚¯ãƒ†ã‚£ãƒ–ãªã‚¹ãƒ†ãƒ¼ãƒˆã«ãã®ã¾ã¾ä¸¸æŠ•ã’ã™ã‚‹
     private void OnCollisionEnter(Collision collision)
     {
-        // ¡‚ÌƒXƒe[ƒg‚ªu”½Ë‚µ‚ÄIv‚Æ‘Ò‚¿\‚¦‚Ä‚¢‚½‚çA‚»‚Á‚¿‚ÌŠÖ”‚ğÀs‚·‚é
+        // ä»Šã®ã‚¹ãƒ†ãƒ¼ãƒˆãŒã€Œåå°„ã—ã¦ï¼ã€ã¨å¾…ã¡æ§‹ãˆã¦ã„ãŸã‚‰ã€ãã£ã¡ã®é–¢æ•°ã‚’å®Ÿè¡Œã™ã‚‹
         OnCollisionEnterEvent?.Invoke(collision);
     }
 }
