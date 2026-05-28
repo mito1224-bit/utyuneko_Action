@@ -17,7 +17,7 @@ public class PlayerState_Charge : IPlayerState
         p.currentChargeTimer = 0f;
         p.currentChargeLevel = 0;
 
-        Time.timeScale = 0.2f;
+        Time.timeScale = p.aimTimeScale;
         Time.fixedDeltaTime = 0.02f * Time.timeScale;
 
         if (p.aimPivot != null)
