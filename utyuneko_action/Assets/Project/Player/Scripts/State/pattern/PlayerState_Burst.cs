@@ -79,7 +79,7 @@ public class PlayerState_Burst : IPlayerState
             wallNormal = wallNormal.normalized;
 
             // Vector2 で反射角を計算
-            Vector2 reflectedDirection = Vector3.Reflect(incomingVector.normalized, wallNormal);
+            Vector2 reflectedDirection = Vector2.Reflect(incomingVector.normalized, wallNormal);
 
             burstDirection = reflectedDirection.normalized;
             currentSpeed = incomingVector.magnitude * p.reflectEfficiency;
