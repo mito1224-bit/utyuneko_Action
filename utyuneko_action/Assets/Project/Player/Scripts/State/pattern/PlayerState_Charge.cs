@@ -1,10 +1,12 @@
-﻿using UnityEngine;
+﻿using Unity.VisualScripting;
+using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class PlayerState_Charge : IPlayerState
 {
     private PlayerController p;
-    private Vector2 aimDirection = Vector2.right; // Vector2に変更
+    private Vector2 aimDirection = Vector2.right;
+    private Vector2 lastVelocity;
 
     private Renderer arrowRenderer;
     private Material arrowMaterial;
@@ -13,6 +15,13 @@ public class PlayerState_Charge : IPlayerState
     {
         p = player;
         Debug.Log("ステート変更：チャージ開始（空中スロー）");
+
+        // バースト開始時にホバーセンサーを無効化
+        if (p.hoverSensor != null) p.hoverSensor.GetComponent<Collider2D>().enabled = false;
+
+        p.rb2D.linearVelocity = p.rb2D.linearVelocity * 0.5f;
+
+        p.OnCollisionEnterEvent += OnCollisionEnter;
 
         p.currentChargeTimer = 0f;
         p.currentChargeLevel = 0;
@@ -69,6 +78,35 @@ public class PlayerState_Charge : IPlayerState
         }
     }
 
+    public void FixedUpdateState()
+    {
+        lastVelocity = p.rb2D.linearVelocity;
+    }
+
+    private void OnCollisionEnter(Collision2D collision)
+    {
+        if (((1 << collision.gameObject.layer) & p.GetGroundLayerMask()) != 0)
+        {
+            Vector2 incomingVector = lastVelocity;
+            if (incomingVector.magnitude < 0.1f) return;
+
+            Vector2 wallNormal = Vector2.zero;
+            foreach (var contact in collision.contacts)
+            {
+                wallNormal += contact.normal;
+            }
+            wallNormal = wallNormal.normalized;
+
+            // 反射角を計算
+            Vector2 reflectedDirection = Vector3.Reflect(incomingVector.normalized, wallNormal);
+
+            // チャージ中なので、通常の反射効率（reflectEfficiency）でポンと跳ね返す
+            p.rb2D.linearVelocity = reflectedDirection.normalized * (incomingVector.magnitude * p.reflectEfficiency);
+
+            Debug.Log("チャージ中に壁に衝突！跳ね返りました");
+        }
+    }
+
     private void SetArrowColor(Color color)
     {
         if (arrowMaterial.HasProperty("_BaseColor"))
@@ -77,10 +115,10 @@ public class PlayerState_Charge : IPlayerState
             arrowMaterial.color = color;
     }
 
-    public void FixedUpdateState() { }
-
     public void Exit()
     {
+        p.OnCollisionEnterEvent -= OnCollisionEnter;
+
         Time.timeScale = 1.0f;
         Time.fixedDeltaTime = 0.02f;
 

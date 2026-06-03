@@ -13,6 +13,7 @@ public class PlayerState_Burst : IPlayerState
     public void Enter(PlayerController player)
     {
         p = player;
+
         p.OnCollisionEnterEvent += OnCollisionEnter;
 
         if (p.useTrail && p.trailRenderer != null) p.trailRenderer.enabled = true;
@@ -52,7 +53,11 @@ public class PlayerState_Burst : IPlayerState
         if (p.inputActions.Player.Jump.triggered)
         {
             p.TransitionToState(p.StateNormal);
-            p.rb2D.linearVelocity = new Vector2(p.rb2D.linearVelocity.x, p.jumpForce);
+
+            if(p.canCancelBurstWithJump) 
+                p.rb2D.linearVelocity = new Vector2(p.rb2D.linearVelocity.x, p.jumpForce);
+            else 
+                p.rb2D.linearVelocity = new Vector2(p.rb2D.linearVelocity.x, p.rb2D.linearVelocity.y);
         }
     }
 
@@ -109,6 +114,6 @@ public class PlayerState_Burst : IPlayerState
             p.afterImageEffect.enabled = false;
         }
 
-        p.rb2D.linearVelocity = p.rb2D.linearVelocity * 0.2f;
+        p.rb2D.linearVelocity = p.rb2D.linearVelocity * 1.0f;
     }
 }
