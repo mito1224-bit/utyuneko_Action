@@ -94,7 +94,7 @@ public class PierceZoneTrigger : MonoBehaviour
         if (dealDamageOnPierce && parentHealth != null)
         {
             Rigidbody rb = other.GetComponent<Rigidbody>();
-            if (rb != null) parentHealth.HandleHit(rb.linearVelocity.magnitude);
+            if (rb != null) parentHealth.HandleHit(rb.linearVelocity.magnitude, other.transform.position);
         }
 
         Debug.Log($"PierceZone: 貫通を許可（{ignoreCollisionDuration}秒間コリジョン無視）");

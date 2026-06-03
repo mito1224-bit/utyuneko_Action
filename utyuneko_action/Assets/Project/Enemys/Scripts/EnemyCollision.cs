@@ -58,6 +58,8 @@ public class EnemyCollision : MonoBehaviour
         // プレイヤーがバースト状態（PlayerBurstレイヤー）かどうかを判定
         bool isBursting = (collision.gameObject.layer == LayerMask.NameToLayer("PlayerBurst"));
 
+        Vector3 hitFromPos = collision.transform.position;
+
         switch (collisionType)
         {
             case CollisionType.Reflect:
@@ -68,7 +70,7 @@ public class EnemyCollision : MonoBehaviour
                 {
                     ApplyKnockback(collision.rigidbody, collision.transform.position);
                 }
-                enemyHealth?.HandleHit(impactSpeed);
+                enemyHealth?.HandleHit(impactSpeed, hitFromPos);
                 break;
 
             case CollisionType.PierceZone:
@@ -76,7 +78,7 @@ public class EnemyCollision : MonoBehaviour
                 // Physics.IgnoreCollision で先に成立させるため、ここに到達した
                 // 衝突は「貫通面以外から当たった」とみなして弾く。
                 ApplyKnockback(collision.rigidbody, collision.transform.position);
-                enemyHealth?.HandleHit(impactSpeed);
+                enemyHealth?.HandleHit(impactSpeed, hitFromPos);
                 break;
         }
     }
@@ -91,7 +93,7 @@ public class EnemyCollision : MonoBehaviour
 
         Rigidbody rb = other.GetComponent<Rigidbody>();
         if (rb != null)
-            enemyHealth?.HandleHit(rb.linearVelocity.magnitude);
+            enemyHealth?.HandleHit(rb.linearVelocity.magnitude, other.transform.position);
     }
 
     // =========================================================
