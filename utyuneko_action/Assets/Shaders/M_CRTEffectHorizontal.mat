@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: M_CathodeRayTube
+  m_Name: M_CRTEffectHorizontal
   m_Shader: {fileID: -6465566751694194690, guid: baf274ebdad4e624aad829917803765a, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
