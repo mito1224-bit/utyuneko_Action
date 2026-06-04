@@ -19,6 +19,11 @@ public class PlayerHealth : MonoBehaviour
     // 2.5Dゲームの見た目用コンポーネント（3DモデルならMeshRenderer、2DならSpriteRenderer）
     private Renderer visualRenderer;
 
+    public int MaxHealth => maxHealth;
+    public int CurrentHealth => currentHealth;
+
+    public System.Action OnHealthChanged;
+
     void Start()
     {
         currentHealth = maxHealth;
@@ -30,6 +35,8 @@ public class PlayerHealth : MonoBehaviour
         visualRenderer = GetComponentInChildren<Renderer>();
 
         Debug.Log($"プレイヤーHP初期化: {currentHealth}/{maxHealth}");
+
+        OnHealthChanged?.Invoke();
     }
 
     void Update()
@@ -71,8 +78,10 @@ public class PlayerHealth : MonoBehaviour
 
         // 3. ダメージ適用
         currentHealth -= damageAmount;
-        currentHealth = Mathf.Max(0, currentHealth); // HPが0以下にならないようにロック
+        currentHealth = Mathf.Max(-1, currentHealth); // HPが-1以下にならないようにロック
         Debug.Log($"被弾！ ダメージ: {damageAmount} / 残りHP: {currentHealth}");
+
+        OnHealthChanged?.Invoke();
 
         // 4. 無敵時間の開始
         isInvincible = true;
@@ -85,10 +94,28 @@ public class PlayerHealth : MonoBehaviour
         }
 
         // 6. 死亡判定
-        if (currentHealth <= 0)
+        if (currentHealth < 0)
         {
             Die();
         }
+    }
+
+    // 回復するコアメソッド
+    public void Heal(int healAmount)
+    {
+        // すでに死亡している（あるいは死亡処理中）なら回復しない
+        if (currentHealth < 0) return;
+
+        // 回復処理（最大HPを超えないように制限）
+        currentHealth += healAmount;
+        currentHealth = Mathf.Min(maxHealth, currentHealth);
+
+        Debug.Log($"回復！ 回復量: {healAmount} / 残りHP: {currentHealth}");
+
+        // UI（ビット）にHPが変わったことを通知して、センターに整列し直させる
+        OnHealthChanged?.Invoke();
+
+        // ここで「キュィィン！」というデータ復旧っぽいSEや緑のパーティクルを出すと最高です！
     }
 
     private void Die()
@@ -103,12 +130,14 @@ public class PlayerHealth : MonoBehaviour
     private void OnCollisionEnter2D(Collision2D collision)
     {
         HandleDamageCollision(collision.gameObject);
+        HandleHealCollision(collision.gameObject);
     }
 
     // 判定②：すり抜ける設定のとき（IsTriggerな2Dコライダーを持つセンサーやエフェクト）
     private void OnTriggerEnter2D(Collider2D other)
     {
         HandleDamageCollision(other.gameObject);
+        HandleHealCollision(other.gameObject);
     }
 
     // 衝突したオブジェクトからダメージ情報を抜き出す共通処理
@@ -121,6 +150,31 @@ public class PlayerHealth : MonoBehaviour
         {
             // 持っていたら設定されているダメージ量を喰らう
             TakeDamage(source.damageAmount);
+        }
+    }
+
+    private void HandleHealCollision(GameObject hitObject)
+    {
+        HealSource source = hitObject.GetComponent<HealSource>();
+
+        if (source != null)
+        {
+            // もし「全回復」にチェックが入っていたら
+            if (source.isFullHeal)
+            {
+                // 最大HP分を回復メソッドに渡す（Healメソッド側で最大HPを超えないようにガードしているのでこれで全回復になります）
+                Heal(maxHealth);
+                Debug.Log("【完全復旧】プレイヤーが全回復しました！");
+            }
+            else
+            {
+                // チェックがなければ、設定された通常の回復量
+                Heal(source.healAmount);
+            }
+
+            // もし「消える」にチェックが入っていたら、回復アイテムを消す
+            if (source.isDestroy)
+                Destroy(hitObject);
         }
     }
 }

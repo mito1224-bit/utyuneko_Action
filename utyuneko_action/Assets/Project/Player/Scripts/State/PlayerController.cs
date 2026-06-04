@@ -18,10 +18,14 @@ public class PlayerController : MonoBehaviour
     public float reflectEfficiency = 0.8f;
     public int maxBurstCount = 3;
     [HideInInspector] public int currentBurstCount = 0;
+    public bool canCancelBurstWithJump = true;
 
     [Header("エイム設定")]
     public Transform aimPivot;
     public Color[] chargeColors = { Color.white, Color.yellow, Color.red };
+
+    [Header("ホバーセンサー")]
+    public HoverSensor hoverSensor;
 
     [Header("チャージ設定")]
     public float[] chargeForceLevels = { 15f, 25f, 40f };
@@ -128,11 +132,11 @@ public class PlayerController : MonoBehaviour
     // 2D版の着地判定（CircleCast2D を使用）
     public bool IsGrounded()
     {
-        float radius = circleCollider2D.radius;
-        // プレイヤーの中心から少し下に向けて球をキャスト
-        Vector2 origin = (Vector2)transform.position + Vector2.up * 0.1f;
-        RaycastHit2D hit = Physics2D.CircleCast(origin, radius, Vector2.down, castDistance, groundLayer);
-        return hit.collider != null;
+        if (hoverSensor != null)
+        {
+            return hoverSensor.IsGrounded();
+        }
+        return false;
     }
 
     public LayerMask GetGroundLayerMask()
