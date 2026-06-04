@@ -280,6 +280,45 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""isPartOfComposite"": false
                 }
             ]
+        },
+        {
+            ""name"": ""Gimmick"",
+            ""id"": ""f50c89c9-fa27-4570-a803-ff5192c6f7ff"",
+            ""actions"": [
+                {
+                    ""name"": ""Firing"",
+                    ""type"": ""Button"",
+                    ""id"": ""4f20bb51-dc74-4b74-85cf-88fd8a4bbc1d"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                }
+            ],
+            ""bindings"": [
+                {
+                    ""name"": """",
+                    ""id"": ""1a392850-3276-45aa-af02-c018441398d4"",
+                    ""path"": ""<Keyboard>/e"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Firing"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""3abb2155-ac6c-4d38-9bd4-7936c598e05f"",
+                    ""path"": ""<Gamepad>/buttonSouth"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Firing"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                }
+            ]
         }
     ],
     ""controlSchemes"": []
@@ -293,12 +332,16 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         // Title
         m_Title = asset.FindActionMap("Title", throwIfNotFound: true);
         m_Title_Newaction = m_Title.FindAction("New action", throwIfNotFound: true);
+        // Gimmick
+        m_Gimmick = asset.FindActionMap("Gimmick", throwIfNotFound: true);
+        m_Gimmick_Firing = m_Gimmick.FindAction("Firing", throwIfNotFound: true);
     }
 
     ~@PlayerInputActions()
     {
         UnityEngine.Debug.Assert(!m_Player.enabled, "This will cause a leak and performance issues, PlayerInputActions.Player.Disable() has not been called.");
         UnityEngine.Debug.Assert(!m_Title.enabled, "This will cause a leak and performance issues, PlayerInputActions.Title.Disable() has not been called.");
+        UnityEngine.Debug.Assert(!m_Gimmick.enabled, "This will cause a leak and performance issues, PlayerInputActions.Gimmick.Disable() has not been called.");
     }
 
     /// <summary>
@@ -595,6 +638,102 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
     /// Provides a new <see cref="TitleActions" /> instance referencing this action map.
     /// </summary>
     public TitleActions @Title => new TitleActions(this);
+
+    // Gimmick
+    private readonly InputActionMap m_Gimmick;
+    private List<IGimmickActions> m_GimmickActionsCallbackInterfaces = new List<IGimmickActions>();
+    private readonly InputAction m_Gimmick_Firing;
+    /// <summary>
+    /// Provides access to input actions defined in input action map "Gimmick".
+    /// </summary>
+    public struct GimmickActions
+    {
+        private @PlayerInputActions m_Wrapper;
+
+        /// <summary>
+        /// Construct a new instance of the input action map wrapper class.
+        /// </summary>
+        public GimmickActions(@PlayerInputActions wrapper) { m_Wrapper = wrapper; }
+        /// <summary>
+        /// Provides access to the underlying input action "Gimmick/Firing".
+        /// </summary>
+        public InputAction @Firing => m_Wrapper.m_Gimmick_Firing;
+        /// <summary>
+        /// Provides access to the underlying input action map instance.
+        /// </summary>
+        public InputActionMap Get() { return m_Wrapper.m_Gimmick; }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Enable()" />
+        public void Enable() { Get().Enable(); }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Disable()" />
+        public void Disable() { Get().Disable(); }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.enabled" />
+        public bool enabled => Get().enabled;
+        /// <summary>
+        /// Implicitly converts an <see ref="GimmickActions" /> to an <see ref="InputActionMap" /> instance.
+        /// </summary>
+        public static implicit operator InputActionMap(GimmickActions set) { return set.Get(); }
+        /// <summary>
+        /// Adds <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
+        /// </summary>
+        /// <param name="instance">Callback instance.</param>
+        /// <remarks>
+        /// If <paramref name="instance" /> is <c>null</c> or <paramref name="instance"/> have already been added this method does nothing.
+        /// </remarks>
+        /// <seealso cref="GimmickActions" />
+        public void AddCallbacks(IGimmickActions instance)
+        {
+            if (instance == null || m_Wrapper.m_GimmickActionsCallbackInterfaces.Contains(instance)) return;
+            m_Wrapper.m_GimmickActionsCallbackInterfaces.Add(instance);
+            @Firing.started += instance.OnFiring;
+            @Firing.performed += instance.OnFiring;
+            @Firing.canceled += instance.OnFiring;
+        }
+
+        /// <summary>
+        /// Removes <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
+        /// </summary>
+        /// <remarks>
+        /// Calling this method when <paramref name="instance" /> have not previously been registered has no side-effects.
+        /// </remarks>
+        /// <seealso cref="GimmickActions" />
+        private void UnregisterCallbacks(IGimmickActions instance)
+        {
+            @Firing.started -= instance.OnFiring;
+            @Firing.performed -= instance.OnFiring;
+            @Firing.canceled -= instance.OnFiring;
+        }
+
+        /// <summary>
+        /// Unregisters <param cref="instance" /> and unregisters all input action callbacks via <see cref="GimmickActions.UnregisterCallbacks(IGimmickActions)" />.
+        /// </summary>
+        /// <seealso cref="GimmickActions.UnregisterCallbacks(IGimmickActions)" />
+        public void RemoveCallbacks(IGimmickActions instance)
+        {
+            if (m_Wrapper.m_GimmickActionsCallbackInterfaces.Remove(instance))
+                UnregisterCallbacks(instance);
+        }
+
+        /// <summary>
+        /// Replaces all existing callback instances and previously registered input action callbacks associated with them with callbacks provided via <param cref="instance" />.
+        /// </summary>
+        /// <remarks>
+        /// If <paramref name="instance" /> is <c>null</c>, calling this method will only unregister all existing callbacks but not register any new callbacks.
+        /// </remarks>
+        /// <seealso cref="GimmickActions.AddCallbacks(IGimmickActions)" />
+        /// <seealso cref="GimmickActions.RemoveCallbacks(IGimmickActions)" />
+        /// <seealso cref="GimmickActions.UnregisterCallbacks(IGimmickActions)" />
+        public void SetCallbacks(IGimmickActions instance)
+        {
+            foreach (var item in m_Wrapper.m_GimmickActionsCallbackInterfaces)
+                UnregisterCallbacks(item);
+            m_Wrapper.m_GimmickActionsCallbackInterfaces.Clear();
+            AddCallbacks(instance);
+        }
+    }
+    /// <summary>
+    /// Provides a new <see cref="GimmickActions" /> instance referencing this action map.
+    /// </summary>
+    public GimmickActions @Gimmick => new GimmickActions(this);
     /// <summary>
     /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "Player" which allows adding and removing callbacks.
     /// </summary>
@@ -645,5 +784,20 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnNewaction(InputAction.CallbackContext context);
+    }
+    /// <summary>
+    /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "Gimmick" which allows adding and removing callbacks.
+    /// </summary>
+    /// <seealso cref="GimmickActions.AddCallbacks(IGimmickActions)" />
+    /// <seealso cref="GimmickActions.RemoveCallbacks(IGimmickActions)" />
+    public interface IGimmickActions
+    {
+        /// <summary>
+        /// Method invoked when associated input action "Firing" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnFiring(InputAction.CallbackContext context);
     }
 }

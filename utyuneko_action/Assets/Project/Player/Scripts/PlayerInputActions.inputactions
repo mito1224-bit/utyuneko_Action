@@ -194,6 +194,45 @@
                     "isPartOfComposite": false
                 }
             ]
+        },
+        {
+            "name": "Gimmick",
+            "id": "f50c89c9-fa27-4570-a803-ff5192c6f7ff",
+            "actions": [
+                {
+                    "name": "Firing",
+                    "type": "Button",
+                    "id": "4f20bb51-dc74-4b74-85cf-88fd8a4bbc1d",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "1a392850-3276-45aa-af02-c018441398d4",
+                    "path": "<Keyboard>/e",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Firing",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "3abb2155-ac6c-4d38-9bd4-7936c598e05f",
+                    "path": "<Gamepad>/buttonSouth",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Firing",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
         }
     ],
     "controlSchemes": []

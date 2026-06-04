@@ -34,7 +34,7 @@ public class WarpPoint : MonoBehaviour
 
                 player.transform.position = targetPosition;
 
-                Debug.Log($"[{gameObject.name}] プレイヤーの状態を安全にリresetしてワープさせました。");
+                Debug.Log($"[{gameObject.name}] プレイヤーの状態を安全にresetしてワープさせました。");
             }
         }
     }
