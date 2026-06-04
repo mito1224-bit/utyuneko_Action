@@ -93,3 +93,7 @@ Changing which enemies a burst player passes through = edit `Physics2DSettings.a
 -Physics設定を変える前に相談する
 -layerを追加するときも相談する
 -コードを勝手に編集しない
+
+##作業メモ
+-2026/06/03 エネミーのボスの仮実装（後で少しいじる）
+-エネミーの吹き飛ばし処理実装中（テストはまだしていない）
