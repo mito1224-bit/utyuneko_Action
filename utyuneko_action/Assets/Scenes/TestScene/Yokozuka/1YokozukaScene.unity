@@ -302,6 +302,9 @@ MonoBehaviour:
   useInertiaInCharge: 1
   useRotationInCharge: 0
   useSquashInCharge: 1
+  knockbackForceX: 10
+  knockbackForceY: 8
+  damageDuration: 0.6
   useTrail: 1
   useAfterImage: 1
   visualManager: {fileID: 89922778}
@@ -501,7 +504,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7301312203219740141, guid: 992b4cbffb5012c42b7f968084b3b48b, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -1692,7 +1695,7 @@ CircleCollider2D:
   m_CompositeOperation: 0
   m_CompositeOrder: 0
   m_Offset: {x: 0, y: 0}
-  m_Radius: 0.3
+  m_Radius: 0.4
 --- !u!4 &1368427161
 Transform:
   m_ObjectHideFlags: 0
