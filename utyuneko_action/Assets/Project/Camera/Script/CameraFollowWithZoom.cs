@@ -111,6 +111,7 @@ public class CameraFollowWithZoom : MonoBehaviour
         }
         else
         {
+            // ロック中は、トリガーから受け取った「自動計算されたマイナスのZ座標」をターゲットにする
             targetZOffset = lockedZOffset;
         }
 
@@ -136,7 +137,6 @@ public class CameraFollowWithZoom : MonoBehaviour
         transform.position = Vector3.Lerp(transform.position, targetPosition, positionSmoothSpeed * deltaTime);
     }
 
-    // ★修正箇所：エラーの出た背景画像の割り当てを直しました
     void OnGUI()
     {
         if (!showZDebugText) return;
@@ -146,12 +146,10 @@ public class CameraFollowWithZoom : MonoBehaviour
         style.fontStyle = FontStyle.Bold;
         style.normal.textColor = Color.cyan;
 
-        // 文字の後ろに薄い黒背景を敷く
         Texture2D bgTex = new Texture2D(1, 1);
         bgTex.SetPixel(0, 0, new Color(0f, 0f, 0f, 0.6f));
         bgTex.Apply();
 
-        // 【修正点】直接ではなく、normal（通常時）の状態の背景にセットします
         style.normal.background = bgTex;
         style.padding = new RectOffset(10, 10, 5, 5);
 
@@ -175,6 +173,182 @@ public class CameraFollowWithZoom : MonoBehaviour
         isLocked = false;
     }
 }
+
+//public class CameraFollowWithZoom : MonoBehaviour
+//{
+//    [Header("追従対象")]
+//    public Transform target;
+
+//    [Header("基本の位置オフセット")]
+//    public Vector3 offset = new Vector3(0, 5, -10);
+
+//    [Header("位置追従のなめらかさ")]
+//    public float positionSmoothSpeed = 10f;
+
+//    [Header("Z軸ズームの調整（高さに応じた引き量）")]
+//    public float heightThreshold = 3f;
+//    public float minZOffset = -10f;
+//    public float maxZOffset = -20f;
+//    public float zoomSensitivity = 2f;
+//    public float zoomSmoothSpeed = 5f;
+
+//    [Header("バウンド軽減用")]
+//    public float heightFilterSpeed = 2f;
+
+//    [Header("2D地面の判定設定")]
+//    public LayerMask groundLayer2D = ~0;
+
+//    [Header("カメラの完全固定モード")]
+//    public bool isLocked = false;
+//    public Vector3 lockedPosition;
+//    private float lockedZOffset;
+
+//    [Header("★カメラ側からのブレ・ガタつき対策")]
+//    [Tooltip("ONにすると、起動時にプレイヤーのRigidbody2Dの補間(Interpolate)をカメラ側から強制的に有効化してブレを止めます。")]
+//    public bool autoEnablePlayerInterpolate = true;
+
+//    [Tooltip("ONにすると、カメラの更新をFixedUpdate(物理同期)で行います。バースト時のブレが酷い場合はチェックを入れてください。")]
+//    public bool updateInFixedUpdate = false;
+
+//    [Header("?? デバッグ設定（見えなくさせるトリガー）")]
+//    [Tooltip("ONにすると、ゲーム画面の左上に現在のカメラのZ座標（ズーム状態）をリアルタイム表示します。")]
+//    public bool showZDebugText = true;
+
+//    private float filteredFloatingHeight;
+//    private float currentDynamicZ;
+//    private Rigidbody2D targetRb2D;
+
+//    void Start()
+//    {
+//        currentDynamicZ = offset.z;
+
+//        if (target != null)
+//        {
+//            if (autoEnablePlayerInterpolate)
+//            {
+//                if (target.TryGetComponent<Rigidbody2D>(out targetRb2D))
+//                {
+//                    targetRb2D.interpolation = RigidbodyInterpolation2D.Interpolate;
+//                }
+//            }
+
+//            Vector3 startPos = target.position + offset;
+//            startPos.z = currentDynamicZ;
+//            transform.position = startPos;
+//        }
+//    }
+
+//    void LateUpdate()
+//    {
+//        if (!updateInFixedUpdate)
+//        {
+//            MoveCamera(Time.deltaTime);
+//        }
+//    }
+
+//    void FixedUpdate()
+//    {
+//        if (updateInFixedUpdate)
+//        {
+//            MoveCamera(Time.fixedDeltaTime);
+//        }
+//    }
+
+//    void MoveCamera(float deltaTime)
+//    {
+//        if (target == null) return;
+
+//        // --------------------------------------------------
+//        // 1. 通常時のみ動く：地面からの高さに応じた自動Zズーム計算
+//        // --------------------------------------------------
+//        float targetZOffset = offset.z;
+
+//        if (!isLocked)
+//        {
+//            float currentFloatingHeight = 0f;
+//            Vector2 rayStart = new Vector2(target.position.x, target.position.y);
+//            RaycastHit2D hit = Physics2D.Raycast(rayStart, Vector2.down, 100f, groundLayer2D);
+
+//            if (hit.collider != null)
+//            {
+//                currentFloatingHeight = target.position.y - hit.point.y;
+//            }
+
+//            filteredFloatingHeight = Mathf.Lerp(filteredFloatingHeight, currentFloatingHeight, heightFilterSpeed * deltaTime);
+
+//            if (filteredFloatingHeight > heightThreshold)
+//            {
+//                float excessHeight = filteredFloatingHeight - heightThreshold;
+//                targetZOffset = offset.z - (excessHeight * zoomSensitivity);
+//                targetZOffset = Mathf.Clamp(targetZOffset, maxZOffset, minZOffset);
+//            }
+//        }
+//        else
+//        {
+//            targetZOffset = lockedZOffset;
+//        }
+
+//        // Z軸の引き（ズーム）をなめらかに変化させる
+//        currentDynamicZ = Mathf.Lerp(currentDynamicZ, targetZOffset, zoomSmoothSpeed * deltaTime);
+
+//        // --------------------------------------------------
+//        // 2. 最終的なカメラ位置の計算と移動
+//        // --------------------------------------------------
+//        Vector3 targetPosition;
+
+//        if (isLocked)
+//        {
+//            targetPosition = new Vector3(lockedPosition.x, lockedPosition.y, currentDynamicZ);
+//        }
+//        else
+//        {
+//            targetPosition = target.position + offset;
+//            targetPosition.z = currentDynamicZ;
+//        }
+
+//        // カメラをなめらかに目標位置へ移動させる
+//        transform.position = Vector3.Lerp(transform.position, targetPosition, positionSmoothSpeed * deltaTime);
+//    }
+
+//    // ★修正箇所：エラーの出た背景画像の割り当てを直しました
+//    void OnGUI()
+//    {
+//        if (!showZDebugText) return;
+
+//        GUIStyle style = new GUIStyle();
+//        style.fontSize = 18;
+//        style.fontStyle = FontStyle.Bold;
+//        style.normal.textColor = Color.cyan;
+
+//        // 文字の後ろに薄い黒背景を敷く
+//        Texture2D bgTex = new Texture2D(1, 1);
+//        bgTex.SetPixel(0, 0, new Color(0f, 0f, 0f, 0.6f));
+//        bgTex.Apply();
+
+//        // 【修正点】直接ではなく、normal（通常時）の状態の背景にセットします
+//        style.normal.background = bgTex;
+//        style.padding = new RectOffset(10, 10, 5, 5);
+
+//        string status = isLocked ? "<color=red>LOCKED</color>" : "NORMAL";
+//        string debugMessage = $"[Camera Z] Current: {currentDynamicZ:F2}  (Limit: {maxZOffset} ～ {minZOffset})  [{status}]";
+
+//        GUILayout.BeginArea(new Rect(10, 10, 600, 40));
+//        GUILayout.Label(debugMessage, style);
+//        GUILayout.EndArea();
+//    }
+
+//    public void LockCamera(Vector3 positionToLock, float targetZValue)
+//    {
+//        lockedPosition = positionToLock;
+//        lockedZOffset = targetZValue;
+//        isLocked = true;
+//    }
+
+//    public void UnlockCamera()
+//    {
+//        isLocked = false;
+//    }
+//}
 
 //public class CameraFollowWithZoom : MonoBehaviour
 //{

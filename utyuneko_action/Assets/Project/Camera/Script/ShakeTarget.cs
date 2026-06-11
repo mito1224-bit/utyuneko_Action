@@ -173,6 +173,8 @@ public class ShakeTarget : MonoBehaviour
     // タイポ吸収用
     private ShakeStyle collisionGridStyle(ShakeStyle style) => style;
 }
+
+
 //using UnityEngine;
 
 //public class ShakeTarget : MonoBehaviour
