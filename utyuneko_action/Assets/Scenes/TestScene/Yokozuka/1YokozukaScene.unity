@@ -213,7 +213,7 @@ GameObject:
   - component: {fileID: 89922777}
   m_Layer: 0
   m_Name: Player_main
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -399,7 +399,6 @@ Transform:
   - {fileID: 293574553}
   - {fileID: 1368427161}
   - {fileID: 819685122}
-  - {fileID: 512900948}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!95 &89922777
@@ -824,11 +823,11 @@ Transform:
   m_GameObject: {fileID: 512900945}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -40}
+  m_LocalPosition: {x: 0, y: 4.37, z: -50}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 89922776}
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &512900949
 MonoBehaviour:
@@ -8936,3 +8935,4 @@ SceneRoots:
   - {fileID: 1828718867}
   - {fileID: 141977778}
   - {fileID: 89922776}
+  - {fileID: 512900948}
