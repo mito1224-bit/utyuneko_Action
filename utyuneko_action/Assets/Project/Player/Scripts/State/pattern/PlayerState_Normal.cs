@@ -1,13 +1,43 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 public class PlayerState_Normal : IPlayerState
 {
+    // ãƒ¢ãƒ‡ãƒ«ã®æœ€åˆã®å‘ã
+    static float targetYAngle = 310f;
     private PlayerController p;
 
     public void Enter(PlayerController player)
     {
         p = player;
-        Debug.Log("ƒXƒe[ƒg•ÏXF’Êíó‘ÔiNormalj");
+        Debug.Log("ã‚¹ãƒ†ãƒ¼ãƒˆå¤‰æ›´ï¼šé€šå¸¸çŠ¶æ…‹ï¼ˆNormalï¼‰");
+
+        if (p.visualManager != null && p.visualManager.playerVisual != null)
+        {
+            float currentVelocityX = p.rb2D.linearVelocity.x;
+
+            if (Mathf.Abs(currentVelocityX) > 0.1f)
+            {
+                targetYAngle = (currentVelocityX > 0f) ? 310f : 50f;
+            }
+            else
+            {
+                if (p.moveInput.x > 0.01f) targetYAngle = 310f;
+                else if (p.moveInput.x < -0.01f) targetYAngle = 50f;
+                else
+                {
+                    float currentY = p.visualManager.playerVisual.localRotation.eulerAngles.y;
+                    targetYAngle = (currentY > 180f) ? 310f : 50f;
+                }
+            }
+
+            p.visualManager.playerVisual.localRotation = Quaternion.Euler(0f, targetYAngle, 0f);
+        }
+
+        // é€šå¸¸çŠ¶æ…‹ã«æˆ»ã£ãŸã‚‰ã€æ¼”å‡ºç”¨ãƒžãƒãƒ¼ã‚¸ãƒ£ãƒ¼å´ã‚‚ä¸€åº¦å®‰å…¨ã«ãƒªã‚»ãƒƒãƒˆã‚’ã‹ã‘ã‚‹
+        if (p.visualManager != null)
+        {
+            p.visualManager.ResetVisuals();
+        }
 
         if (p.hoverSensor != null)
         {
@@ -25,7 +55,6 @@ public class PlayerState_Normal : IPlayerState
 
         if (p.inputActions.Player.Jump.triggered && p.IsGrounded())
         {
-            // Vector2 ‚Å‘¬“x‚ð‘ã“ü
             p.rb2D.linearVelocity = new Vector2(p.rb2D.linearVelocity.x, p.jumpForce);
 
             if (p.currentBurstCount > 0)
@@ -39,16 +68,20 @@ public class PlayerState_Normal : IPlayerState
             if (p.currentBurstCount > 0)
             {
                 p.currentBurstCount = 0;
-                Debug.Log("ƒo[ƒXƒg‰ñ”‚ªƒŠƒZƒbƒg");
+                Debug.Log("ãƒãƒ¼ã‚¹ãƒˆå›žæ•°ãŒãƒªã‚»ãƒƒãƒˆ");
             }
         }
     }
 
     public void FixedUpdateState()
     {
+        if (p.anim != null)
+        {
+            p.anim.SetBool("isWalk", p.moveInput.x != 0);
+        }
+
         if (p.IsGrounded())
         {
-            // yÚ’nŽžz‚±‚ê‚Ü‚Å‚Ì’ÊíˆÚ“®iƒLƒrƒLƒr“®‚­j
             Vector2 newVelocity = new Vector2(
                 p.moveInput.x * p.moveSpeed,
                 p.rb2D.linearVelocity.y
@@ -57,38 +90,61 @@ public class PlayerState_Normal : IPlayerState
         }
         else
         {
-            // y‹ó’†ŽžzƒWƒƒƒ“ƒv‚Æƒo[ƒXƒgŒã‚Å—¼—§‚·‚éA’´‰õ“K‚È‹ó’†§ŒäI
             float currentX = p.rb2D.linearVelocity.x;
 
             if (p.moveInput.x != 0)
             {
-                // ‡@ –Ú•W‘¬“x‚ðuŒ»Ý‚Ì¨‚¢iâ‘Î’ljv‚É‡‚í‚¹‚Ä“®“I‚É•Ï‚¦‚é
-                // ‚±‚ê‚É‚æ‚èAƒo[ƒXƒg’¼Œã‚Ì’´‚‘¬‚ðˆÛŽ‚µ‚½‚Ü‚Ü¶‰E‚É‹È‚ª‚ê‚é‚æ‚¤‚É‚È‚è‚Ü‚·
                 float currentMaxSpeed = Mathf.Max(Mathf.Abs(currentX), p.moveSpeed);
                 float targetX = p.moveInput.x * currentMaxSpeed;
 
-                // ‡A •ûŒü“]Š·‚ÌŠ´“xiƒx[ƒX’lj
                 float turnSensitivity = 8.0f;
 
-                // ‡B is•ûŒü‚Æu‹tv‚Ì“ü—Í‚ð“ü‚ê‚½i”½“]‚µ‚½‚¢jŽž‚ÍA‚³‚ç‚É—Í‚ð2”{‚É‚·‚é
-                // ‚±‚ê‚ªƒAƒNƒVƒ‡ƒ“ƒQ[ƒ€‚ÌuƒLƒrƒLƒrŠ´v‚ð¶‚Þ’´d—vƒ|ƒCƒ“ƒg‚Å‚·
                 if (Mathf.Sign(p.moveInput.x) != Mathf.Sign(currentX))
                 {
                     turnSensitivity = 16.0f;
                 }
 
-                // ‡C Lerp‚ðŽg‚Á‚ÄAŒ»Ý‚Ì‘¬“xƒXƒP[ƒ‹‚É‡‚í‚¹‚½ŠŠ‚ç‚©‚©‚Â‹­—Í‚È•ûŒü“]Š·
                 float newX = Mathf.Lerp(currentX, targetX, Time.fixedDeltaTime * turnSensitivity);
                 p.rb2D.linearVelocity = new Vector2(newX, p.rb2D.linearVelocity.y);
             }
             else
             {
-                // “ü—Í‚ª‚È‚¢ê‡F
-                // ’ÊíƒWƒƒƒ“ƒv‚Ì”ÍˆÍ“à‚È‚çƒsƒ^ƒb‚ÆŽ~‚Ü‚èAƒo[ƒXƒgŒã‚Ì’´‚‘¬ó‘Ô‚È‚ç­‚µŠŠ‚é‚æ‚¤‚ÉŒ¸‘¬
                 float brakeSpeed = (Mathf.Abs(currentX) > p.moveSpeed) ? 15.0f : 35.0f;
                 float newX = Mathf.MoveTowards(currentX, 0f, Time.fixedDeltaTime * brakeSpeed);
                 p.rb2D.linearVelocity = new Vector2(newX, p.rb2D.linearVelocity.y);
             }
+        }
+
+        // å·¦å³ç§»å‹•ä¸­ã®ã—ãªã‚Šï¼ˆLeanï¼‰å‡¦ç†
+        if (p.visualManager != null && p.visualManager.playerVisual != null && p.anim != null)
+        {
+            float targetLeanAngle = 0.0f;
+
+            // p.leanAngle ã§ã¯ãªãã€ãƒžãƒãƒ¼ã‚¸ãƒ£ãƒ¼å´ã® p.visualManager.leanAngle ã‚’è¦‹ã«è¡Œãã¾ã™ï¼
+            if (p.moveInput.x > 0.01f)
+            {
+                targetYAngle = 310f;
+                targetLeanAngle = -(p.moveInput.x * p.visualManager.leanAngle);
+            }
+            else if (p.moveInput.x < -0.01f)
+            {
+                targetYAngle = 50f;
+                targetLeanAngle = p.moveInput.x * p.visualManager.leanAngle;
+            }
+
+            Quaternion targetRotation = Quaternion.Euler(targetLeanAngle, targetYAngle, 0f);
+
+            // â˜…ä¿®æ­£ã®è‚ï¼šã‚¹ãƒ ãƒ¼ã‚¸ãƒ³ã‚°ã®é€Ÿåº¦ã‚‚ãƒžãƒãƒ¼ã‚¸ãƒ£ãƒ¼å´ã‚’å‚ç…§ã—ã¾ã™ï¼
+            p.visualManager.playerVisual.localRotation = Quaternion.Lerp(
+                p.visualManager.playerVisual.localRotation,
+                targetRotation,
+                Time.fixedDeltaTime * p.visualManager.leanSmoothing
+            );
+        }
+
+        if (p.visualManager != null)
+        {
+            p.visualManager.UpdateSquashAndStretch();
         }
     }
 

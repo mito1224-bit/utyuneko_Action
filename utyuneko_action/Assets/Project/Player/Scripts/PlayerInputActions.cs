@@ -557,7 +557,13 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         /// <summary>
         /// Construct a new instance of the input action map wrapper class.
         /// </summary>
-        public TitleActions(@PlayerInputActions wrapper) { m_Wrapper = wrapper; }
+        public TitleActions(@PlayerInputActions wrapper)
+        {
+            m_Wrapper = wrapper;
+            Cancel = null;//エラーが出たため追加
+            Submit = null;//エラーが出たため追加
+            Move = null;//エラーが出たため追加
+        }
         /// <summary>
         /// Provides access to the underlying input action "Title/Newaction".
         /// </summary>
@@ -572,6 +578,11 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         public void Disable() { Get().Disable(); }
         /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.enabled" />
         public bool enabled => Get().enabled;
+
+        public object Cancel { get; internal set; }
+        public object Submit { get; internal set; }
+        public object Move { get; internal set; }
+
         /// <summary>
         /// Implicitly converts an <see ref="TitleActions" /> to an <see ref="InputActionMap" /> instance.
         /// </summary>

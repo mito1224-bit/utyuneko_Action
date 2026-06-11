@@ -87,10 +87,21 @@ public class PlayerHealth : MonoBehaviour
         isInvincible = true;
         iFrameTimer = iFrameDuration;
 
-        // 5. 【Stateパターン連携】被弾したらバーストを強制解除して通常状態に戻す
-        if (p != null && p.CurrentState == p.StateBurst)
+        // 5. 【Stateパターン連携】被弾したらバーストを強制解除してダメージ状態に戻す
+        if (p != null)
         {
-            p.TransitionToState(p.StateNormal);
+            // ※注意: 直近の敵の座標を取得するため、この関数の引数にGameObjectを渡すか、
+            // 面倒なら「現在のdB君の見た目の向き（Y軸が50度なら右向き、310度なら左向きなど）の真後ろ」に飛ばす形にします。
+            // ここでは一番簡単な「dB君が今向いている方向の真後ろ」に吹っ飛ばすロジックにします。
+            float currentYAngle = p.visualManager.playerVisual.localRotation.eulerAngles.y;
+
+            // 310度付近（右向き）なら左（-1）へ、50度付近（左向き）なら右（1）へ吹っ飛ばす
+            float xDir = (currentYAngle > 180f) ? -1f : 1f;
+            Vector2 knockbackVector = new Vector2(xDir, 0.5f);
+
+            // ダメージステートに方向を伝えて、ステート遷移！
+            p.StateDamage.SetKnockbackDirection(knockbackVector);
+            p.TransitionToState(p.StateDamage);
         }
 
         // 6. 死亡判定
@@ -132,12 +143,24 @@ public class PlayerHealth : MonoBehaviour
         HandleDamageCollision(collision.gameObject);
         HandleHealCollision(collision.gameObject);
     }
+    // 無敵時間が切れた瞬間にまだ触れていたらダメージを食らわせるための判定
+    private void OnCollisionStay2D(Collision2D collision)
+    {
+        // 無敵が切れた瞬間にまだ触れていたらダメージを食らわせる
+        HandleDamageCollision(collision.gameObject);
+    }
 
     // 判定②：すり抜ける設定のとき（IsTriggerな2Dコライダーを持つセンサーやエフェクト）
     private void OnTriggerEnter2D(Collider2D other)
     {
         HandleDamageCollision(other.gameObject);
         HandleHealCollision(other.gameObject);
+    }
+    // 無敵時間が切れた瞬間にまだ触れていたらダメージを食らわせるための判定
+    private void OnTriggerStay2D(Collider2D other)
+    {
+        // 無敵が切れた瞬間にまだ触れていたらダメージを食らわせる
+        HandleDamageCollision(other.gameObject);
     }
 
     // 衝突したオブジェクトからダメージ情報を抜き出す共通処理
