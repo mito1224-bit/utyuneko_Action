@@ -17,6 +17,8 @@ public class Fiting : MonoBehaviour
     private PlayerInputActions _inputActions;
     private bool _hasInputPressed = false;
 
+    private bool _isHolding = false;
+
     private void Awake()
     {
         // 大砲自身の入力システムを用意する（プレイヤーの状態に依存しなくなる）
@@ -27,6 +29,9 @@ public class Fiting : MonoBehaviour
     {
         if (collision.CompareTag("Player"))
         {
+            // すでに何かをホールド中なら多重判定を防ぐために無視
+            if (_isHolding) return;
+
             PlayerController player = collision.GetComponent<PlayerController>();
             if (player != null)
             {
@@ -34,9 +39,13 @@ public class Fiting : MonoBehaviour
                 {
                     _currentActiveCannon.StopCoroutine(_activeLaunchCoroutine);
                     _currentActiveCannon.DisableInputMonitoring(); // 古い大砲の監視を終了
+
+                    // 古い大砲が持っていたホールドフラグも解除してあげる
+                    if (_currentActiveCannon != null) _currentActiveCannon._isHolding = false;
                 }
 
                 _currentActiveCannon = this;
+                _isHolding = true; // ホールド開始
                 _activeLaunchCoroutine = StartCoroutine(LaunchPlayerRoutine(player));
             }
         }
@@ -46,43 +55,63 @@ public class Fiting : MonoBehaviour
     {
         Debug.Log($"[{gameObject.name}] プレイヤーが大砲に入りました。Eキーまたはボタンを待っています...");
 
+        // ★【最重要】大砲に入った瞬間の、純粋なプレイヤーの燃料状態を記憶する
+        int saveFuelCount = player.currentBurstCount;
+
         // 1. 大砲待機中（完全ホールド）
         player.enabled = false;
-        player.transform.position = transform.position + -transform.right * 0.3f;
         player.rb2D.linearVelocity = Vector2.zero;
+
+        // ? 【削除】player.currentBurstCount = 0; ← これが勝手に回復させていた原因です
 
         float originalGravity = player.rb2D.gravityScale;
         player.rb2D.gravityScale = 0f;
-        player.rb2D.bodyType = RigidbodyType2D.Kinematic;
 
-        // ★ 大砲独自のルートで入力を監視開始
+        // 物理的に完全に静止させ、移動判定を呼ばせないようにする
+        player.rb2D.bodyType = RigidbodyType2D.Kinematic;
+        player.rb2D.constraints = RigidbodyConstraints2D.FreezeAll; // 位置も角度も物理的に完全ロック
+
         _hasInputPressed = false;
         EnableInputMonitoring();
 
-        // ★ ボタンが押されるまでじっと待機
         while (!_hasInputPressed)
         {
+            // 待機中も、外部の割り込み等で燃料が変わらないように突入時の値を維持
+            player.currentBurstCount = saveFuelCount;
+
+            // 毎フレーム位置を固定（微小な移動によるカウント消費を防ぐ）
+            player.transform.position = transform.position + -transform.right * 0.3f;
             yield return null;
         }
 
-        // ★ ボタンが押されたので監視を終了
         DisableInputMonitoring();
 
         // 2. 発射（重力オン、Burst状態へ）
         Debug.Log($"[{gameObject.name}] ボタン入力を検知！発射します！");
+
+        // 発射するので物理ロックを解除
+        player.rb2D.constraints = RigidbodyConstraints2D.FreezeRotation; // 回転だけロックに戻す
+
         player.rb2D.bodyType = RigidbodyType2D.Dynamic;
         player.rb2D.gravityScale = originalGravity;
+
+        // ここでBurst状態に遷移（ステート側で勝手にカウントが消費される可能性がある）
         player.TransitionToState(player.StateBurst);
+
+        // ★【最重要】遷移した直後のフレームで、すぐに記憶していた燃料で上書き（消費・回復を打ち消す）
+        player.currentBurstCount = saveFuelCount;
 
         Vector2 firingDirection = -transform.right;
         player.rb2D.linearVelocity = firingDirection * firingSpeed;
 
-        // 大砲から抜け出すための猶予
         yield return new WaitForFixedUpdate();
 
         // 3. 飛行・衝突監視ループ
         while (true)
         {
+            // 飛んでいる間も、記憶した突入時の燃料を毎フレーム強制維持
+            player.currentBurstCount = saveFuelCount;
+
             if (player.rb2D.IsTouchingLayers(obstacleLayers)) break;
             if (player.rb2D.linearVelocity.magnitude < 0.1f) break;
             yield return null;
@@ -91,13 +120,17 @@ public class Fiting : MonoBehaviour
         // 4. 解放処理
         player.enabled = true;
 
+        // 完全に大砲の処理から解放される瞬間も、突入時の燃料状態を維持
+        player.currentBurstCount = saveFuelCount;
+
+        // 大砲から完全に離れたので、次回の侵入を受け付けるためにフラグを下ろす
+        _isHolding = false;
+
         if (_currentActiveCannon == this)
         {
             _activeLaunchCoroutine = null;
             _currentActiveCannon = null;
         }
-
-        Debug.Log($"[{gameObject.name}] プレイヤーを解放しました。");
     }
 
     // ─── 大砲独自の入力監視処理（自動生成クラスを使用） ───
@@ -106,7 +139,6 @@ public class Fiting : MonoBehaviour
     {
         if (_inputActions != null)
         {
-            // 共有してもらった自動生成クラスの中の「Gimmick」マップの「Firing」にメソッドを登録
             _inputActions.Gimmick.Firing.started += OnLaunchButtonPressed;
             _inputActions.Gimmick.Enable(); // Gimmickのキー受付を強制開始！
         }
