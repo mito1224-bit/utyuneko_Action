@@ -32,9 +32,30 @@ public class PlayerController : MonoBehaviour
     public float chargeTimePerLevel = 0.5f;
     public float aimTimeScale = 0.05f;
 
+    [Header("チャージ中演出設定")]
+    [Tooltip("True: チャージ中もバースト時の慣性を残してスロー移動する\nFalse: チャージに入った瞬間に速度を0にしてその場に完全停止する")]
+    public bool useInertiaInCharge = true; // 慣性移動のON/OFF
+    [Tooltip("True: チャージ中もドリル回転やしなり移動を行う\nFalse: 回転などを止め、純粋にエイム方向を向くだけにする")]
+    public bool useRotationInCharge = true; // 回転演出のON/OFF
+    [Tooltip("True: チャージ中の壁衝突時にもモチッと伸縮・反射演出を行う\nFalse: チャージ中は一切伸縮しなくなる")]
+    public bool useSquashInCharge = true; // 伸縮演出のON/OFF
+
+    [Header("ダメージ設定")]
+    public float knockbackForceX = 10f; // 横に吹っ飛ぶ強さ
+    public float knockbackForceY = 8f; // 上に跳ね上がる強さ
+    public float damageDuration = 1.0f; // 操作不能になる時間(秒)
+
     [Header("バースト演出設定")]
-    public bool useTrail = true;
-    public bool useAfterImage = true;
+    public bool useTrail = true;       // トレイル演出のオンオフ
+    public bool useAfterImage = true;  // 残像演出のオンオフ
+
+    [Header("Visual Manager Reference")]
+    [Tooltip("演出管理コンポーネントの参照")]
+    public PlayerVisualManager visualManager;
+
+    [Header("Visual Settings")]
+    [Tooltip("どれくらい前のめりにするか(最大角度)")]
+    public float leanAngle = 20.0f;
 
     // 2D物理用の隠しプロパティ
     [HideInInspector] public Rigidbody2D rb2D;
@@ -47,15 +68,17 @@ public class PlayerController : MonoBehaviour
     [HideInInspector] public int currentChargeLevel = 0;
     [HideInInspector] public float currentChargeTimer = 0f;
 
+    [HideInInspector] public Animator anim;
+
     public IPlayerState CurrentState => currentState;
 
-    // イベントも Collision2D 用に変更
     public System.Action<Collision2D> OnCollisionEnterEvent;
     private IPlayerState currentState;
 
     public PlayerState_Normal StateNormal { get; private set; }
     public PlayerState_Charge StateCharge { get; private set; }
     public PlayerState_Burst StateBurst { get; private set; }
+    public PlayerState_Damage StateDamage { get; private set; }
 
     void Awake()
     {
@@ -64,17 +87,17 @@ public class PlayerController : MonoBehaviour
         StateNormal = new PlayerState_Normal();
         StateCharge = new PlayerState_Charge();
         StateBurst = new PlayerState_Burst();
+        StateDamage = new PlayerState_Damage();
     }
 
     void Start()
     {
         rb2D = GetComponent<Rigidbody2D>();
         circleCollider2D = GetComponent<CircleCollider2D>();
+        anim = GetComponent<Animator>();
 
-        // 2D用の Constraints 設定（Z軸回転のみ固定。2DなのでZ移動固定の概念はありません）
         rb2D.constraints = RigidbodyConstraints2D.FreezeRotation;
 
-        // 高速移動の隙間すり抜け・挟まり防止（最強設定）
         rb2D.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
         rb2D.sleepMode = RigidbodySleepMode2D.NeverSleep;
 
@@ -83,7 +106,7 @@ public class PlayerController : MonoBehaviour
             aimPivot.gameObject.SetActive(false);
         }
 
-        trailRenderer = GetComponent<TrailRenderer>();
+        trailRenderer = GetComponentInChildren<TrailRenderer>();
         if (trailRenderer != null)
         {
             trailRenderer.enabled = false;
@@ -94,6 +117,9 @@ public class PlayerController : MonoBehaviour
         {
             afterImageEffect.enabled = false;
         }
+
+        if (visualManager == null) visualManager = GetComponent<PlayerVisualManager>();
+        if (visualManager != null) visualManager.Initialize(this);
 
         TransitionToState(StateNormal);
     }
@@ -129,7 +155,6 @@ public class PlayerController : MonoBehaviour
         currentState.Enter(this);
     }
 
-    // 2D版の着地判定（CircleCast2D を使用）
     public bool IsGrounded()
     {
         if (hoverSensor != null)
@@ -144,7 +169,6 @@ public class PlayerController : MonoBehaviour
         return groundLayer;
     }
 
-    // 2Dの衝突イベントを受け取ってステートに丸投げ
     private void OnCollisionEnter2D(Collision2D collision)
     {
         OnCollisionEnterEvent?.Invoke(collision);
