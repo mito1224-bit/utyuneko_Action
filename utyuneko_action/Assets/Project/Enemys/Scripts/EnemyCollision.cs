@@ -34,22 +34,74 @@ public class EnemyCollision : MonoBehaviour
     [Header("ノックバック設定")]
     public float knockbackForce = 15f;
 
-    private Collider myCol;
+    [Header("Pierce専用設定（2コライダー方式）")]
+    [Tooltip("Pierceタイプ: 床・壁に当たるソリッドのBodyコライダー。プレイヤーとは実行時に衝突無視する。\n" +
+             "未設定ならこのGameObjectの非トリガーColliderを自動採用")]
+    public Collider2D pierceBodyCollider;
+    [Tooltip("Pierceタイプ: プレイヤー検出用トリガーコライダー（ダメージ判定）。\n" +
+             "未設定ならこのGameObjectのトリガーColliderを自動採用")]
+    public Collider2D pierceDamageTrigger;
+
+    private Collider2D myCol;
     private EnemyHealth enemyHealth;
 
     void Awake()
     {
-        myCol = GetComponent<Collider>();
         enemyHealth = GetComponent<EnemyHealth>();
 
-        if (myCol != null)
-            myCol.isTrigger = (collisionType == CollisionType.Pierce);
+        if (collisionType == CollisionType.Pierce)
+        {
+            // Pierce: 環境用のソリッドBody + プレイヤー検出用トリガーの2コライダー構成
+            AutoAssignPierceColliders();
+            if (pierceBodyCollider != null) pierceBodyCollider.isTrigger = false; // 床・壁にソリッドで当たる
+            if (pierceDamageTrigger != null) pierceDamageTrigger.isTrigger = true;  // プレイヤー検出はトリガー
+        }
+        else
+        {
+            // Reflect / PierceZone: 本体コライダーは常にソリッド
+            myCol = GetComponent<Collider2D>();
+            if (myCol != null) myCol.isTrigger = false;
+        }
+    }
+
+    void Start()
+    {
+        if (collisionType != CollisionType.Pierce || pierceBodyCollider == null) return;
+
+        // プレイヤーはすり抜けさせたいので、Bodyコライダーとプレイヤーの衝突だけ無視する。
+        // （床・壁との衝突は維持されるので、すり抜けなくなる）
+        GameObject player = GameObject.FindGameObjectWithTag(playerTag);
+        if (player == null) return;
+
+        foreach (var playerCol in player.GetComponentsInChildren<Collider2D>())
+        {
+            if (playerCol != null)
+                Physics2D.IgnoreCollision(pierceBodyCollider, playerCol, true);
+        }
+    }
+
+    // Inspector 未設定時に、自身のコライダーから Body/トリガーを自動割り当てする
+    private void AutoAssignPierceColliders()
+    {
+        if (pierceBodyCollider != null && pierceDamageTrigger != null) return;
+
+        foreach (var col in GetComponents<Collider2D>())
+        {
+            if (col.isTrigger)
+            {
+                if (pierceDamageTrigger == null) pierceDamageTrigger = col;
+            }
+            else
+            {
+                if (pierceBodyCollider == null) pierceBodyCollider = col;
+            }
+        }
     }
 
     // =========================================================
-    //  Reflect / PierceZone → OnCollisionEnter
+    //  Reflect / PierceZone → OnCollisionEnter2D
     // =========================================================
-    void OnCollisionEnter(Collision collision)
+    void OnCollisionEnter2D(Collision2D collision)
     {
         if (!collision.gameObject.CompareTag(playerTag)) return;
 
@@ -86,12 +138,12 @@ public class EnemyCollision : MonoBehaviour
     // =========================================================
     //  Pierce → OnTriggerEnter（すり抜けつつダメージを与える）
     // =========================================================
-    void OnTriggerEnter(Collider other)
+    void OnTriggerEnter2D(Collider2D other)
     {
         if (collisionType != CollisionType.Pierce) return;
         if (!other.CompareTag(playerTag)) return;
 
-        Rigidbody rb = other.GetComponent<Rigidbody>();
+        Rigidbody2D rb = other.GetComponent<Rigidbody2D>();
         if (rb != null)
             enemyHealth?.HandleHit(rb.linearVelocity.magnitude, other.transform.position);
     }
@@ -99,15 +151,16 @@ public class EnemyCollision : MonoBehaviour
     // =========================================================
     //  共通ユーティリティ
     // =========================================================
-    private void ApplyKnockback(Rigidbody targetRb, Vector3 targetPos)
+    private void ApplyKnockback(Rigidbody2D targetRb, Vector3 targetPos)
     {
         if (targetRb == null) return;
 
-        Vector3 dir = (targetPos - transform.position);
+        // XY平面で水平方向（X）にのみ弾く（縦方向には飛ばさない）
+        Vector2 dir = (Vector2)(targetPos - transform.position);
         dir.y = 0f;
         dir = dir.normalized;
 
-        targetRb.linearVelocity = Vector3.zero;
-        targetRb.AddForce(dir * knockbackForce, ForceMode.Impulse);
+        targetRb.linearVelocity = Vector2.zero;
+        targetRb.AddForce(dir * knockbackForce, ForceMode2D.Impulse);
     }
 }
