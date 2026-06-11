@@ -30,7 +30,7 @@ public class DirectionalLaunchPanel : MonoBehaviour
                 float clampedSpeed = Mathf.Clamp(boostedSpeed, minimumBoostSpeed, maxBoostSpeed);
 
                 // 5. プレイヤーの状態を「バースト中」に切り替える
-                player.TransitionToState(player.StateBurst);
+               // player.TransitionToState(player.StateBurst);
 
                 // 6. 1フレーム待って物理速度をパネルの方向・速度に強制上書き
                 StartCoroutine(ForceLaunchNextFrame(rb, launchDirection.normalized, clampedSpeed));
