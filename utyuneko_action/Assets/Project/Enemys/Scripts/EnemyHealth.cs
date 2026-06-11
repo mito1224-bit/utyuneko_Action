@@ -22,10 +22,12 @@ public class EnemyHealth : MonoBehaviour
     public float speedDamageMultiplier = 1.0f;
 
     private EnemyKnockback knockback;
+    private EnemyShield shield;
 
     void Awake()
     {
         knockback = GetComponent<EnemyKnockback>();
+        shield = GetComponent<EnemyShield>(); // 盾を持つ敵のみ。無ければ null
     }
 
     void Start()
@@ -40,6 +42,14 @@ public class EnemyHealth : MonoBehaviour
     public void HandleHit(float impactSpeed, Vector3 hitFromPosition)
     {
         if (impactSpeed < damageSpeedThreshold) return;
+
+        // 盾を持つ敵は、前方（盾側）から当てられてもダメージを受けない。
+        // 反射・ノックバックは EnemyCollision（Reflect）が担当するので、ここではダメージだけ無効化する。
+        if (shield != null && shield.Blocks(hitFromPosition))
+        {
+            Debug.Log($"{gameObject.name}: 盾で防御！ ダメージ無効（盾の反対側から当てる必要あり）");
+            return;
+        }
 
         float extraSpeed = impactSpeed - damageSpeedThreshold;
         int damage = baseDamage + Mathf.FloorToInt(extraSpeed * speedDamageMultiplier);
