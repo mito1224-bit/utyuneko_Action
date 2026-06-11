@@ -651,9 +651,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ShakeTarget
   playerController: {fileID: 1583114815}
   shakeOnPlayerCollision: 1
-  collisionShakeStyle: 2
+  collisionShakeStyle: 1
   useZoomCompensation: 1
-  referenceZOffset: -40
+  referenceZOffset: -10
 --- !u!1 &515184688
 GameObject:
   m_ObjectHideFlags: 0
