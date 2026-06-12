@@ -14,7 +14,7 @@ public class Fiting : MonoBehaviour
     private static Fiting _currentActiveCannon;
 
     // 自動生成された入力クラスのインスタンスを大砲が自分で持つ
-    private PlayerInputActions _inputActions;
+    private GameInputActions _inputActions;
     private bool _hasInputPressed = false;
 
     private bool _isHolding = false;
@@ -22,7 +22,7 @@ public class Fiting : MonoBehaviour
     private void Awake()
     {
         // 大砲自身の入力システムを用意する（プレイヤーの状態に依存しなくなる）
-        _inputActions = new PlayerInputActions();
+        _inputActions = new GameInputActions();
     }
 
     private void OnTriggerEnter2D(Collider2D collision)

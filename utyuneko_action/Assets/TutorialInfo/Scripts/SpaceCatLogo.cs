@@ -51,7 +51,7 @@ public class SpaceCatLogo : MonoBehaviour
 
         // 4. 仕様書：「消えたらタイトルへ」
         // TitleSceneという名前のシーンへ切り替えます
-        SceneManager.LoadScene("TitlePazuru");
+        SceneManager.LoadScene("TitleScene");
     }
 
     void Update()

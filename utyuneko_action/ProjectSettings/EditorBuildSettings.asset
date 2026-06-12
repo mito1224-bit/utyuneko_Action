@@ -9,7 +9,7 @@ EditorBuildSettings:
     path: Assets/Scenes/TestScene/Yokozuka/Stage_kari.unity
     guid: 30339856c90608b42a9974c03c2d9f01
   - enabled: 1
-    path: Assets/Scenes/TestScene/Yokozuka/ResultScene.unity
+    path: Assets/Scenes/MainScene/Result/ResultScene.unity
     guid: 6c7f27e4e9d669346b9f069e3ccb8567
   - enabled: 1
     path: Assets/Scenes/TestScene/Takahasi/Stage_TAKA_01.unity
@@ -18,25 +18,25 @@ EditorBuildSettings:
     path: Assets/Scenes/TestScene/Takahasi/Stage_TAKA_02.unity
     guid: 42e2a7eb7f1dd5d4f84577a6044cc4ef
   - enabled: 1
-    path: Assets/Scenes/TestScene/Hosino/StageSelect.unity
+    path: Assets/Scenes/MainScene/Stage/StageSelect.unity
     guid: 61b99c3d674194e46af1154bcb42c47b
   - enabled: 1
-    path: Assets/Scenes/TestScene/Mituhasi/LogoPazuru.unity
+    path: Assets/Scenes/MainScene/Title/LogoScene.unity
     guid: 6025d458daf87a54fb6e636bdf9ecfc0
   - enabled: 1
-    path: Assets/Scenes/TestScene/Mituhasi/TitlePazuru.unity
+    path: Assets/Scenes/MainScene/Title/TitleScene.unity
     guid: f01290a8ffb65fe468ec71c1d2e4cc9c
   - enabled: 1
-    path: Assets/Scenes/MainScene/Stage1.unity
+    path: Assets/Scenes/MainScene/Stage/Stage1.unity
     guid: c5a960285409d5542b541eed08eba9b1
   - enabled: 1
-    path: Assets/Scenes/MainScene/Stage2.unity
+    path: Assets/Scenes/MainScene/Stage/Stage2.unity
     guid: 6f2594477f325624bacee236c578ac05
   - enabled: 1
-    path: Assets/Scenes/MainScene/Stage3.unity
+    path: Assets/Scenes/MainScene/Stage/Stage3.unity
     guid: 530be08c829b6314a814fb1920ed5cec
   - enabled: 1
-    path: Assets/Scenes/MainScene/Stage4.unity
+    path: Assets/Scenes/MainScene/Stage/Stage4.unity
     guid: 7adfe4860d5b67949a983418dd404b49
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 6e3ab87eaef33dd4abac34b7a0218692, type: 3}
