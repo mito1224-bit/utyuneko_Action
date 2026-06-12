@@ -61,7 +61,7 @@ public class PlayerController : MonoBehaviour
     [HideInInspector] public Rigidbody2D rb2D;
     [HideInInspector] public CircleCollider2D circleCollider2D;
     [HideInInspector] public Vector2 moveInput;
-    [HideInInspector] public PlayerInputActions inputActions;
+    [HideInInspector] public GameInputActions inputActions;
     [HideInInspector] public Vector2 mousePositionInput;
     [HideInInspector] public TrailRenderer trailRenderer;
     [HideInInspector] public AfterImageEffect afterImageEffect;
@@ -82,7 +82,7 @@ public class PlayerController : MonoBehaviour
 
     void Awake()
     {
-        inputActions = new PlayerInputActions();
+        inputActions = new GameInputActions();
 
         StateNormal = new PlayerState_Normal();
         StateCharge = new PlayerState_Charge();

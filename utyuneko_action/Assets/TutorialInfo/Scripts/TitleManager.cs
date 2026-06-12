@@ -541,7 +541,7 @@ public class TitleManager : MonoBehaviour
         if (noButton != null && selectedIndex == 1) noButton.Select();
     }
 
-    void OnStart() { SceneManager.LoadScene("Stage1"); }
+    void OnStart() { SceneManager.LoadScene("StageSelect"); }
     void OnSetting() { Debug.Log("ê›íËñ¢é¿ëï"); }
 
     void OnEnd()
