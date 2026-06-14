@@ -11,9 +11,13 @@ public class DebugDamageInput : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Return))
+        if (Input.GetKeyDown(KeyCode.O))
         {
-            _damageEffect.PlayDamageEffect();
+             _damageEffect.PlayDamageEffect(DamageType.Drone);
+        }
+        if (Input.GetKeyDown(KeyCode.P))
+        {
+            _damageEffect.PlayDamageEffect(DamageType.Player);
         }
     }
 }

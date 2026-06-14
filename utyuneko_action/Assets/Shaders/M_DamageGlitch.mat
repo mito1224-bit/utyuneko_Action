@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: M_DamageGlitch
-  m_Shader: {fileID: -6465566751694194690, guid: 95d838212f82dca4bac08457b71beae8, type: 3}
+  m_Shader: {fileID: 4800000, guid: fa2d2e55255bed249bcd0346d74718f1, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -22,28 +22,17 @@ Material:
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
-    m_TexEnvs:
-    - unity_Lightmaps:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - unity_LightmapsInd:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - unity_ShadowMasks:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
+    m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _BlockScale: 40
+    - _BlockScale: 10
     - _ChromaticIntensity: 0
+    - _ChromaticSpeed: 8
+    - _DiagonalAmount: 0.3
     - _Intensity: 0
-    - _ScanlineIntensity: 0
-    - _ScanlineScale: 100
-    - _ScanlineSpeed: 2
     - _Speed: 10
+    - _ThresholdSpeed: 0.2
+    - _WarpStrength: 1
     m_Colors: []
   m_BuildTextureStacks: []
   m_AllowLocking: 1
