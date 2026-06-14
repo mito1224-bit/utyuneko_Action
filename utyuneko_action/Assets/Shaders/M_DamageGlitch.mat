@@ -25,7 +25,7 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _BlockScale: 10
+    - _BlockScale: 15
     - _ChromaticIntensity: 0
     - _ChromaticSpeed: 8
     - _DiagonalAmount: 0.3
