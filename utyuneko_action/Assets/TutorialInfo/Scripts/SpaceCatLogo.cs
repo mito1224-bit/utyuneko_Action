@@ -2,6 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using UnityEngine.InputSystem; // ★新入力システムを使うために追加
 
 public class SpaceCatLogo : MonoBehaviour
 {
@@ -50,13 +51,31 @@ public class SpaceCatLogo : MonoBehaviour
 
         // 4. 仕様書：「消えたらタイトルへ」
         // TitleSceneという名前のシーンへ切り替えます
-        SceneManager.LoadScene("Title");
+        SceneManager.LoadScene("TitleScene");
     }
 
     void Update()
     {
-        // ゲーム中に何かキーボードやマウスが押されたら、スキップフラグをONにする
-        if (Input.anyKeyDown)
+        // キーボードの任意のキーが押された瞬間
+        bool keyboardPressed = Keyboard.current != null && Keyboard.current.anyKey.wasPressedThisFrame;
+
+        // ★ゲームパッドのいずれかのボタンが押された瞬間を安全に検知
+        bool gamepadPressed = false;
+        if (Gamepad.current != null)
+        {
+            // ゲームパッドの「すべてのボタン・入力」の中から、今フレーム押されたものがあるか探す
+            foreach (var control in Gamepad.current.allControls)
+            {
+                if (control is UnityEngine.InputSystem.Controls.ButtonControl button && button.wasPressedThisFrame)
+                {
+                    gamepadPressed = true;
+                    break;
+                }
+            }
+        }
+
+        // どちらかが押されていたらスキップ
+        if (keyboardPressed || gamepadPressed)
         {
             スキップした = true;
         }

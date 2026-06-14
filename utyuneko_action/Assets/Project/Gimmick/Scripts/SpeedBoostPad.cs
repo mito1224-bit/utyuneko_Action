@@ -37,7 +37,7 @@ public class SpeedBoostPad : MonoBehaviour
 
                 // 6. プレイヤーの状態を「バースト中」に切り替える
                 // (これでトレイルや残像がONになり、通常移動入力が遮断されます)
-                player.TransitionToState(player.StateBurst);
+                //player.TransitionToState(player.StateBurst);
 
                 // 7. コルーチンを動かして、1フレーム後に進行方向へ加速を叩き込む
                 StartCoroutine(ForceBoostNextFrame(player, rb, moveDirection, finalSpeed));
