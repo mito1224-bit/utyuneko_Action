@@ -3,104 +3,162 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
-// ダメージの種類を区別するenum
 public enum DamageType
 {
-    Player, // プレイヤー本体がダメージを受けたとき（赤・強め）
-    Drone   // ドローンが身代わりになったとき（青・軽め）
+    Player,
+    Drone
 }
 
 public class PlayerDamageEffect : MonoBehaviour
 {
-    // ----------------------------------------------------------------
-    // Glitchシェーダー
-    // ----------------------------------------------------------------
+    //==================================================
+    // Glitch Shader
+    //==================================================
     [Header("Glitch Shader")]
     [Tooltip("DamageGlitch.matをアサインしてください")]
     public Material glitchMaterial;
 
-    // ----------------------------------------------------------------
-    // プレイヤーダメージの設定
-    // ----------------------------------------------------------------
+    //==================================================
+    // Player Damage Settings
+    //==================================================
     [Header("Player Damage Settings")]
-
     [Tooltip("エフェクト全体の長さ（秒）")]
+    [Range(0.05f, 1.5f)]
     public float playerEffectDuration = 0.3f;
 
-    [Tooltip("横ズレの強さ")]
-    public float playerGlitchIntensity = 0.3f;
-
-    [Tooltip("RGBにじみの強さ")]
-    public float playerChromaticIntensity = 0.04f;
-
-    [Tooltip("ビネットの色")]
-    public Color playerVignetteColor = new Color(0.8f, 0f, 0f);
-
-    [Tooltip("周辺の暗さ（0〜1）")]
-    public float playerVignetteIntensity = 0.6f;
-
-    [Tooltip("ビネットのぼかし具合（0でくっきり、1でなめらか）")]
-    public float playerVignetteSmoothness = 0.5f;
-
-    [Tooltip("白黒になる量（0〜100）")]
-    public float playerDesaturation = 100f;
-
-    [Tooltip("ノイズの強さ")]
-    public float playerGrainIntensity = 0.8f;
-
-    [Tooltip("暗い部分へのノイズの出やすさ")]
-    public float playerGrainResponse = 0.8f;
-
     [Tooltip("カーブの鋭さ。上げると瞬間的に強く出てすぐ消える")]
+    [Range(0.5f, 10f)]
     public float playerSharpness = 3f;
 
-    // ----------------------------------------------------------------
-    // ドローンダメージの設定
-    // ----------------------------------------------------------------
-    [Header("Drone Damage Settings")]
+    [Header("Player Vignette")]
+    public Color playerVignetteColor = new Color(0.8f, 0f, 0f);
+    [Range(0f, 1f)] public float playerVignetteIntensity = 0.6f;
+    [Range(0f, 1f)] public float playerVignetteSmoothness = 0.5f;
+    public bool playerUseVignetteIntensity = true;
 
+    [Header("Player Desaturation")]
+    [Tooltip("白黒になる量（0〜100）")]
+    [Range(0f, 100f)]
+    public float playerDesaturation = 100f;
+    public bool playerUseColorIntensity = true;
+
+    [Header("Player Grain")]
+    [Range(0f, 1f)] public float playerGrainIntensity = 0.8f;
+    [Range(0f, 1f)] public float playerGrainResponse = 0.8f;
+    public bool playerUseGrainIntensity = true;
+
+    [Header("Player Glitch")]
+    [Range(0f, 1f)] public float playerGlitchIntensity = 0.3f;
+    public bool playerUseGlitchIntensity = false;
+
+    [Header("Player Chromatic")]
+    [Range(0f, 0.1f)] public float playerChromaticIntensity = 0.04f;
+    public bool playerUseChromaticIntensity = false;
+
+    [Header("Player Color Filter")]
+    [Tooltip("画面全体にかける色味。白なら変化なし")]
+    public Color playerColorFilter = new Color(1f, 0.75f, 0.75f, 1f);
+    [Range(0f, 1f)] public float playerColorFilterStrength = 0.25f;
+    public bool playerUseColorFilterIntensity = true;
+
+    //==================================================
+    // Drone Damage Settings
+    //==================================================
+    [Header("Drone Damage Settings")]
     [Tooltip("エフェクト全体の長さ（秒）")]
+    [Range(0.05f, 1.5f)]
     public float droneEffectDuration = 0.2f;
 
-    [Tooltip("横ズレの強さ")]
-    public float droneGlitchIntensity = 0.15f;
-
-    [Tooltip("RGBにじみの強さ")]
-    public float droneChromaticIntensity = 0.02f;
-
-    [Tooltip("ビネットの色")]
-    public Color droneVignetteColor = new Color(0.2f, 0.7f, 1f);
-
-    [Tooltip("周辺の暗さ（0〜1）")]
-    public float droneVignetteIntensity = 0.35f;
-
-    [Tooltip("ビネットのぼかし具合（0でくっきり、1でなめらか）")]
-    public float droneVignetteSmoothness = 0.5f;
-
-    [Tooltip("白黒になる量（0〜100）")]
-    public float droneDesaturation = 30f;
-
-    [Tooltip("ノイズの強さ")]
-    public float droneGrainIntensity = 0.3f;
-
-    [Tooltip("暗い部分へのノイズの出やすさ")]
-    public float droneGrainResponse = 0.8f;
-
     [Tooltip("カーブの鋭さ。上げると瞬間的に強く出てすぐ消える")]
+    [Range(0.5f, 10f)]
     public float droneSharpness = 4f;
 
-    // ----------------------------------------------------------------
-    // 内部変数（Inspectorには表示しない）
-    // ----------------------------------------------------------------
-    private Volume _volume;                       // URPのポストエフェクト制御用Volume
-    private Vignette _vignette;                   // 画面周辺を暗くするビネット
-    private ColorAdjustments _colorAdjustments;   // 彩度などの色調整
-    private FilmGrain _filmGrain;                 // フィルムグレイン（ノイズ）
-    private Coroutine _effectCoroutine;           // 実行中のエフェクトコルーチン
+    [Header("Drone Vignette")]
+    public Color droneVignetteColor = new Color(0.2f, 0.7f, 1f);
+    [Range(0f, 1f)] public float droneVignetteIntensity = 0.35f;
+    [Range(0f, 1f)] public float droneVignetteSmoothness = 0.5f;
+    public bool droneUseVignetteIntensity = true;
 
-    // ----------------------------------------------------------------
+    [Header("Drone Desaturation")]
+    [Tooltip("白黒になる量（0〜100）")]
+    [Range(0f, 100f)]
+    public float droneDesaturation = 30f;
+    public bool droneUseColorIntensity = true;
+
+    [Header("Drone Grain")]
+    [Range(0f, 1f)] public float droneGrainIntensity = 0.3f;
+    [Range(0f, 1f)] public float droneGrainResponse = 0.8f;
+    public bool droneUseGrainIntensity = true;
+
+    [Header("Drone Glitch")]
+    [Range(0f, 1f)] public float droneGlitchIntensity = 0.15f;
+    public bool droneUseGlitchIntensity = false;
+
+    [Header("Drone Chromatic")]
+    [Range(0f, 0.1f)] public float droneChromaticIntensity = 0.02f;
+    public bool droneUseChromaticIntensity = false;
+
+    [Header("Drone Color Filter")]
+    [Tooltip("画面全体にかける色味。白なら変化なし")]
+    public Color droneColorFilter = new Color(0.75f, 0.9f, 1f, 1f);
+    [Range(0f, 1f)] public float droneColorFilterStrength = 0.2f;
+    public bool droneUseColorFilterIntensity = true;
+
+    //==================================================
+    // 内部参照
+    //==================================================
+    private Volume _volume;
+    private Vignette _vignette;
+    private ColorAdjustments _colorAdjustments;
+    private FilmGrain _filmGrain;
+    private Coroutine _effectCoroutine;
+
+    // Material更新最適化用キャッシュ
+    private float _prevGlitchIntensity = -1f;
+    private float _prevChromaticIntensity = -1f;
+
+    //==================================================
+    // フラグ構造体
+    //==================================================
+    private struct EffectFlags
+    {
+        public bool vignette;
+        public bool color;
+        public bool grain;
+        public bool glitch;
+        public bool chromatic;
+        public bool colorFilter;
+    }
+
+    //==================================================
+    // 設定構造体
+    //==================================================
+    private struct DamageSettings
+    {
+        public float duration;
+        public float sharpness;
+
+        public Color vignetteColor;
+        public float vignetteIntensity;
+        public float vignetteSmoothness;
+
+        public float desaturation;
+
+        public float grainIntensity;
+        public float grainResponse;
+
+        public float glitchIntensity;
+        public float chromaticIntensity;
+
+        public Color colorFilter;
+        public float colorFilterStrength;
+
+        public EffectFlags flags;
+    }
+
+    //==================================================
     // 初期化
-    // ----------------------------------------------------------------
+    //==================================================
     private void Awake()
     {
         SetupVolume();
@@ -111,64 +169,132 @@ public class PlayerDamageEffect : MonoBehaviour
     {
         _volume = gameObject.AddComponent<Volume>();
         _volume.isGlobal = true;
-        _volume.priority = 10;
+        _volume.priority = 10f;
 
         var profile = ScriptableObject.CreateInstance<VolumeProfile>();
         _volume.profile = profile;
 
-        // Vignette（画面周辺を暗くする）
-        _vignette = profile.Add<Vignette>(overrides: true);
+        _vignette = profile.Add<Vignette>(true);
+        _colorAdjustments = profile.Add<ColorAdjustments>(true);
+        _filmGrain = profile.Add<FilmGrain>(true);
+
+        // Vignette
         _vignette.color.overrideState = true;
         _vignette.intensity.overrideState = true;
         _vignette.smoothness.overrideState = true;
 
-        // ColorAdjustments（彩度）
-        _colorAdjustments = profile.Add<ColorAdjustments>(overrides: true);
+        // Color Adjustments
         _colorAdjustments.saturation.overrideState = true;
+        _colorAdjustments.colorFilter.overrideState = true;
 
-        // FilmGrain（ノイズ）
-        _filmGrain = profile.Add<FilmGrain>(overrides: true);
+        // Film Grain
         _filmGrain.type.overrideState = true;
         _filmGrain.intensity.overrideState = true;
         _filmGrain.response.overrideState = true;
         _filmGrain.type.value = FilmGrainLookup.Thin1;
     }
 
-    // ----------------------------------------------------------------
-    // 外部から呼ぶ
-    // ----------------------------------------------------------------
-
-    /// <summary>
-    /// ダメージエフェクトを再生する。
-    /// 例: GetComponent&lt;PlayerDamageEffect&gt;().PlayDamageEffect(DamageType.Player);
-    /// </summary>
+    //==================================================
+    // 外部呼び出し
+    //==================================================
     public void PlayDamageEffect(DamageType type)
     {
         if (_effectCoroutine != null)
+        {
             StopCoroutine(_effectCoroutine);
+        }
 
         _effectCoroutine = StartCoroutine(DamageEffectCoroutine(type));
     }
 
-    // ----------------------------------------------------------------
-    // エフェクト本体
-    // ----------------------------------------------------------------
+    //==================================================
+    // 設定取得
+    //==================================================
+    private DamageSettings GetSettings(DamageType type)
+    {
+        if (type == DamageType.Player)
+        {
+            return new DamageSettings
+            {
+                duration = playerEffectDuration,
+                sharpness = playerSharpness,
+
+                vignetteColor = playerVignetteColor,
+                vignetteIntensity = playerVignetteIntensity,
+                vignetteSmoothness = playerVignetteSmoothness,
+
+                desaturation = playerDesaturation,
+
+                grainIntensity = playerGrainIntensity,
+                grainResponse = playerGrainResponse,
+
+                glitchIntensity = playerGlitchIntensity,
+                chromaticIntensity = playerChromaticIntensity,
+
+                colorFilter = playerColorFilter,
+                colorFilterStrength = playerColorFilterStrength,
+
+                flags = new EffectFlags
+                {
+                    vignette = playerUseVignetteIntensity,
+                    color = playerUseColorIntensity,
+                    grain = playerUseGrainIntensity,
+                    glitch = playerUseGlitchIntensity,
+                    chromatic = playerUseChromaticIntensity,
+                    colorFilter = playerUseColorFilterIntensity
+                }
+            };
+        }
+
+        return new DamageSettings
+        {
+            duration = droneEffectDuration,
+            sharpness = droneSharpness,
+
+            vignetteColor = droneVignetteColor,
+            vignetteIntensity = droneVignetteIntensity,
+            vignetteSmoothness = droneVignetteSmoothness,
+
+            desaturation = droneDesaturation,
+
+            grainIntensity = droneGrainIntensity,
+            grainResponse = droneGrainResponse,
+
+            glitchIntensity = droneGlitchIntensity,
+            chromaticIntensity = droneChromaticIntensity,
+
+            colorFilter = droneColorFilter,
+            colorFilterStrength = droneColorFilterStrength,
+
+            flags = new EffectFlags
+            {
+                vignette = droneUseVignetteIntensity,
+                color = droneUseColorIntensity,
+                grain = droneUseGrainIntensity,
+                glitch = droneUseGlitchIntensity,
+                chromatic = droneUseChromaticIntensity,
+                colorFilter = droneUseColorFilterIntensity
+            }
+        };
+    }
+
+    //==================================================
+    // コルーチン本体
+    //==================================================
     private IEnumerator DamageEffectCoroutine(DamageType type)
     {
-        float duration = (type == DamageType.Player) ? playerEffectDuration : droneEffectDuration;
-        float sharpness = (type == DamageType.Player) ? playerSharpness : droneSharpness;
+        DamageSettings settings = GetSettings(type);
 
         float elapsed = 0f;
 
-        while (elapsed < duration)
+        while (elapsed < settings.duration)
         {
-            float t = elapsed / duration;
+            float t = elapsed / settings.duration;
 
-            // Sin(t*PI) で 0→1→0 の山なりカーブ
-            // Pow(sharpness) で鋭さを調整（大きいほど瞬間的に強く出てすぐ消える）
-            float intensity = Mathf.Pow(Mathf.Sin(t * Mathf.PI), sharpness);
+            // 0 → 1 → 0 の山なり
+            float intensity = Mathf.Pow(Mathf.Sin(t * Mathf.PI), settings.sharpness);
 
-            ApplyEffects(intensity, type);
+            ApplyEffects(intensity, settings);
 
             elapsed += Time.deltaTime;
             yield return null;
@@ -178,57 +304,118 @@ public class PlayerDamageEffect : MonoBehaviour
         _effectCoroutine = null;
     }
 
-    private void ApplyEffects(float intensity, DamageType type)
+    //==================================================
+    // 適用処理
+    //==================================================
+    private void ApplyEffects(float intensity, DamageSettings s)
     {
-        Color vigColor = (type == DamageType.Player) ? playerVignetteColor : droneVignetteColor;
-        float vigIntensity = (type == DamageType.Player) ? playerVignetteIntensity : droneVignetteIntensity;
-        float vigSmoothness = (type == DamageType.Player) ? playerVignetteSmoothness : droneVignetteSmoothness;
-        float desaturation = (type == DamageType.Player) ? playerDesaturation : droneDesaturation;
-        float grainInt = (type == DamageType.Player) ? playerGrainIntensity : droneGrainIntensity;
-        float grainRes = (type == DamageType.Player) ? playerGrainResponse : droneGrainResponse;
-        float glitchInt = (type == DamageType.Player) ? playerGlitchIntensity : droneGlitchIntensity;
-        float chromInt = (type == DamageType.Player) ? playerChromaticIntensity : droneChromaticIntensity;
-
+        // -----------------------------
         // Vignette
-        _vignette.color.value = vigColor;
-        _vignette.intensity.value = vigIntensity * intensity;
-        _vignette.smoothness.value = vigSmoothness;
+        // -----------------------------
+        float vignetteValue = s.flags.vignette
+            ? s.vignetteIntensity * intensity
+            : s.vignetteIntensity;
 
-        // 彩度（0で通常、-100で完全に白黒）
-        _colorAdjustments.saturation.value = -desaturation * intensity;
+        _vignette.color.value = s.vignetteColor;
+        _vignette.intensity.value = vignetteValue;
+        _vignette.smoothness.value = s.vignetteSmoothness;
 
-        // FilmGrain
-        _filmGrain.intensity.value = grainInt * intensity;
-        _filmGrain.response.value = grainRes;
+        // -----------------------------
+        // Desaturation
+        // -----------------------------
+        float saturationValue = s.flags.color
+            ? -s.desaturation * intensity
+            : -s.desaturation;
 
-        // Glitchシェーダー
+        _colorAdjustments.saturation.value = saturationValue;
+
+        // -----------------------------
+        // Color Filter
+        // 白(Color.white)から指定色へ補間
+        // -----------------------------
+        float filterStrength = s.flags.colorFilter
+            ? s.colorFilterStrength * intensity
+            : s.colorFilterStrength;
+
+        _colorAdjustments.colorFilter.value = Color.Lerp(Color.white, s.colorFilter, filterStrength);
+
+        // -----------------------------
+        // Grain
+        // -----------------------------
+        float grainValue = s.flags.grain
+            ? s.grainIntensity * intensity
+            : s.grainIntensity;
+
+        _filmGrain.intensity.value = grainValue;
+        _filmGrain.response.value = s.grainResponse;
+
+        // -----------------------------
+        // Glitch / Chromatic
+        // -----------------------------
+        float glitchValue = s.flags.glitch
+            ? s.glitchIntensity * intensity
+            : s.glitchIntensity;
+
+        float chromaticValue = s.flags.chromatic
+            ? s.chromaticIntensity * intensity
+            : s.chromaticIntensity;
+
         if (glitchMaterial != null)
         {
-            //glitchMaterial.SetFloat("_Intensity", glitchInt * intensity);
-            glitchMaterial.SetFloat("_Intensity", glitchInt);
-            glitchMaterial.SetFloat("_ChromaticIntensity", chromInt);
+            if (!Mathf.Approximately(_prevGlitchIntensity, glitchValue))
+            {
+                glitchMaterial.SetFloat("_Intensity", glitchValue);
+                _prevGlitchIntensity = glitchValue;
+            }
+
+            if (!Mathf.Approximately(_prevChromaticIntensity, chromaticValue))
+            {
+                glitchMaterial.SetFloat("_ChromaticIntensity", chromaticValue);
+                _prevChromaticIntensity = chromaticValue;
+            }
         }
     }
 
+    //==================================================
+    // リセット
+    //==================================================
     private void ResetEffects()
     {
-        _vignette.intensity.value = 0f;
-        _colorAdjustments.saturation.value = 0f;
-        _filmGrain.intensity.value = 0f;
+        if (_vignette != null)
+        {
+            _vignette.intensity.value = 0f;
+            _vignette.color.value = Color.black;
+        }
+
+        if (_colorAdjustments != null)
+        {
+            _colorAdjustments.saturation.value = 0f;
+            _colorAdjustments.colorFilter.value = Color.white;
+        }
+
+        if (_filmGrain != null)
+        {
+            _filmGrain.intensity.value = 0f;
+        }
 
         if (glitchMaterial != null)
         {
             glitchMaterial.SetFloat("_Intensity", 0f);
             glitchMaterial.SetFloat("_ChromaticIntensity", 0f);
         }
+
+        _prevGlitchIntensity = -1f;
+        _prevChromaticIntensity = -1f;
     }
 
-    // ----------------------------------------------------------------
+    //==================================================
     // 後始末
-    // ----------------------------------------------------------------
+    //==================================================
     private void OnDestroy()
     {
         if (_volume != null && _volume.profile != null)
+        {
             Destroy(_volume.profile);
+        }
     }
 }
