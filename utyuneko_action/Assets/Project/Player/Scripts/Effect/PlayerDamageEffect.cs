@@ -24,31 +24,31 @@ public class PlayerDamageEffect : MonoBehaviour
     [Header("Player Damage Settings")]
     [Tooltip("エフェクト全体の長さ（秒）")]
     [Range(0.05f, 1.5f)]
-    public float playerEffectDuration = 0.3f;
+    public float playerEffectDuration = 0.2f;
 
     [Tooltip("カーブの鋭さ。上げると瞬間的に強く出てすぐ消える")]
     [Range(0.5f, 10f)]
-    public float playerSharpness = 3f;
+    public float playerSharpness = 4f;
 
     [Header("Player Vignette")]
-    public Color playerVignetteColor = new Color(0.8f, 0f, 0f);
-    [Range(0f, 1f)] public float playerVignetteIntensity = 0.6f;
+    public Color playerVignetteColor = new Color(0f, 0f, 0f);
+    [Range(0f, 1f)] public float playerVignetteIntensity = 0.4f;
     [Range(0f, 1f)] public float playerVignetteSmoothness = 0.5f;
-    public bool playerUseVignetteIntensity = true;
+    public bool playerUseVignetteIntensity = false;
 
     [Header("Player Desaturation")]
     [Tooltip("白黒になる量（0〜100）")]
     [Range(0f, 100f)]
-    public float playerDesaturation = 100f;
-    public bool playerUseColorIntensity = true;
+    public float playerDesaturation = 20f;
+    public bool playerUseColorIntensity = false;
 
     [Header("Player Grain")]
-    [Range(0f, 1f)] public float playerGrainIntensity = 0.8f;
-    [Range(0f, 1f)] public float playerGrainResponse = 0.8f;
-    public bool playerUseGrainIntensity = true;
+    [Range(0f, 1f)] public float playerGrainIntensity = 0.6f;
+    [Range(0f, 1f)] public float playerGrainResponse = 0.2f;
+    public bool playerUseGrainIntensity = false;
 
     [Header("Player Glitch")]
-    [Range(0f, 1f)] public float playerGlitchIntensity = 0.3f;
+    [Range(0f, 1f)] public float playerGlitchIntensity = 0.4f;
     public bool playerUseGlitchIntensity = false;
 
     [Header("Player Chromatic")]
@@ -57,9 +57,9 @@ public class PlayerDamageEffect : MonoBehaviour
 
     [Header("Player Color Filter")]
     [Tooltip("画面全体にかける色味。白なら変化なし")]
-    public Color playerColorFilter = new Color(1f, 0.75f, 0.75f, 1f);
-    [Range(0f, 1f)] public float playerColorFilterStrength = 0.25f;
-    public bool playerUseColorFilterIntensity = true;
+    public Color playerColorFilter = new Color(1f, 0.3f, 0.3f, 1f);
+    [Range(0f, 1f)] public float playerColorFilterStrength = 0.4f;
+    public bool playerUseColorFilterIntensity = false;
 
     //==================================================
     // Drone Damage Settings
@@ -74,24 +74,24 @@ public class PlayerDamageEffect : MonoBehaviour
     public float droneSharpness = 4f;
 
     [Header("Drone Vignette")]
-    public Color droneVignetteColor = new Color(0.2f, 0.7f, 1f);
-    [Range(0f, 1f)] public float droneVignetteIntensity = 0.35f;
-    [Range(0f, 1f)] public float droneVignetteSmoothness = 0.5f;
-    public bool droneUseVignetteIntensity = true;
+    public Color droneVignetteColor = new Color(0.25f, 0.3f, 0.35f);
+    [Range(0f, 1f)] public float droneVignetteIntensity = 0.4f;
+    [Range(0f, 1f)] public float droneVignetteSmoothness = 0.7f;
+    public bool droneUseVignetteIntensity = false;
 
     [Header("Drone Desaturation")]
     [Tooltip("白黒になる量（0〜100）")]
     [Range(0f, 100f)]
-    public float droneDesaturation = 30f;
-    public bool droneUseColorIntensity = true;
+    public float droneDesaturation = 20f;
+    public bool droneUseColorIntensity = false;
 
     [Header("Drone Grain")]
-    [Range(0f, 1f)] public float droneGrainIntensity = 0.3f;
-    [Range(0f, 1f)] public float droneGrainResponse = 0.8f;
-    public bool droneUseGrainIntensity = true;
+    [Range(0f, 1f)] public float droneGrainIntensity = 0.4f;
+    [Range(0f, 1f)] public float droneGrainResponse = 0.2f;
+    public bool droneUseGrainIntensity = false;
 
     [Header("Drone Glitch")]
-    [Range(0f, 1f)] public float droneGlitchIntensity = 0.15f;
+    [Range(0f, 1f)] public float droneGlitchIntensity = 0.2f;
     public bool droneUseGlitchIntensity = false;
 
     [Header("Drone Chromatic")]
@@ -100,9 +100,9 @@ public class PlayerDamageEffect : MonoBehaviour
 
     [Header("Drone Color Filter")]
     [Tooltip("画面全体にかける色味。白なら変化なし")]
-    public Color droneColorFilter = new Color(0.75f, 0.9f, 1f, 1f);
-    [Range(0f, 1f)] public float droneColorFilterStrength = 0.2f;
-    public bool droneUseColorFilterIntensity = true;
+    public Color droneColorFilter = new Color(1f, 0.3f, 0.3f, 1f);
+    [Range(0f, 1f)] public float droneColorFilterStrength = 0.1f;
+    public bool droneUseColorFilterIntensity = false;
 
     //==================================================
     // 内部参照
