@@ -1,28 +1,45 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Collections;
+using System.Collections.Generic;
 
-// 使用できるトランジションの種類をここで定義する
-// 新しいエフェクトを追加するときは、この enum に1行足すだけでOK
+// ITransitionEffect.cs を削除し、ここに同居させる
+// DigitalRainEffect・WipeEffect から普通に実装できる（ネストではなく同ファイル配置）
+public interface ITransitionEffect
+{
+    void Initialize(float duration);
+    IEnumerator FadeOut();
+    IEnumerator FadeIn();
+}
+
 public enum TransitionType
 {
     DigitalRain,
     Wipe,
+    // 新しいエフェクトを追加するときはここに1行足すだけ
 }
 
 public class TransitionManager : MonoBehaviour
 {
-    // どこからでも「TransitionManager.Instance」でアクセスできるようにする（シングルトン）
     public static TransitionManager Instance { get; private set; }
 
-    [Header("各エフェクトのスクリプト")]
-    [SerializeField] private DigitalRainEffect digitalRainEffect;
-    [SerializeField] private WipeEffect wipeEffect;
+    // エフェクトの登録エントリ
+    // 新しいエフェクトはInspectorのリストに追加するだけ（コード修正不要）
+    [System.Serializable]
+    private class TransitionEntry
+    {
+        public TransitionType type;
+        public MonoBehaviour effect; // ITransitionEffect を実装したコンポーネントをアサイン
+    }
+
+    [Header("エフェクト登録（Inspectorでアサイン）")]
+    [SerializeField] private List<TransitionEntry> effectEntries;
 
     [Header("共通設定")]
     [SerializeField] private float duration = 0.6f;
 
-    private bool isTransitioning = false; // 二重実行を防ぐフラグ
+    private Dictionary<TransitionType, ITransitionEffect> effectMap;
+    private bool isTransitioning = false;
 
     void Awake()
     {
@@ -37,14 +54,22 @@ public class TransitionManager : MonoBehaviour
             return;
         }
 
-        // 各エフェクトに共通の duration を渡して初期化
-        digitalRainEffect.Initialize(duration);
-        wipeEffect.Initialize(duration);
+        effectMap = new Dictionary<TransitionType, ITransitionEffect>();
+        foreach (var entry in effectEntries)
+        {
+            if (entry.effect is ITransitionEffect effect)
+            {
+                effect.Initialize(duration);
+                effectMap[entry.type] = effect;
+            }
+            else
+            {
+                Debug.LogWarning($"[TransitionManager] {entry.effect?.name} は ITransitionEffect を実装していません。");
+            }
+        }
     }
 
-    // 外部のスクリプト（トリガーなど）からここを呼ぶ
-    // sceneName  : 遷移先のシーン名
-    // type       : 使いたいエフェクトの種類
+    // 外部スクリプトから呼ぶ口はここだけ
     public void ChangeScene(string sceneName, TransitionType type)
     {
         if (isTransitioning) return;
@@ -55,37 +80,32 @@ public class TransitionManager : MonoBehaviour
     {
         isTransitioning = true;
 
-        // 指定された種類に応じて、対応するエフェクトに処理を委譲する
+        ITransitionEffect effect = GetEffect(type);
+        if (effect == null) { isTransitioning = false; yield break; }
 
         // 【1. フェードアウト】
-        yield return StartCoroutine(GetEffect(type).FadeOut());
+        yield return StartCoroutine(effect.FadeOut());
 
         // 【2. シーンを非同期読み込み】
         AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(sceneName);
-        while (!asyncLoad.isDone)
-        {
-            yield return null;
-        }
+        while (!asyncLoad.isDone) yield return null;
 
-        // 新シーン開始直後に少しタメを作る
         yield return new WaitForSeconds(0.1f);
 
         // 【3. フェードイン】
-        yield return StartCoroutine(GetEffect(type).FadeIn());
+        yield return StartCoroutine(effect.FadeIn());
 
         isTransitioning = false;
     }
 
-    // TransitionType から対応するエフェクトを返すヘルパー関数
     private ITransitionEffect GetEffect(TransitionType type)
     {
-        switch (type)
-        {
-            case TransitionType.DigitalRain: return digitalRainEffect;
-            case TransitionType.Wipe: return wipeEffect;
-            default:
-                Debug.LogWarning($"未対応の TransitionType: {type}。DigitalRain を使います。");
-                return digitalRainEffect;
-        }
+        if (effectMap.TryGetValue(type, out var effect)) return effect;
+
+        Debug.LogWarning($"[TransitionManager] 未対応の TransitionType: {type}。最初のエフェクトで代替します。");
+        foreach (var e in effectMap.Values) return e; // 先頭をフォールバック
+
+        Debug.LogError("[TransitionManager] エフェクトが1つも登録されていません！");
+        return null;
     }
 }
