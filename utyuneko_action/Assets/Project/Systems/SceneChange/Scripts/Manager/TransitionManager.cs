@@ -16,6 +16,7 @@ public enum TransitionType
 {
     DigitalRain,
     Wipe,
+    Fade,
     // 新しいエフェクトを追加するときはここに1行足すだけ
 }
 
