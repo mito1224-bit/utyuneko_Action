@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 93a5b1c627855234486ca04df44f1e4e
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - spriteSurprise: {fileID: -1259598198, guid: 0791263bb7bd45a4bba03d13d617a424, type: 3}
+  - spriteNod: {fileID: -2023548143, guid: 0791263bb7bd45a4bba03d13d617a424, type: 3}
+  - spriteSweat: {fileID: 1366236493, guid: 0791263bb7bd45a4bba03d13d617a424, type: 3}
+  - spriteJoy: {fileID: 1628391786, guid: 0791263bb7bd45a4bba03d13d617a424, type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
