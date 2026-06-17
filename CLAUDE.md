@@ -166,7 +166,48 @@ Scene flow / UI: `Systems/Scripts/SceneChanger.cs` (player-trigger scene load) &
   - 盾の見た目は `shieldPivot`（子オブジェクト）に割当てると、前方へ**自動回転＋自動配置**（`shieldDistance` で中心からの距離を調整）。敵が反転すると盾も反対側へ移動。位置はワールド座標で毎フレーム上書きするため子側の手動オフセットは無効（Zは敵と同じ平面）。`OnDrawGizmosSelected` で防御範囲を可視化（青）
   - セットアップ想定：EnemyCollision の collisionType=**Reflect** ＋ `EnemyShield` を付与。前から当てると弾かれるだけ／背後から当てるとダメージ
   - 確認済み：盾の判定（前=無効/背後=ダメージ）OK、`shieldPivot` の回転・位置追従OK
--別種類のEnemy(上から優先順位が高い順) ※盾敵=実装済（次は「範囲攻撃を出す敵」から）
+-2026/06/12 範囲攻撃を出す敵を実装（★未テスト＝Unityでの動作確認まだ）
+  - 新規 `EnemyAreaAttack.cs`：一定間隔で自分中心の円範囲へ攻撃を出す。クールダウン→予兆→発動を繰り返す
+  - サイクル：`startDelay`（初回待ち）→`attackInterval`（攻撃間隔）→`telegraphTime`（予兆＝回避猶予）→発動。`Time.deltaTime` 駆動（チャージ中のスローモーの影響を受ける＝他のエネミーと同じ）
+  - 発動時に `Physics2D.OverlapCircleAll(中心, attackRadius, targetLayers)` で範囲走査し、`PlayerHealth.TakeDamage(attackDamage)` を呼ぶ。バースト中無敵・被弾後の無敵は `PlayerHealth` 側が処理（疎結合）。`GetComponentInParent<PlayerHealth>` ＋ 最初の1体でbreak（多重ヒット防止）
+  - 演出（任意）：`telegraphEffectPrefab`（予兆・敵の子として追従）／`strikeEffectPrefab`（発動の瞬間）。`autoScaleEffect` ONで直径 `attackRadius*2` に自動スケール（1x1ユニット＝直径1のプレハブ想定）
+  - 協調：`EnemyKnockback` の `IsActive`／`IsDying` 中は攻撃を中断（予兆も消す）。`EnemyMovement` と同じ協調パターン
+  - 単体で付与できる攻撃モジュール（`RequireComponent` なし）。`OnDrawGizmosSelected` で攻撃範囲を可視化（予兆中=橙／通常=赤）
+  - 注意: `targetLayers` にプレイヤーのレイヤーを含めること（既定は全レイヤー）。`attackRadius`／`attackInterval`／`telegraphTime` は Inspector で要調整。プレハブ化は各シーンで要対応
+-2026/06/17 範囲攻撃エネミーを拡張（★Unity動作確認まだ）
+  - 実行時可視化（仮）を追加：`EnemyAreaAttack` が半径1の塗りつぶし円メッシュを子として実行時生成し、Gameビューでも攻撃範囲が見える（プレハブ未用意でも可視）。`showRuntimeRange`/`idleColor`/`telegraphColor`/`strikeColor`。ビルトインRP前提で `Shader.Find("Sprites/Default")`、生成Material/Meshは `OnDestroy` で破棄
+  - フェーズに「発動中（Active）」を追加：サイクルが クールダウン→予兆→**発動中(`activeTime`)**→クールダウン に変更。発動中は毎フレーム `OverlapCircleAll` で判定が残る（無敵切れで再ヒット）。`activeTime=0` で従来の瞬間判定と同じ。中断処理は `CancelAttack`（予兆中・発動中の両方を打ち切り）
+-2026/06/17 スナイパー敵を実装（★未テスト＝Unityでの動作確認まだ）
+  - 新規 `EnemySniper.cs`：2D前提（`Physics2D`）。フェーズ機械 待機(Idle)→照準(Aim:射線がプレイヤー追従)→ロック(Lock:射線固定＝最終警告)→発射(Fire:レーザー判定)→クールダウン→待機
+  - 索敵：`detectionRange` 内＋`obstacleLayer` で射線が壁に遮られないと照準開始（`Physics2D.Raycast`）。一度照準に入るとプレイヤーが逃げても固定方向に撃つ（避けるゲーム性）。見失っても最後の方向を保持
+  - レーザー：`obstacleLayer` で壁に当たると止まる（`ComputeBeamLength`）。判定は太さ考慮で `Physics2D.CircleCast`（半径=`beamWidth/2`）→ `PlayerHealth.TakeDamage(beamDamage)`。無敵は `PlayerHealth` 側（疎結合）
+  - 可視化：`LineRenderer` を実行時生成（射線=細い`sightWidth`／レーザー=太い`beamWidth`、色は `aimColor`/`lockColor`/`fireColor`）。ビルトインRP前提 `Sprites/Default`、Materialは `OnDestroy` で破棄。`sortingOrder=10`
+  - 協調：`EnemyKnockback` の `IsActive`／`IsDying` 中は中断してクールダウンへ。`firePoint` 未指定なら自分の位置が原点
+  - 銃口追従：`aimPivot`（銃口オブジェクト）を毎フレーム照準方向 `lockedDir` へ回転（`aimAngleOffset` で絵の基準向き補正）。位置は `aimPivotDistance=0` のとき**最初に置いた配置を基準に照準方向へオービット**（Startで敵中心からのオフセットと角度を記録し、照準方向との差分だけ回転）＝反対方向を狙うと銃口も反対側へ回り込む。`aimPivotDistance>0` なら敵中心からその距離の純粋な放射状配置で上書き。Zは敵と同平面。`firePoint` を `aimPivot` の子（銃口先端）にすると射線原点も自動追従
+  - 注意: `targetLayers` にプレイヤー、`obstacleLayer` に壁を設定すること。`aimTime`/`lockTime`/`fireDuration`/`cooldown`/`maxBeamLength` は Inspector で要調整。プレハブ化は各シーンで要対応
+-2026/06/17 突進のみの敵を実装（★未テスト＝Unityでの動作確認まだ）
+  - 新規 `EnemyCharger.cs`：2D前提。フェーズ機械 待機(Idle)→予兆(Windup:突進方向を固定)→突進(Charge)→壁ヒットで自滅スタン(Stun:停止＋点滅)→クールダウン→待機
+  - 移動は EnemyMovement/EnemyKnockback と同じく `transform` で手動制御（物理解決に頼らない）。壁検知は衝突コールバックではなく進行方向への `Physics2D.Raycast`（高速突進のトンネリング回避、今フレームの移動量＋`wallSkin` の範囲で検知し壁手前で停止）
+  - 索敵：`detectionRange` 内＋`requireLineOfSight` で `wallLayers` に射線を遮られないと突進開始。突進方向は Windup 開始時に固定（以降プレイヤーが逃げても追わない＝避けるゲーム性）。`horizontalOnly` で左右のみ/全方向
+  - スタン：壁ヒットで `stunDuration` 停止＝攻撃チャンス。`stunBlink`/`blinkInterval` で点滅。壁に当たらず `maxChargeTime` を過ぎたらスタンせず終了。`IsStunned` プロパティあり
+  - 接触ダメージ・反射は `EnemyCollision(Reflect)` が担当（疎結合）。吹き飛び中は中断してクールダウンへ
+  - 注意: `wallLayers` に壁を設定すること（未設定だと壁を貫通し永遠に止まらない→`maxChargeTime` で終了）。`chargeSpeed`/`windupTime`/`stunDuration` は Inspector で要調整。プレハブ化は各シーンで要対応
+-2026/06/17 自爆（カウントダウン爆発）の敵を実装（★未テスト＝Unityでの動作確認まだ）
+  - 新規 `EnemyBomber.cs`：2D前提。フェーズ機械 待機(Idle)→カウントダウン(Countdown:導火線)→爆発(Exploding)→自滅 or 待機へリセット
+  - 索敵：`detectionRange` 内に入ると導火線スタート。残り時間が減るほど Renderer の点滅が加速（`blinkIntervalStart`→`blinkIntervalEnd`）＋爆発範囲の円が濃くなる
+  - 爆発：`fuseTime` 経過で `Physics2D.OverlapCircleAll(explosionRadius, targetLayers)` → `PlayerHealth.TakeDamage(explosionDamage)`（最初の1体でbreak）。`explosionEffectPrefab`（任意・半径に自動スケール）。`destroyOnExplode` で自滅、false なら待機へリセット
+  - `resetIfPlayerLeaves`：カウントダウン中に射程外へ出たらリセット（既定false＝一度始まったら止まらない）。吹き飛び中／死亡中はカウントダウン中断＝殴って爆発を止められる（爆発中は止めない）
+  - 可視化：EnemyAreaAttack と同じ実行時生成の塗りつぶし円メッシュ（`showRuntimeRange`/`idleColor`/`dangerColor`/`explodeColor`、Sprites/Default、`OnDestroy` で破棄）
+  - 注意: `targetLayers` にプレイヤーを含めること。点滅対象 Renderer は可視化メッシュ生成前に取得＝自分の見た目のみ。`detectionRange`/`fuseTime`/`explosionRadius` は Inspector で要調整。プレハブ化は各シーンで要対応
+-2026/06/17 ブラックホール（吸い込み）の敵を実装（★未テスト＝Unityでの動作確認まだ）
+  - 新規 `EnemyBlackHole.cs`：2D前提。`pullRadius` 内のプレイヤー `Rigidbody2D` を中心へ `AddForce`（`FixedUpdate` で物理に乗せる）。吸引のみ担当
+  - 「敵に当たるとダメージ／反射」は本体の `EnemyCollision(Reflect)` ＋ `EnemyHealth.HandleHit` が担当（疎結合）。バースト中無敵・被弾後無敵は `PlayerHealth` 側。仕様の「吸い込まれて敵に当たるとダメージ」はこの組み合わせで成立
+  - 吸引力：`pullForce` 基準。`strongerNearCenter` ON で中心に近いほど強める（外周1倍→中心 `centerForceMultiplier` 倍）。`horizontalOnly` で水平限定（既定OFF＝平面全方向）。`limitApproachSpeed`/`maxApproachSpeed` で中心方向の速度に上限（暴走防止）
+  - 協調：`EnemyKnockback` の `IsActive`／`IsDying` 中は吸引停止（殴って怯ませれば止まる）。プレイヤーは Start でタグ検索→`Rigidbody2D` を取得（ルート→子の順）
+  - 可視化：EnemyBomber と同じ実行時生成の塗りつぶし円メッシュ。ただし**頂点カラーで中心濃→外周透明**のグラデ＋`swirlSpeed` で渦回転（`showRuntimeRange`/`edgeColor`/`coreColor`、Sprites/Default、`OnDestroy` で破棄）
+  - セットアップ想定：`EnemyCollision.collisionType=Reflect` ＋本体コライダー ＋ `EnemyBlackHole`。`pullRadius`/`pullForce` は Inspector で要調整。プレハブ化は各シーンで要対応
+  - 注意: 吸引は物理（`FixedUpdate`/`AddForce`）なのでチャージ中のスロー（`Time.timeScale`）の影響を受ける＝他エネミーと同じ。バースト中も吸引自体は効く（無敵なので当たってもダメージは無し）
+-別種類のEnemy(上から優先順位が高い順) ※盾敵・範囲攻撃敵・スナイパー・突進敵・自爆敵・ブラックホール=実装済（次は「倒すと分裂して2体に増える敵」）
 -仕様
 -向いている方向に盾を持っている敵（盾の反対側から倒せるようにする）
 -一定の時間で自分を中心とした設定範囲に攻撃を出す敵
