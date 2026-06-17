@@ -1,18 +1,18 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(Rigidbody2D), typeof(CircleCollider2D))]
 public class PlayerController : MonoBehaviour
 {
-    [Header("ˆÚ“®ƒpƒ‰ƒ[ƒ^")]
+    [Header("ç§»å‹•ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿")]
     public float moveSpeed = 5.0f;
     public float jumpForce = 7.0f;
 
-    [Header("’…’n”»’è")]
+    [Header("ç€åœ°åˆ¤å®š")]
     [SerializeField] private LayerMask groundLayer;
     [SerializeField] private float castDistance = 0.2f;
 
-    [Header("ƒo[ƒXƒgE”½Ëİ’è")]
+    [Header("ãƒãƒ¼ã‚¹ãƒˆãƒ»åå°„è¨­å®š")]
     public float burstSpeed = 25.0f;
     [Range(0f, 1f)]
     public float reflectEfficiency = 0.8f;
@@ -20,44 +20,44 @@ public class PlayerController : MonoBehaviour
     [HideInInspector] public int currentBurstCount = 0;
     public bool canCancelBurstWithJump = true;
 
-    [Header("ƒGƒCƒ€İ’è")]
+    [Header("ã‚¨ã‚¤ãƒ è¨­å®š")]
     public Transform aimPivot;
     public Color[] chargeColors = { Color.white, Color.yellow, Color.red };
 
-    [Header("ƒzƒo[ƒZƒ“ƒT[")]
+    [Header("ãƒ›ãƒãƒ¼ã‚»ãƒ³ã‚µãƒ¼")]
     public HoverSensor hoverSensor;
 
-    [Header("ƒ`ƒƒ[ƒWİ’è")]
+    [Header("ãƒãƒ£ãƒ¼ã‚¸è¨­å®š")]
     public float[] chargeForceLevels = { 15f, 25f, 40f };
     public float chargeTimePerLevel = 0.5f;
     public float aimTimeScale = 0.05f;
 
-    [Header("ƒ`ƒƒ[ƒW’†‰‰oİ’è")]
-    [Tooltip("True: ƒ`ƒƒ[ƒW’†‚àƒo[ƒXƒg‚ÌŠµ«‚ğc‚µ‚ÄƒXƒ[ˆÚ“®‚·‚é\nFalse: ƒ`ƒƒ[ƒW‚É“ü‚Á‚½uŠÔ‚É‘¬“x‚ğ0‚É‚µ‚Ä‚»‚Ìê‚ÉŠ®‘S’â~‚·‚é")]
-    public bool useInertiaInCharge = true; // Šµ«ˆÚ“®‚ÌON/OFF
-    [Tooltip("True: ƒ`ƒƒ[ƒW’†‚àƒhƒŠƒ‹‰ñ“]‚â‚µ‚È‚èˆÚ“®‚ğs‚¤\nFalse: ‰ñ“]‚È‚Ç‚ğ~‚ßAƒˆ‚ÉƒGƒCƒ€•ûŒü‚ğŒü‚­‚¾‚¯‚É‚·‚é")]
-    public bool useRotationInCharge = true; // ‰ñ“]‰‰o‚ÌON/OFF
-    [Tooltip("True: ƒ`ƒƒ[ƒW’†‚Ì•ÇÕ“Ë‚É‚àƒ‚ƒ`ƒb‚ÆLkE”½Ë‰‰o‚ğs‚¤\nFalse: ƒ`ƒƒ[ƒW’†‚ÍˆêØLk‚µ‚È‚­‚È‚é")]
-    public bool useSquashInCharge = true; // Lk‰‰o‚ÌON/OFF
+    [Header("ãƒãƒ£ãƒ¼ã‚¸ä¸­æ¼”å‡ºè¨­å®š")]
+    [Tooltip("True: ãƒãƒ£ãƒ¼ã‚¸ä¸­ã‚‚ãƒãƒ¼ã‚¹ãƒˆæ™‚ã®æ…£æ€§ã‚’æ®‹ã—ã¦ã‚¹ãƒ­ãƒ¼ç§»å‹•ã™ã‚‹\nFalse: ãƒãƒ£ãƒ¼ã‚¸ã«å…¥ã£ãŸç¬é–“ã«é€Ÿåº¦ã‚’0ã«ã—ã¦ãã®å ´ã«å®Œå…¨åœæ­¢ã™ã‚‹")]
+    public bool useInertiaInCharge = true; // æ…£æ€§ç§»å‹•ã®ON/OFF
+    [Tooltip("True: ãƒãƒ£ãƒ¼ã‚¸ä¸­ã‚‚ãƒ‰ãƒªãƒ«å›è»¢ã‚„ã—ãªã‚Šç§»å‹•ã‚’è¡Œã†\nFalse: å›è»¢ãªã©ã‚’æ­¢ã‚ã€ç´”ç²‹ã«ã‚¨ã‚¤ãƒ æ–¹å‘ã‚’å‘ãã ã‘ã«ã™ã‚‹")]
+    public bool useRotationInCharge = true; // å›è»¢æ¼”å‡ºã®ON/OFF
+    [Tooltip("True: ãƒãƒ£ãƒ¼ã‚¸ä¸­ã®å£è¡çªæ™‚ã«ã‚‚ãƒ¢ãƒãƒƒã¨ä¼¸ç¸®ãƒ»åå°„æ¼”å‡ºã‚’è¡Œã†\nFalse: ãƒãƒ£ãƒ¼ã‚¸ä¸­ã¯ä¸€åˆ‡ä¼¸ç¸®ã—ãªããªã‚‹")]
+    public bool useSquashInCharge = true; // ä¼¸ç¸®æ¼”å‡ºã®ON/OFF
 
-    [Header("ƒ_ƒ[ƒWİ’è")]
-    public float knockbackForceX = 10f; // ‰¡‚É‚Á”ò‚Ô‹­‚³
-    public float knockbackForceY = 8f; // ã‚É’µ‚Ëã‚ª‚é‹­‚³
-    public float damageDuration = 1.0f; // ‘€ì•s”\‚É‚È‚éŠÔ(•b)
+    [Header("ãƒ€ãƒ¡ãƒ¼ã‚¸è¨­å®š")]
+    public float knockbackForceX = 10f; // æ¨ªã«å¹ã£é£›ã¶å¼·ã•
+    public float knockbackForceY = 8f; // ä¸Šã«è·³ã­ä¸ŠãŒã‚‹å¼·ã•
+    public float damageDuration = 1.0f; // æ“ä½œä¸èƒ½ã«ãªã‚‹æ™‚é–“(ç§’)
 
-    [Header("ƒo[ƒXƒg‰‰oİ’è")]
-    public bool useTrail = true;       // ƒgƒŒƒCƒ‹‰‰o‚ÌƒIƒ“ƒIƒt
-    public bool useAfterImage = true;  // c‘œ‰‰o‚ÌƒIƒ“ƒIƒt
+    [Header("ãƒãƒ¼ã‚¹ãƒˆæ¼”å‡ºè¨­å®š")]
+    public bool useTrail = true;       // ãƒˆãƒ¬ã‚¤ãƒ«æ¼”å‡ºã®ã‚ªãƒ³ã‚ªãƒ•
+    public bool useAfterImage = true;  // æ®‹åƒæ¼”å‡ºã®ã‚ªãƒ³ã‚ªãƒ•
 
     [Header("Visual Manager Reference")]
-    [Tooltip("‰‰oŠÇ—ƒRƒ“ƒ|[ƒlƒ“ƒg‚ÌQÆ")]
+    [Tooltip("æ¼”å‡ºç®¡ç†ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã®å‚ç…§")]
     public PlayerVisualManager visualManager;
 
     [Header("Visual Settings")]
-    [Tooltip("‚Ç‚ê‚­‚ç‚¢‘O‚Ì‚ß‚è‚É‚·‚é‚©(Å‘åŠp“x)")]
+    [Tooltip("ã©ã‚Œãã‚‰ã„å‰ã®ã‚ã‚Šã«ã™ã‚‹ã‹(æœ€å¤§è§’åº¦)")]
     public float leanAngle = 20.0f;
 
-    // 2D•¨——p‚Ì‰B‚µƒvƒƒpƒeƒB
+    // 2Dç‰©ç†ç”¨ã®éš ã—ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£
     [HideInInspector] public Rigidbody2D rb2D;
     [HideInInspector] public CircleCollider2D circleCollider2D;
     [HideInInspector] public Vector2 moveInput;
@@ -172,5 +172,46 @@ public class PlayerController : MonoBehaviour
     private void OnCollisionEnter2D(Collision2D collision)
     {
         OnCollisionEnterEvent?.Invoke(collision);
+    }
+
+    /// <summary>
+    /// å¤–éƒ¨ï¼ˆã‚¤ãƒ™ãƒ³ãƒˆãƒãƒãƒ¼ã‚¸ãƒ£ãƒ¼ï¼‰ã‹ã‚‰å‘¼ã°ã‚Œã‚‹ãƒªã‚¢ã‚¯ã‚·ãƒ§ãƒ³çª“å£
+    /// </summary>
+    public void PlayReaction(PlayerVisualManager.ReactionType type, float duration = 2.0f)
+    {
+        // ç¨®é¡ã«å¿œã˜ã¦ã€Œä½“ï¼ˆã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ã‚„ç‰©ç†ï¼‰ã€ã®ãƒªã‚¢ã‚¯ã‚·ãƒ§ãƒ³ã ã‘ã‚’è‡ªåˆ†ãŒæ‹…å½“ã™ã‚‹
+        switch (type)
+        {
+            case PlayerVisualManager.ReactionType.Surprise:
+                //if (anim != null) anim.SetTrigger("isSurprise");
+                rb2D.linearVelocity = new Vector2(rb2D.linearVelocity.x, 4f); // ã´ã‚‡ã“ã£ã¨ä¸Šã«è·³ã­ã‚‹ç‰©ç†ãƒªã‚¢ã‚¯ã‚·ãƒ§ãƒ³
+                break;
+
+            case PlayerVisualManager.ReactionType.Nod:
+                //if (anim != null) anim.SetTrigger("isNod");
+                break;
+
+            case PlayerVisualManager.ReactionType.Sweat:
+                //if (anim != null) anim.SetBool("isSweating", true);
+                break;
+
+            case PlayerVisualManager.ReactionType.Joy:
+                //if (anim != null) anim.SetTrigger("isJoy");
+                break;
+        }
+    }
+
+    /// <summary>
+    /// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ãŒç¾åœ¨å‘ã„ã¦ã„ã‚‹æ–¹å‘ã‚’è¿”ã—ã¾ã™ï¼ˆå³å‘ã: 1, å·¦å‘ã: -1ï¼‰
+    /// </summary>
+    public float GetFacingDirection()
+    {
+        if (visualManager != null && visualManager.playerVisual != null)
+        {
+            // Visualã®Yè»¸å›è»¢ãŒ180åº¦ã‚ˆã‚Šå¤§ãã‘ã‚Œã°å³å‘ã(310f)ã€å°ã•ã‘ã‚Œã°å·¦å‘ã(50f)
+            float yAngle = visualManager.playerVisual.localRotation.eulerAngles.y;
+            return (yAngle > 180f) ? 1f : -1f;
+        }
+        return 1f; // å–ã‚Œãªã‹ã£ãŸæ™‚ã®å®‰å…¨ç­–ï¼ˆãƒ‡ãƒ•ã‚©ãƒ«ãƒˆå³å‘ãï¼‰
     }
 }

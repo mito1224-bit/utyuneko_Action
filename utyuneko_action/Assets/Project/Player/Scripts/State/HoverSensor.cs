@@ -1,31 +1,40 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 public class HoverSensor : MonoBehaviour
 {
-    private PlayerController p;
+    private Rigidbody2D rb;
     private Collider2D sensorCollider;
 
-    [Header("•¨—ƒoƒliƒNƒbƒVƒ‡ƒ“jİ’è")]
-    [SerializeField] private float baseHoverForce = 55f;   // •‚‚©‚¹‚éƒoƒl‚Ì‹­‚³i­‚µ‹­‚ß‚É‚·‚é‚Æ–Ú•W‚Ì”g‚ÉãY—í‚É’Ç]‚µ‚Ü‚·j
-    [SerializeField] private float hoverDamping = 7f;     // ƒKƒ^ƒKƒ^k‚¦‚é‚Ì‚ğ—}‚¦‚éƒuƒŒ[ƒLiƒ_ƒ“ƒp[j
+    [Header("åœ°é¢ã¨åˆ¤å®šã™ã‚‹ãƒ¬ã‚¤ãƒ¤ãƒ¼")]
+    [SerializeField] private LayerMask groundLayer;
 
-    [Header("–Ú•W‚“x‚Ì sin ”g—h‚ç‚¬İ’è")]
-    [SerializeField] private float targetOverlap = 0.15f; // Šî€‚Æ‚È‚é•‚—V‚“xiƒZƒ“ƒT[‚Ì‚ß‚è‚İ–Ú•W’lj
-    [SerializeField] private float bobbingAmount = 0.05f;  // ‚Ç‚ê‚­‚ç‚¢ã‰º‚ÉƒvƒJƒvƒJ‚³‚¹‚é‚©
-    [SerializeField] private float bobbingSpeed = 4.0f;   // ƒvƒJƒvƒJ‚·‚éƒXƒs[ƒh
+    [Header("ç‰©ç†ãƒãƒï¼ˆã‚¯ãƒƒã‚·ãƒ§ãƒ³ï¼‰è¨­å®š")]
+    [SerializeField] private float baseHoverForce = 55f;
+    [SerializeField] private float hoverDamping = 7f;
+
+    [Header("ç›®æ¨™é«˜åº¦ã® sin æ³¢æºã‚‰ãè¨­å®š")]
+    [SerializeField] private float targetOverlap = 0.15f;
+    [SerializeField] private float bobbingAmount = 0.05f;
+    [SerializeField] private float bobbingSpeed = 4.0f;
 
     private bool isGrounded;
     private float overlapDistance;
 
     void Start()
     {
-        p = GetComponentInParent<PlayerController>();
+        // è¦ªã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‹ã‚‰ç‰©ç†ãƒœãƒ‡ã‚£ï¼ˆRigidbody2Dï¼‰ã‚’è‡ªå‹•å–å¾—
+        rb = GetComponentInParent<Rigidbody2D>();
         sensorCollider = GetComponent<Collider2D>();
+
+        if (rb == null)
+        {
+            Debug.LogError($"{gameObject.name} ã®è¦ªã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã« Rigidbody2D ãŒè¦‹ã¤ã‹ã‚Šã¾ã›ã‚“ï¼");
+        }
     }
 
     void OnTriggerStay2D(Collider2D other)
     {
-        if (((1 << other.gameObject.layer) & p.GetGroundLayerMask()) == 0) return;
+        if (((1 << other.gameObject.layer) & groundLayer) == 0) return;
         isGrounded = true;
 
         ColliderDistance2D dist = sensorCollider.Distance(other);
@@ -37,38 +46,43 @@ public class HoverSensor : MonoBehaviour
 
     void OnTriggerExit2D(Collider2D other)
     {
-        if (((1 << other.gameObject.layer) & p.GetGroundLayerMask()) == 0) return;
+        if (((1 << other.gameObject.layer) & groundLayer) == 0) return;
         isGrounded = false;
         overlapDistance = 0f;
     }
 
     void FixedUpdate()
     {
-        // ƒo[ƒXƒg’†‚â‹ó’†‚É‚¢‚é‚Í•¨—id—Íj‚É”C‚¹‚é
-        if (!sensorCollider.enabled || !isGrounded) return;
+        // rb ã®æœ‰ç„¡ãƒã‚§ãƒƒã‚¯ã¨ã€ã‚³ãƒ©ã‚¤ãƒ€ãƒ¼ãŒç„¡åŠ¹åŒ–ã•ã‚Œã¦ã„ã‚‹æ™‚ã¯å‡¦ç†ã‚’ã‚¹ã‚­ãƒƒãƒ—
+        if (rb == null || !sensorCollider.enabled || !isGrounded) return;
 
-        // ‡@ y‚±‚±‚ªƒ|ƒCƒ“ƒgIzƒoƒl‚ª–Úw‚·u–Ú•W‚Ì‚ß‚è‚İ—Êv©‘Ì‚ğƒTƒCƒ“”g‚Å‚È‚ß‚ç‚©‚É•Ï‰»‚³‚¹‚é
-        // ƒ`ƒƒ[ƒW’†‚Ì‹ó’†ƒXƒ[‚É‚à“¯‚¶‘¬“x‚Åƒtƒƒtƒ‚³‚¹‚½‚¢ê‡‚Í Time.fixedTime ‚ğ Time.unscaledTime ‚É•ÏX‚µ‚Ä‚­‚¾‚³‚¢
-        float currentTargetOverlap = targetOverlap + Mathf.Sin(Time.fixedTime * bobbingSpeed) * bobbingAmount;
+        // ãƒãƒãŒç›®æŒ‡ã™ã€Œç›®æ¨™ã®ã‚ã‚Šè¾¼ã¿é‡ã€ã‚’ã‚µã‚¤ãƒ³æ³¢ã§ãªã‚ã‚‰ã‹ã«å¤‰åŒ–ã•ã›ã‚‹
+        float currentTargetOverlap = targetOverlap + Mathf.Sin(Time.fixedTime * bobbingSpeed) * bobbingAmount; //
 
-        // ‡A –Ú•W‚Ì‚‚³‚É‘Î‚µ‚ÄA¡‚Ç‚ê‚­‚ç‚¢—]•ª‚É’n–Ê‚É‹ß‚Ã‚¢‚Ä‚¢‚é‚©iƒYƒŒj‚ğŒvZ
-        float heightError = overlapDistance - currentTargetOverlap;
+        // ç›®æ¨™ã®é«˜ã•ã«å¯¾ã—ã¦ã€ä»Šã©ã‚Œãã‚‰ã„ä½™åˆ†ã«åœ°é¢ã«è¿‘ã¥ã„ã¦ã„ã‚‹ã‹ï¼ˆã‚ºãƒ¬ï¼‰ã‚’è¨ˆç®—
+        float heightError = overlapDistance - currentTargetOverlap; //
 
-        // ‡B ƒoƒl‚Ì—Í‚ğŒvZi–Ú•W‚æ‚è’¾‚İ‚Ş‚Ù‚Ç‹­‚­‰Ÿ‚µ•Ô‚µA•‚‚«ã‚ª‚é‚ÆŠŠ‚ç‚©‚É—Í‚ğã‚ß‚éj
-        float springForce = heightError * baseHoverForce;
+        // ãƒãƒã®åŠ›ã‚’è¨ˆç®—
+        float springForce = heightError * baseHoverForce; //
 
-        // ‡C ƒ_ƒ“ƒp[‚Ì—Íiã‰º‘¬“x‚É‰‚¶‚½ƒuƒŒ[ƒLB‚±‚ê‚ÅƒKƒ^‚Â‚«‚ğÁ‚µ‹‚éj
-        float damperForce = p.rb2D.linearVelocity.y * hoverDamping;
+        // ãƒ€ãƒ³ãƒ‘ãƒ¼ã®åŠ›
+        float damperForce = rb.linearVelocity.y * hoverDamping;
 
-        // ÅI“I‚Èƒzƒo[—ÍiãŒü‚«‚Ì‰Ÿ‚µ•Ô‚µ—Íj
-        float totalHoverForce = springForce - damperForce;
+        // æœ€çµ‚çš„ãªãƒ›ãƒãƒ¼åŠ›
+        float totalHoverForce = springForce - damperForce; //
 
-        // ’n–Ê‚©‚ç—£‚ê‚·‚¬‚Ä—Í‚ªƒ}ƒCƒiƒXi‰ºŒü‚«j‚É‚È‚ç‚È‚¢‚æ‚¤‚É§Œä‚µ‚Ä AddForce
-        if (totalHoverForce > 0f)
+        // åœ°é¢ã‹ã‚‰é›¢ã‚Œã™ãã¦åŠ›ãŒãƒã‚¤ãƒŠã‚¹ã«ãªã‚‰ãªã„ã‚ˆã†ã«åˆ¶å¾¡ã—ã¦ AddForce
+        if (totalHoverForce > 0f) //
         {
-            p.rb2D.AddForce(Vector2.up * totalHoverForce, ForceMode2D.Force);
+            rb.AddForce(Vector2.up * totalHoverForce, ForceMode2D.Force);
         }
     }
 
-    public bool IsGrounded() => isGrounded;
+    public bool IsGrounded() => isGrounded; //
+
+    // å¤–éƒ¨ï¼ˆPlayerControllerãªã©ï¼‰ã‹ã‚‰åœ°é¢ãƒ¬ã‚¤ãƒ¤ãƒ¼ã‚’ã‚»ãƒƒãƒˆã—ç›´ã™ãŸã‚ã®çª“å£
+    public void SetGroundLayer(LayerMask layer)
+    {
+        groundLayer = layer;
+    }
 }

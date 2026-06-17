@@ -33,6 +33,8 @@ public class PlayerVisualManager : MonoBehaviour
     [Tooltip("見た目（振り向き・傾き・回転）を担当する子オブジェクト (PlayerCenter)")]
     public Transform playerVisual;
 
+    public enum ReactionType { Surprise, Nod, Sweat, Joy }
+
     // 内部管理用の隠しプロパティ
     private Vector3 originalScale;
     private float currentXRotation = 0f;

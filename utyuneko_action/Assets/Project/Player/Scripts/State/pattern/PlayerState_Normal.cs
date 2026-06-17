@@ -120,7 +120,6 @@ public class PlayerState_Normal : IPlayerState
         {
             float targetLeanAngle = 0.0f;
 
-            // p.leanAngle ではなく、マネージャー側の p.visualManager.leanAngle を見に行きます！
             if (p.moveInput.x > 0.01f)
             {
                 targetYAngle = 310f;
@@ -131,10 +130,18 @@ public class PlayerState_Normal : IPlayerState
                 targetYAngle = 50f;
                 targetLeanAngle = p.moveInput.x * p.visualManager.leanAngle;
             }
+            else
+            {
+                // 💡【ここを修正！】
+                // 生の角度をそのまま入れるのではなく、180度より大きければ「右(310)」、
+                // 小さければ「左(50)」へと、近い方の綺麗な角度にカチッとスナップさせます！
+                float currentY = p.visualManager.playerVisual.localRotation.eulerAngles.y;
+                targetYAngle = (currentY > 180f) ? 310f : 50f;
+            }
 
+            // 確定した綺麗なおすすめ角度（310 or 50）に向かって Lerp させる
             Quaternion targetRotation = Quaternion.Euler(targetLeanAngle, targetYAngle, 0f);
 
-            // ★修正の肝：スムージングの速度もマネージャー側を参照します！
             p.visualManager.playerVisual.localRotation = Quaternion.Lerp(
                 p.visualManager.playerVisual.localRotation,
                 targetRotation,
