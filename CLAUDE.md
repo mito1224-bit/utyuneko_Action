@@ -188,7 +188,8 @@ Scene flow / UI: `Systems/Scripts/SceneChanger.cs` (player-trigger scene load) &
 -2026/06/17 突進のみの敵を実装（★未テスト＝Unityでの動作確認まだ）
   - 新規 `EnemyCharger.cs`：2D前提。フェーズ機械 待機(Idle)→予兆(Windup:突進方向を固定)→突進(Charge)→壁ヒットで自滅スタン(Stun:停止＋点滅)→クールダウン→待機
   - 移動は EnemyMovement/EnemyKnockback と同じく `transform` で手動制御（物理解決に頼らない）。壁検知は衝突コールバックではなく進行方向への `Physics2D.Raycast`（高速突進のトンネリング回避、今フレームの移動量＋`wallSkin` の範囲で検知し壁手前で停止）
-  - 索敵：`detectionRange` 内＋`requireLineOfSight` で `wallLayers` に射線を遮られないと突進開始。突進方向は Windup 開始時に固定（以降プレイヤーが逃げても追わない＝避けるゲーム性）。`horizontalOnly` で左右のみ/全方向
+  - 索敵：`detectionRange` 内＋`requireLineOfSight` で `wallLayers` に射線を遮られないと突進開始。`horizontalOnly` で左右のみ/全方向
+  - 2026/06/17 手直し：プレイヤー発見方向への突進を強化。`horizontalOnly` の既定を **false（斜め含む全方向にプレイヤーの実位置へ突進）** に変更。突進方向の固定タイミングを `trackDuringWindup` で切替可能に（OFF＝予兆開始時に固定＝避けゲー寄り／ON＝予兆中も追従し突進開始の瞬間に確定＝当たりやすい）。Inspectorでどちらも選べる
   - スタン：壁ヒットで `stunDuration` 停止＝攻撃チャンス。`stunBlink`/`blinkInterval` で点滅。壁に当たらず `maxChargeTime` を過ぎたらスタンせず終了。`IsStunned` プロパティあり
   - 接触ダメージ・反射は `EnemyCollision(Reflect)` が担当（疎結合）。吹き飛び中は中断してクールダウンへ
   - 注意: `wallLayers` に壁を設定すること（未設定だと壁を貫通し永遠に止まらない→`maxChargeTime` で終了）。`chargeSpeed`/`windupTime`/`stunDuration` は Inspector で要調整。プレハブ化は各シーンで要対応
