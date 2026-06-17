@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class CameraFollowWithZoom : MonoBehaviour
 {
-    [Header("追従対象")]
+    [Header("追従対象（空欄なら起動時にPlayerタグから自動取得します）")]
     public Transform target;
 
     [Header("基本の位置オフセット")]
@@ -48,6 +48,21 @@ public class CameraFollowWithZoom : MonoBehaviour
     {
         currentDynamicZ = offset.z;
 
+        // 【修正】インスペクターが空欄の場合、Playerタグから自動取得
+        if (target == null)
+        {
+            GameObject playerObj = GameObject.FindWithTag("Player");
+            if (playerObj != null)
+            {
+                target = playerObj.transform;
+            }
+            else
+            {
+                Debug.LogError("[CameraFollowWithZoom] 'Player' タグのついたオブジェクトが見つかりません。プレイヤーのタグを確認してください。");
+            }
+        }
+
+        // ターゲットが見つかった場合の初期化処理
         if (target != null)
         {
             if (autoEnablePlayerInterpolate)
@@ -111,11 +126,9 @@ public class CameraFollowWithZoom : MonoBehaviour
         }
         else
         {
-            // ロック中は、トリガーから受け取った「自動計算されたマイナスのZ座標」をターゲットにする
             targetZOffset = lockedZOffset;
         }
 
-        // Z軸の引き（ズーム）をなめらかに変化させる
         currentDynamicZ = Mathf.Lerp(currentDynamicZ, targetZOffset, zoomSmoothSpeed * deltaTime);
 
         // --------------------------------------------------
@@ -133,7 +146,6 @@ public class CameraFollowWithZoom : MonoBehaviour
             targetPosition.z = currentDynamicZ;
         }
 
-        // カメラをなめらかに目標位置へ移動させる
         transform.position = Vector3.Lerp(transform.position, targetPosition, positionSmoothSpeed * deltaTime);
     }
 
