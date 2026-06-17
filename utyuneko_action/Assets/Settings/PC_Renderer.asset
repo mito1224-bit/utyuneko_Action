@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b00045f12942b46c698459096c89274e, type: 3}
-  m_Name: FullScreenPassRendererFeature
+  m_Name: DigitalRainTransition
   m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.FullScreenPassRendererFeature
   m_Active: 1
   injectionPoint: 600
@@ -111,8 +111,10 @@ MonoBehaviour:
   - {fileID: -5854779935158309999}
   - {fileID: -3806594099353561030}
   - {fileID: -7801428063682317528}
+  - {fileID: 4231068665217506181}
+  - {fileID: 4980700764587160425}
   - {fileID: 5575868310112008628}
-  m_RendererFeatureMap: ad6b866f10d7b46c11134d9979f3cd4f2c3e278c342f5fff91ebcd3eaba4bfae3ad8eeb7d5422ccb28b3738382c2bb93b4799592af76614d
+  m_RendererFeatureMap: ad6b866f10d7b46c11134d9979f3cd4f2c3e278c342f5fff91ebcd3eaba4bfae3ad8eeb7d5422ccb28b3738382c2bb93855b93aa88c6b73a69f3bbddf4001f45b4799592af76614d
   m_UseNativeRenderPass: 1
   xrSystemData: {fileID: 0}
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
@@ -141,6 +143,46 @@ MonoBehaviour:
   m_DepthTextureFormat: 0
   m_AccurateGbufferNormals: 0
   m_IntermediateTextureMode: 0
+--- !u!114 &4231068665217506181
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b00045f12942b46c698459096c89274e, type: 3}
+  m_Name: WipeTransition
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.FullScreenPassRendererFeature
+  m_Active: 1
+  injectionPoint: 600
+  fetchColorBuffer: 1
+  requirements: 0
+  passMaterial: {fileID: 2100000, guid: b77f67f09ca4d6041be1c3864d604ec0, type: 2}
+  passIndex: 0
+  bindDepthStencilAttachment: 0
+  m_Version: 1
+--- !u!114 &4980700764587160425
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b00045f12942b46c698459096c89274e, type: 3}
+  m_Name: FadeTransition
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.FullScreenPassRendererFeature
+  m_Active: 1
+  injectionPoint: 600
+  fetchColorBuffer: 1
+  requirements: 0
+  passMaterial: {fileID: 2100000, guid: 407aa3b59d8b76a42b5ee9e7a7ad0d0d, type: 2}
+  passIndex: 0
+  bindDepthStencilAttachment: 0
+  m_Version: 1
 --- !u!114 &5575868310112008628
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -157,7 +199,7 @@ MonoBehaviour:
   injectionPoint: 600
   fetchColorBuffer: 1
   requirements: 0
-  passMaterial: {fileID: 2100000, guid: 8aa51ac243dd00f4eac33cd68837ce4c, type: 2}
+  passMaterial: {fileID: 2100000, guid: 196e7c7d998d7bf46bd5cfae661ec874, type: 2}
   passIndex: 0
   bindDepthStencilAttachment: 0
   m_Version: 1

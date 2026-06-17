@@ -1,66 +1,61 @@
 using UnityEngine;
-using UnityEngine.UI;
 using System.Collections;
 
 public class WipeEffect : MonoBehaviour, ITransitionEffect
 {
-    [Header("マスク設定")]
-    [SerializeField] private Image maskImage; // ワイプ用のUI Image
+    [Header("マテリアル設定")]
+    [SerializeField] private Material transitionMaterial; // Full Screen Pass にセットしたマテリアル
 
-    private Material transitionMaterial;
-    private int circleSizeID;
+    private int progressID;
     private float duration;
 
-    private const float StartSize = 0f;  // 画面が見えている状態
-    private const float EndSize = 50f; // 完全に真っ黒な状態
-
-    // TransitionManager から呼ばれて、必要な値をセットアップする
+    // TransitionManager から呼ばれて初期化
     public void Initialize(float duration)
     {
         this.duration = duration;
-
-        if (maskImage == null)
-        {
-            Debug.LogError("[WipeEffect] Mask Image がセットされていません！");
-            return;
-        }
-
-        transitionMaterial = maskImage.material;
-        circleSizeID = Shader.PropertyToID("_TransitionScale");
-
-        // 起動時は画面が見えている状態（0）にしておく
-        transitionMaterial.SetFloat(circleSizeID, StartSize);
+        progressID = Shader.PropertyToID("_Progress");
+        if (transitionMaterial != null)
+            transitionMaterial.SetFloat(progressID, 0f);
     }
 
-    // 【フェードアウト】穴を小さくして画面を真っ黒にする (0 → 50)
+    // 【フェードアウト】円が縮んで画面を覆う (Progress: 0 → 1)
     public IEnumerator FadeOut()
     {
-        if (transitionMaterial == null) yield break;
-
+        if (transitionMaterial == null)
+        {
+            Debug.LogError("[WipeEffect] Transition Material がセットされていません！");
+            yield break;
+        }
         float elapsed = 0f;
         while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
-            float easedT = Mathf.SmoothStep(0f, 1f, elapsed / duration);
-            transitionMaterial.SetFloat(circleSizeID, Mathf.Lerp(StartSize, EndSize, easedT));
+            // SmoothStepで円の動きをイーズイン/アウト
+            float t = Mathf.SmoothStep(0f, 1f, elapsed / duration);
+            transitionMaterial.SetFloat(progressID, t);
             yield return null;
         }
-        transitionMaterial.SetFloat(circleSizeID, EndSize);
+        transitionMaterial.SetFloat(progressID, 1f);
     }
 
-    // 【フェードイン】穴を大きくして画面を見せる (50 → 0)
+    // 【フェードイン】円が広がって画面が見える (Progress: 1 → 0)
     public IEnumerator FadeIn()
     {
         if (transitionMaterial == null) yield break;
-
         float elapsed = 0f;
         while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
-            float easedT = Mathf.SmoothStep(0f, 1f, elapsed / duration);
-            transitionMaterial.SetFloat(circleSizeID, Mathf.Lerp(EndSize, StartSize, easedT));
+            float t = Mathf.SmoothStep(0f, 1f, elapsed / duration);
+            transitionMaterial.SetFloat(progressID, 1f - t);
             yield return null;
         }
-        transitionMaterial.SetFloat(circleSizeID, StartSize);
+        transitionMaterial.SetFloat(progressID, 0f);
+    }
+
+    private void OnDestroy()
+    {
+        if (transitionMaterial != null)
+            transitionMaterial.SetFloat(progressID, 0f);
     }
 }
