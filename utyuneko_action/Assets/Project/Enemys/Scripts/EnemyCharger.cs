@@ -37,8 +37,12 @@ public class EnemyCharger : MonoBehaviour
     [Tooltip("壁に当たらなかった場合に突進を打ち切る保険時間（秒）")]
     public float maxChargeTime = 2f;
 
-    [Tooltip("突進方向を水平（左右）のみにする。浮いている敵で全方向に突進させたいなら false")]
-    public bool horizontalOnly = true;
+    [Tooltip("突進方向を水平（左右）のみにする。OFFならプレイヤーの実際の位置（斜め上・下含む）へ一直線に突進する")]
+    public bool horizontalOnly = false;
+
+    [Tooltip("予兆中もプレイヤーを追い続け、突進開始の瞬間に方向を確定する。\n" +
+             "OFF＝予兆開始時の方向で固定（以降プレイヤーが逃げれば避けられる＝避けゲー寄り）")]
+    public bool trackDuringWindup = false;
 
     [Header("スタン")]
     [Tooltip("壁に当たって自滅したときのスタン時間（停止＝攻撃チャンス）")]
@@ -100,7 +104,9 @@ public class EnemyCharger : MonoBehaviour
                 break;
 
             case Phase.Windup:
-                Countdown(BeginCharge); // 方向は BeginWindup で固定済み
+                // trackDuringWindup なら予兆中も追従し、突進開始の瞬間に方向が確定する
+                if (trackDuringWindup) chargeDir = DirectionToPlayer();
+                Countdown(BeginCharge);
                 break;
 
             case Phase.Charge:
@@ -130,7 +136,9 @@ public class EnemyCharger : MonoBehaviour
     {
         phase = Phase.Windup;
         timer = Mathf.Max(0f, windupTime);
-        chargeDir = DirectionToPlayer(); // ここで方向を固定（以降プレイヤーが逃げても追わない）
+        // 初期方向を決定。trackDuringWindup=false ならこのまま固定（以降プレイヤーが逃げても追わない＝避けられる）。
+        // trackDuringWindup=true なら予兆中も Update で更新され、突進開始の瞬間に確定する。
+        chargeDir = DirectionToPlayer();
     }
 
     private void BeginCharge()
