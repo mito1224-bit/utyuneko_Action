@@ -1,0 +1,359 @@
+using UnityEngine;
+
+/// <summary>
+/// スナイパー型の敵。
+///
+/// 仕様:
+///   - プレイヤーが射程に入り射線が通る（壁に遮られない）と「照準」を開始し、射線がプレイヤーを追う。
+///   - 一定時間（aimTime）経つと射線がその方向に固定（ロック）され、最終警告（lockTime）のあと
+///     その線上に「レーザー」を発射してダメージ判定（fireDuration）。
+///   - 一度照準に入るとプレイヤーが逃げても固定方向に撃つ（避けるゲーム性）。
+///
+/// 物理は2D前提（Physics2D）。プレイヤーは Rigidbody2D/Collider2D。
+/// 吹き飛び中／死亡中（EnemyKnockback）は攻撃を中断する（EnemyAreaAttack と同じ協調）。
+///
+/// 可視化は LineRenderer を実行時生成（プレハブ不要）。射線=細い／レーザー=太い。
+/// 生成した Material は OnDestroy で破棄（リーク対策の流儀どおり）。
+/// </summary>
+public class EnemySniper : MonoBehaviour
+{
+    [Header("索敵")]
+    [Tooltip("プレイヤーのタグ")]
+    public string playerTag = "Player";
+
+    [Tooltip("プレイヤーを見つける半径")]
+    public float detectionRange = 12f;
+
+    [Tooltip("射線を遮る壁などのレイヤー。レーザーもここで止まる")]
+    public LayerMask obstacleLayer;
+
+    [Tooltip("ダメージ判定の対象レイヤー（プレイヤーのレイヤーを含めること）")]
+    public LayerMask targetLayers = ~0;
+
+    [Tooltip("射線・レーザーを出す原点（未指定なら自分の位置）")]
+    public Transform firePoint;
+
+    [Header("タイミング")]
+    [Tooltip("照準（射線がプレイヤーを追う）時間。経つと射線が固定される")]
+    public float aimTime = 1.2f;
+
+    [Tooltip("射線固定後、レーザー発射までの最終警告時間")]
+    public float lockTime = 0.3f;
+
+    [Tooltip("レーザー（攻撃判定）が出ている時間")]
+    public float fireDuration = 0.25f;
+
+    [Tooltip("発射後、次の照準を始められるまでのクールダウン")]
+    public float cooldown = 2f;
+
+    [Header("レーザー・威力")]
+    [Tooltip("レーザーの最大長（壁があればそこで止まる）")]
+    public float maxBeamLength = 30f;
+
+    [Tooltip("レーザーがプレイヤーに与えるダメージ量")]
+    public int beamDamage = 1;
+
+    [Header("可視化")]
+    [Tooltip("射線（照準中）の太さ")]
+    public float sightWidth = 0.06f;
+
+    [Tooltip("レーザー（発射中）の太さ")]
+    public float beamWidth = 0.4f;
+
+    [Tooltip("照準中の射線の色（追従）")]
+    public Color aimColor = new Color(1f, 1f, 0f, 0.5f);
+
+    [Tooltip("ロック中（最終警告）の射線の色")]
+    public Color lockColor = new Color(1f, 0f, 0f, 0.8f);
+
+    [Tooltip("レーザー発射中の色")]
+    public Color fireColor = new Color(1f, 0.2f, 0.2f, 0.95f);
+
+    [Header("銃口（照準追従）")]
+    [Tooltip("照準方向に合わせて回転・配置する銃口オブジェクト（バレル等）。firePoint をこの子にすると射線原点も追従する")]
+    public Transform aimPivot;
+
+    [Tooltip("0なら最初に置いた位置を基準に照準方向へオービット（反対方向を狙うと銃口も反対側へ回り込む）。0より大きいと敵中心からその距離の純粋な放射状配置で上書き")]
+    public float aimPivotDistance = 0f;
+
+    [Tooltip("銃口スプライトの基準向きの補正角（度）。既定は右(+X)向きが照準方向に一致。上向きの絵なら-90など")]
+    public float aimAngleOffset = 0f;
+
+    private enum Phase { Idle, Aim, Lock, Fire, Cooldown }
+    private Phase phase = Phase.Idle;
+    private float timer;
+
+    private Transform player;
+    private EnemyKnockback knockback;
+
+    private Vector2 lockedDir = Vector2.left; // ロック時に固定する発射方向
+
+    // 銃口の初期配置（敵中心からのオフセット）。照準方向に合わせてこれをオービットさせる
+    private Vector2 pivotRestOffset;
+    private float pivotRestAngle;
+    private bool hasPivotRest;
+
+    // 可視化用（実行時生成）。OnDestroy で破棄
+    private LineRenderer line;
+    private Material lineMaterial;
+
+    void Awake()
+    {
+        knockback = GetComponent<EnemyKnockback>();
+        CreateBeamVisual();
+    }
+
+    void Start()
+    {
+        GameObject p = GameObject.FindGameObjectWithTag(playerTag);
+        if (p != null) player = p.transform;
+
+        // 銃口の初期配置を記録（この位置を基準に照準方向へオービットさせる）
+        if (aimPivot != null)
+        {
+            pivotRestOffset = (Vector2)(aimPivot.position - transform.position);
+            if (pivotRestOffset.sqrMagnitude > 0.0001f)
+            {
+                pivotRestAngle = Mathf.Atan2(pivotRestOffset.y, pivotRestOffset.x);
+                hasPivotRest = true;
+            }
+        }
+    }
+
+    void Update()
+    {
+        // 銃口は常に現在の照準方向へ向ける（照準中は lockedDir がプレイヤーを追う）
+        UpdateAimPivot();
+
+        // 吹き飛び中／死亡中は攻撃を中断
+        if (knockback != null && (knockback.IsActive || knockback.IsDying))
+        {
+            if (phase != Phase.Idle && phase != Phase.Cooldown) BeginCooldown();
+            HideBeam();
+            return;
+        }
+
+        switch (phase)
+        {
+            case Phase.Idle:
+                if (CanSeePlayer()) BeginAim();
+                HideBeam();
+                break;
+
+            case Phase.Aim:
+                // プレイヤーが見えている間は射線を追従させる（見失っても最後の方向を保持）
+                if (CanSeePlayer()) lockedDir = AimDirectionToPlayer();
+                DrawBeam(lockedDir, aimColor, sightWidth);
+                Countdown(BeginLock);
+                break;
+
+            case Phase.Lock:
+                // 射線を固定したまま最終警告
+                DrawBeam(lockedDir, lockColor, sightWidth);
+                Countdown(BeginFire);
+                break;
+
+            case Phase.Fire:
+                // レーザー判定＋表示。発射中は毎フレーム当たり判定（無敵は PlayerHealth 側）
+                DrawBeam(lockedDir, fireColor, beamWidth);
+                ApplyBeamDamage();
+                Countdown(BeginCooldown);
+                break;
+
+            case Phase.Cooldown:
+                HideBeam();
+                Countdown(() => phase = Phase.Idle);
+                break;
+        }
+    }
+
+    // タイマーを進め、0になったら次の処理を呼ぶ
+    private void Countdown(System.Action onElapsed)
+    {
+        timer -= Time.deltaTime;
+        if (timer <= 0f) onElapsed();
+    }
+
+    private void BeginAim()
+    {
+        phase = Phase.Aim;
+        timer = Mathf.Max(0f, aimTime);
+        lockedDir = AimDirectionToPlayer();
+    }
+
+    private void BeginLock()
+    {
+        phase = Phase.Lock;
+        timer = Mathf.Max(0f, lockTime);
+    }
+
+    private void BeginFire()
+    {
+        phase = Phase.Fire;
+        timer = Mathf.Max(0f, fireDuration);
+        ApplyBeamDamage(); // fireDuration=0 でも最低1回は判定
+    }
+
+    private void BeginCooldown()
+    {
+        phase = Phase.Cooldown;
+        timer = Mathf.Max(0f, cooldown);
+    }
+
+    // ─── 索敵・方向 ───────────────────────────────
+
+    private Vector2 FireOrigin()
+    {
+        return firePoint != null ? (Vector2)firePoint.position : (Vector2)transform.position;
+    }
+
+    private Vector2 AimDirectionToPlayer()
+    {
+        if (player == null) return lockedDir;
+        Vector2 d = (Vector2)player.position - FireOrigin();
+        return d.sqrMagnitude > 0.0001f ? d.normalized : lockedDir;
+    }
+
+    // 射程内かつ射線が壁に遮られていないか
+    private bool CanSeePlayer()
+    {
+        if (player == null) return false;
+
+        Vector2 origin = FireOrigin();
+        Vector2 toPlayer = (Vector2)player.position - origin;
+        float dist = toPlayer.magnitude;
+        if (dist > detectionRange) return false;
+
+        // 壁に当たったら射線は通っていない
+        RaycastHit2D wall = Physics2D.Raycast(origin, toPlayer.normalized, dist, obstacleLayer);
+        return wall.collider == null;
+    }
+
+    // 銃口オブジェクトを照準方向に合わせて回転・配置する。
+    // 位置は「最初に置いた配置」を基準に、照準方向へ敵の周りをオービット（回り込み）させる。
+    // これにより反対方向を狙うと銃口も反対側へ移動する。
+    private void UpdateAimPivot()
+    {
+        if (aimPivot == null) return;
+
+        float aimAngleRad = Mathf.Atan2(lockedDir.y, lockedDir.x);
+
+        // 向き：照準方向に絵の基準向き補正を加える
+        aimPivot.rotation = Quaternion.Euler(0f, 0f, aimAngleRad * Mathf.Rad2Deg + aimAngleOffset);
+
+        // 位置
+        Vector2 offset;
+        if (aimPivotDistance != 0f)
+        {
+            // distance>0：敵中心から照準方向へその距離だけ離して配置（純粋な放射状）
+            offset = lockedDir * aimPivotDistance;
+        }
+        else if (hasPivotRest)
+        {
+            // distance=0：最初に置いたオフセットを、照準方向との差分だけ回転させてオービット
+            float delta = aimAngleRad - pivotRestAngle;
+            offset = Rotate2D(pivotRestOffset, delta);
+        }
+        else
+        {
+            return; // 基準配置が無く距離も0なら回転のみ（位置はそのまま）
+        }
+
+        Vector3 pos = transform.position + (Vector3)offset;
+        pos.z = transform.position.z; // Zは敵と同じ平面を維持
+        aimPivot.position = pos;
+    }
+
+    // 2DベクトルをZ軸回りに回す（ラジアン）
+    private static Vector2 Rotate2D(Vector2 v, float radians)
+    {
+        float c = Mathf.Cos(radians);
+        float s = Mathf.Sin(radians);
+        return new Vector2(v.x * c - v.y * s, v.x * s + v.y * c);
+    }
+
+    // ─── レーザー判定 ─────────────────────────────
+
+    // 壁で止まることを考慮したレーザーの長さ
+    private float ComputeBeamLength(Vector2 origin, Vector2 dir)
+    {
+        RaycastHit2D wall = Physics2D.Raycast(origin, dir, maxBeamLength, obstacleLayer);
+        return wall.collider != null ? wall.distance : maxBeamLength;
+    }
+
+    private void ApplyBeamDamage()
+    {
+        Vector2 origin = FireOrigin();
+        float len = ComputeBeamLength(origin, lockedDir);
+
+        // 太さを考慮してプレイヤーを拾う（細いレイだと避けにくさが理不尽になるため CircleCast）
+        float radius = Mathf.Max(0.01f, beamWidth * 0.5f);
+        RaycastHit2D hit = Physics2D.CircleCast(origin, radius, lockedDir, len, targetLayers);
+        if (hit.collider != null)
+        {
+            PlayerHealth hp = hit.collider.GetComponentInParent<PlayerHealth>();
+            if (hp != null) hp.TakeDamage(beamDamage);
+        }
+    }
+
+    // ─── 可視化（LineRenderer 実行時生成） ──────────
+
+    private void CreateBeamVisual()
+    {
+        GameObject go = new GameObject("SniperBeam");
+        go.transform.SetParent(transform, false);
+
+        line = go.AddComponent<LineRenderer>();
+        line.useWorldSpace = true;
+        line.positionCount = 2;
+        line.numCapVertices = 2;
+        line.textureMode = LineTextureMode.Stretch;
+        line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        line.receiveShadows = false;
+        line.sortingOrder = 10; // 敵・プレイヤーより前に描く
+
+        // ビルトインRP前提。Sprites/Default は頂点カラー＆半透明ブレンド対応
+        lineMaterial = new Material(Shader.Find("Sprites/Default"));
+        lineMaterial.renderQueue = 3000; // Transparent
+        line.material = lineMaterial;
+
+        HideBeam();
+    }
+
+    private void DrawBeam(Vector2 dir, Color color, float width)
+    {
+        if (line == null) return;
+
+        Vector2 origin = FireOrigin();
+        float len = ComputeBeamLength(origin, dir);
+
+        line.enabled = true;
+        line.startWidth = width;
+        line.endWidth = width;
+        line.startColor = color;
+        line.endColor = color;
+        line.SetPosition(0, origin);
+        line.SetPosition(1, origin + dir * len);
+    }
+
+    private void HideBeam()
+    {
+        if (line != null) line.enabled = false;
+    }
+
+    void OnDestroy()
+    {
+        if (lineMaterial != null) Destroy(lineMaterial);
+    }
+
+    // シーンビューで索敵範囲と現在の射線方向を可視化
+    private void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position, detectionRange);
+
+        Vector3 origin = Application.isPlaying ? (Vector3)FireOrigin() : transform.position;
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawLine(origin, origin + (Vector3)(lockedDir * 2f));
+    }
+}
