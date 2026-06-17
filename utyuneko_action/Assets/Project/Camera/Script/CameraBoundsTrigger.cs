@@ -1,20 +1,16 @@
 using UnityEngine;
 
+[RequireComponent(typeof(BoxCollider2D))]
 public class CameraBoundsTrigger : MonoBehaviour
 {
-    [Header("カメラを固定する場所（空欄ならコライダーの中心になります）")]
-    [Tooltip("ここに指定したオブジェクトの位置にカメラが固定されます。空欄なら自動でコライダーの真ん中になります。")]
-    public Transform cameraTargetPoint;
-
     [Header("カメラの引き量（Z座標の固定値）")]
-    [Tooltip("トリガーに入ったときのカメラのZ座標を指定します。マイナスの値で指定してください（例: -15 や -20 など）。通常のカメラのデフォルトは -10 です。")]
+    [Tooltip("トリガーに入ったときのカメラのZ座標を指定します。通常のカメラのデフォルトは -10 です。")]
     public float targetZOffset = -15f;
 
-    [Header("手動割り当て（空欄なら自動取得します）")]
-    public CameraFollowWithZoom customCameraController;
-
+    // 内部で自動取得するため非公開
+    private Transform cameraTargetPoint;
+    private CameraFollowWithZoom customCameraController;
     private BoxCollider2D triggerCollider;
-    private Camera mainCamera;
 
     void Start()
     {
@@ -23,14 +19,29 @@ public class CameraBoundsTrigger : MonoBehaviour
 
     private void InitializeReferences()
     {
-        if (mainCamera == null) mainCamera = Camera.main;
+        // 1. トリガーコライダーの自動取得
+        if (triggerCollider == null) triggerCollider = GetComponent<BoxCollider2D>();
 
-        if (customCameraController == null && mainCamera != null)
+        // 2. 子オブジェクトから "CameraPoint" という名前のオブジェクトを探して自動割り当て
+        if (cameraTargetPoint == null)
         {
-            customCameraController = mainCamera.GetComponent<CameraFollowWithZoom>();
+            Transform foundChild = transform.Find("CameraPoint");
+            if (foundChild != null)
+            {
+                cameraTargetPoint = foundChild;
+            }
         }
 
-        if (triggerCollider == null) triggerCollider = GetComponent<BoxCollider2D>();
+        // 3. 【修正】MainCameraタグから親方向（CameraPivot）も含めてスクリプトを探索
+        if (customCameraController == null)
+        {
+            GameObject mainCamObj = GameObject.FindWithTag("MainCamera");
+            if (mainCamObj != null)
+            {
+                // まずMainCamera自身、無ければその親(CameraPivotなど)からコンポーネントを探す
+                customCameraController = mainCamObj.GetComponentInParent<CameraFollowWithZoom>();
+            }
+        }
     }
 
     void OnTriggerEnter2D(Collider2D collision)
@@ -41,20 +52,14 @@ public class CameraBoundsTrigger : MonoBehaviour
 
             if (customCameraController != null)
             {
-                // コライダーの実際の中心点(Offsetも考慮)を基準にする（TargetPointがあればそちらを優先）
-                Vector3 lockBasePosition = triggerCollider != null ? triggerCollider.bounds.center : transform.position;
+                Vector3 lockBasePosition = (cameraTargetPoint != null) ? cameraTargetPoint.position :
+                                           (triggerCollider != null ? triggerCollider.bounds.center : transform.position);
 
-                if (cameraTargetPoint != null)
-                {
-                    lockBasePosition = cameraTargetPoint.position;
-                }
-
-                // インスペクターで設定した「固定の引き量（Z値）」をそのまま渡してカメラをロック
                 customCameraController.LockCamera(lockBasePosition, targetZOffset);
             }
             else
             {
-                Debug.LogWarning("[CameraBoundsTrigger] CameraFollowWithZoomスクリプトが見つかりません。カメラオブジェクトを手動で割り当ててください。");
+                Debug.LogError($"[CameraBoundsTrigger] {gameObject.name} から 'MainCamera' の親にある 'CameraFollowWithZoom' が見つかりません！タグの設定や構造を確認してください。");
             }
         }
     }
@@ -74,10 +79,12 @@ public class CameraBoundsTrigger : MonoBehaviour
     void OnDrawGizmos()
     {
         if (triggerCollider == null) triggerCollider = GetComponent<BoxCollider2D>();
+        if (cameraTargetPoint == null) cameraTargetPoint = transform.Find("CameraPoint");
 
         Gizmos.color = Color.cyan;
-        Vector3 pointPos = cameraTargetPoint != null ? cameraTargetPoint.position :
+        Vector3 pointPos = (cameraTargetPoint != null) ? cameraTargetPoint.position :
                            (triggerCollider != null ? triggerCollider.bounds.center : transform.position);
+
         Gizmos.DrawSphere(pointPos, 0.4f);
     }
 }

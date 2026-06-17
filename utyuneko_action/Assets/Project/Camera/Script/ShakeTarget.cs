@@ -7,19 +7,20 @@ public class ShakeTarget : MonoBehaviour
     // 揺れの種類を大中小・微振動で定義
     public enum ShakeStyle { Tiny, Small, Medium, Large }
 
-    [Header("自動連携設定（Player側の変更は一切不要）")]
-    [SerializeField] private PlayerController playerController;
-
+    [Header("自動連携設定（Player側の変更・インスペクター登録は不要）")]
     [Tooltip("ONにすると、プレイヤーが衝突した瞬間に自動でカメラが揺れます。")]
     public bool shakeOnPlayerCollision = true;
     [Tooltip("プレイヤーが衝突した時の揺れの種類を選べます。")]
     public ShakeStyle collisionShakeStyle = ShakeStyle.Medium;
 
-    [Header("?? ズーム（距離）による自動補正設定")]
+    [Header("ズーム（距離）による自動補正設定")]
     [Tooltip("ONにすると、カメラが遠くに引いている(Z軸が深い)時、揺れが小さく見えてしまうのを防ぐため、自動で揺れを激しく補正します。")]
     public bool useZoomCompensation = true;
     [Tooltip("カメラがこのZ座標にいる時を「基準の揺れの強さ(1倍)」とします。")]
     public float referenceZOffset = -10f;
+
+    // 内部で保持するため、シリアライズ（インスペクター表示）は不要に
+    private PlayerController playerController;
 
     private Vector3 initialLocalPosition;
     private float shakeMagnitude = 0f;
@@ -38,14 +39,26 @@ public class ShakeTarget : MonoBehaviour
     {
         initialLocalPosition = transform.localPosition;
 
-        if (playerController == null)
+        // ★ タグが "Player" のオブジェクトを探して、コンポーネントを自動取得
+        GameObject playerObj = GameObject.FindWithTag("Player");
+        if (playerObj != null)
         {
+            playerController = playerObj.GetComponent<PlayerController>();
+        }
+        else
+        {
+            // タグで見つからない場合の保険として、型検索も残しておく
             playerController = Object.FindFirstObjectByType<PlayerController>();
         }
 
+        // イベントの登録
         if (playerController != null && shakeOnPlayerCollision)
         {
             playerController.OnCollisionEnterEvent += HandlePlayerCollision;
+        }
+        else if (playerController == null)
+        {
+            Debug.LogWarning("[ShakeTarget] 'Player' タグの付いたオブジェクト、または PlayerController が見つかりません。");
         }
     }
 
@@ -86,12 +99,10 @@ public class ShakeTarget : MonoBehaviour
             }
 
             // 4. 【工夫：渦巻くような収束】
-            // 残り時間(t)をなめらかなカーブ(t^2)にしてキュッと中心に吸い込まれるように減衰させる
             float t = shakeTimer / shakeDuration;
             float damptarget = t * t;
 
-            // さらに、収束していくにつれてわずかに回転を加えることで「渦巻く収束」を表現
-            float swirlAngle = (1f - t) * 90f; // 収束に向けて最大90度回転させる
+            float swirlAngle = (1f - t) * 90f;
             Vector3 rawNoise = new Vector3(xNoise, yNoise, 0f);
             Vector3 swirledNoise = Quaternion.Euler(0, 0, swirlAngle) * rawNoise;
 
@@ -99,12 +110,10 @@ public class ShakeTarget : MonoBehaviour
             float zoomMultiplier = 1f;
             if (useZoomCompensation && transform.parent != null)
             {
-                // 親の現在のZ位置（遠さ）を取得
                 float currentZ = Mathf.Abs(transform.parent.position.z);
                 float refZ = Mathf.Abs(referenceZOffset);
                 if (refZ > 0)
                 {
-                    // 基準より遠くに引いている場合、その比率に応じて揺れを激しくする
                     zoomMultiplier = currentZ / refZ;
                 }
             }
@@ -122,31 +131,25 @@ public class ShakeTarget : MonoBehaviour
 
     private void HandlePlayerCollision(Collision2D collision)
     {
-        // プレイヤー衝突時は、インスペクターで設定したスタイルで揺らす
-        RequestShakeStyle(collisionGridStyle(collisionShakeStyle));
+        // 登録されたスタイルで直接揺らす
+        RequestShakeStyle(collisionShakeStyle);
     }
 
-    // スタイルに応じたプリセット数値を返す内部用関数
     private (float duration, float magnitude) GetPreset(ShakeStyle style)
     {
         return style switch
         {
-            ShakeStyle.Tiny => (0.10f, 0.15f), // 微振動：一瞬、かなり弱い
-            ShakeStyle.Small => (0.12f, 0.30f), // 小振動：短く、少し弱い
-            ShakeStyle.Medium => (0.18f, 0.55f), // 中振動：標準
-            ShakeStyle.Large => (0.28f, 0.90f), // 大振動：長く、激しい
+            ShakeStyle.Tiny => (0.20f, 0.30f),
+            ShakeStyle.Small => (0.20f, 0.40f),
+            ShakeStyle.Medium => (0.20f, 0.55f),
+            ShakeStyle.Large => (0.28f, 0.90f),
             _ => (0.15f, 0.40f)
         };
     }
 
-    /// <summary>
-    /// 【新機能】大中小のスタイルを指定してカメラを揺らす（おすすめ）
-    /// </summary>
     public void RequestShakeStyle(ShakeStyle style)
     {
         var preset = GetPreset(style);
-
-        // 既に強いシェイクが走っている場合は上書きしない
         if (shakeTimer > 0 && preset.magnitude < shakeMagnitude) return;
 
         currentStyle = style;
@@ -156,9 +159,6 @@ public class ShakeTarget : MonoBehaviour
         noiseSampleTimer = Random.Range(0f, 100f);
     }
 
-    /// <summary>
-    /// 従来の、数値で直接細かく指定して揺らす関数（互換性用）
-    /// </summary>
     public void RequestShakeDirect(float duration, float magnitude, ShakeStyle style = ShakeStyle.Medium)
     {
         if (shakeTimer > 0 && magnitude < shakeMagnitude) return;
@@ -169,9 +169,6 @@ public class ShakeTarget : MonoBehaviour
         shakeMagnitude = magnitude;
         noiseSampleTimer = Random.Range(0f, 100f);
     }
-
-    // タイポ吸収用
-    private ShakeStyle collisionGridStyle(ShakeStyle style) => style;
 }
 
 
