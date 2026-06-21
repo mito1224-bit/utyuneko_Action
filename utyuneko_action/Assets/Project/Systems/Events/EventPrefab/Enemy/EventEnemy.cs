@@ -42,6 +42,8 @@ public class EventEnemy : MonoBehaviour
             {
                 // プレイヤーの位置を渡して撃破処理へ
                 Defeated(collision.transform.position);
+
+                TimeManager.Instance.TriggerGlobalSlowMotion(1.0f, 0.2f);
             }
         }
     }

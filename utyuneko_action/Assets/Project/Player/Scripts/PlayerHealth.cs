@@ -105,7 +105,7 @@ public class PlayerHealth : MonoBehaviour
         }
 
         // 6. 死亡判定
-        if (currentHealth < 0)
+        if (currentHealth <= 0)
         {
             Die();
         }

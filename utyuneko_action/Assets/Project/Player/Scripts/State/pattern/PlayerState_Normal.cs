@@ -6,6 +6,8 @@ public class PlayerState_Normal : IPlayerState
     static float targetYAngle = 310f;
     private PlayerController p;
 
+    private bool wasGroundedLastFrame;
+
     public void Enter(PlayerController player)
     {
         p = player;
@@ -43,6 +45,8 @@ public class PlayerState_Normal : IPlayerState
         {
             p.hoverSensor.GetComponent<Collider2D>().enabled = true;
         }
+
+        wasGroundedLastFrame = p.IsGrounded();
     }
 
     public void UpdateState()
@@ -56,6 +60,11 @@ public class PlayerState_Normal : IPlayerState
         if (p.inputActions.Player.Jump.triggered && p.IsGrounded())
         {
             p.rb2D.linearVelocity = new Vector2(p.rb2D.linearVelocity.x, p.jumpForce);
+
+            if (p.visualManager != null)
+            {
+                p.visualManager.TriggerJumpStretch();
+            }
 
             if (p.currentBurstCount > 0)
             {
@@ -149,6 +158,30 @@ public class PlayerState_Normal : IPlayerState
             );
         }
 
+        bool isGroundedNow = p.IsGrounded();
+
+        //「前フレームは空中だった」かつ「今フレームは接地している」なら着地した瞬間！
+        if (isGroundedNow && !wasGroundedLastFrame)
+        {
+            // 下方向にしっかり落ちている時だけ潰す（床を歩いている時の誤作動防止）
+            if (p.rb2D.linearVelocity.y <= 0.1f)
+            {
+                if (p.visualManager != null)
+                {
+                    p.visualManager.TriggerLandSquash();
+                }
+            }
+        }
+
+        // 最後に、今の接地状態を「前フレームの状態」として記憶して次のフレームへ
+        wasGroundedLastFrame = isGroundedNow;
+
+        if (p.visualManager != null)
+        {
+            p.visualManager.UpdateHoverBobbing(p.rb2D.linearVelocity.x);
+        }
+
+        // 既存の伸縮更新処理
         if (p.visualManager != null)
         {
             p.visualManager.UpdateSquashAndStretch();

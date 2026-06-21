@@ -2,7 +2,7 @@
 using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(Rigidbody2D), typeof(CircleCollider2D))]
-public class PlayerController : MonoBehaviour
+public class PlayerController : MonoBehaviour, IEventActor
 {
     [Header("移動パラメータ")]
     public float moveSpeed = 5.0f;
@@ -70,10 +70,14 @@ public class PlayerController : MonoBehaviour
 
     [HideInInspector] public Animator anim;
 
+    public AimTrajectoryLine trajectoryLine;
+
     public IPlayerState CurrentState => currentState;
 
     public System.Action<Collision2D> OnCollisionEnterEvent;
     private IPlayerState currentState;
+
+    private ImageBubble imageBubble;
 
     public PlayerState_Normal StateNormal { get; private set; }
     public PlayerState_Charge StateCharge { get; private set; }
@@ -101,6 +105,8 @@ public class PlayerController : MonoBehaviour
         rb2D.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
         rb2D.sleepMode = RigidbodySleepMode2D.NeverSleep;
 
+        trajectoryLine = GetComponentInChildren<AimTrajectoryLine>();
+
         if (aimPivot != null)
         {
             aimPivot.gameObject.SetActive(false);
@@ -117,6 +123,8 @@ public class PlayerController : MonoBehaviour
         {
             afterImageEffect.enabled = false;
         }
+
+        imageBubble = GetComponentInChildren<ImageBubble>();
 
         if (visualManager == null) visualManager = GetComponent<PlayerVisualManager>();
         if (visualManager != null) visualManager.Initialize(this);
@@ -169,6 +177,15 @@ public class PlayerController : MonoBehaviour
         return groundLayer;
     }
 
+    /// <summary>
+    /// バースト中に敵を撃破した際、バースト回数を回復する関数
+    /// </summary>
+    public void OnEnemyKilledInBurst()
+    {
+            currentBurstCount = Mathf.Max(0, currentBurstCount - 1);
+            // currentBurstCount = 0;
+    }
+
     private void OnCollisionEnter2D(Collision2D collision)
     {
         OnCollisionEnterEvent?.Invoke(collision);
@@ -177,26 +194,34 @@ public class PlayerController : MonoBehaviour
     /// <summary>
     /// 外部（イベントマネージャー）から呼ばれるリアクション窓口
     /// </summary>
-    public void PlayReaction(PlayerVisualManager.ReactionType type, float duration = 2.0f)
+    public void PlayReaction(ImageBubble.StampType type, float duration = 2.0f)
     {
         // 種類に応じて「体（アニメーションや物理）」のリアクションだけを自分が担当する
         switch (type)
         {
-            case PlayerVisualManager.ReactionType.Surprise:
-                //if (anim != null) anim.SetTrigger("isSurprise");
+            case ImageBubble.StampType.OK:
+                break;
+            case ImageBubble.StampType.Question:
+                break;
+            case ImageBubble.StampType.Surprise:
                 rb2D.linearVelocity = new Vector2(rb2D.linearVelocity.x, 4f); // ぴょこっと上に跳ねる物理リアクション
                 break;
-
-            case PlayerVisualManager.ReactionType.Nod:
-                //if (anim != null) anim.SetTrigger("isNod");
+            case ImageBubble.StampType.Doya:
                 break;
-
-            case PlayerVisualManager.ReactionType.Sweat:
-                //if (anim != null) anim.SetBool("isSweating", true);
+            case ImageBubble.StampType.Sweat:
                 break;
-
-            case PlayerVisualManager.ReactionType.Joy:
-                //if (anim != null) anim.SetTrigger("isJoy");
+            case ImageBubble.StampType.Hatena:
+                break;
+            case ImageBubble.StampType.Joy:
+                rb2D.linearVelocity = new Vector2(rb2D.linearVelocity.x, 3f);
+                break;
+            case ImageBubble.StampType.Gift:
+                break;
+            case ImageBubble.StampType.Star:
+                break;
+            case ImageBubble.StampType.Go:
+                break;
+            case ImageBubble.StampType.Enemy:
                 break;
         }
     }

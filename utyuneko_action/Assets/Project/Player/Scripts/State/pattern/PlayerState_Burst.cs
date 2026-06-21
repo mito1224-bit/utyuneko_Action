@@ -67,9 +67,18 @@ public class PlayerState_Burst : IPlayerState
             p.TransitionToState(p.StateNormal);
 
             if (p.canCancelBurstWithJump)
+            {
                 p.rb2D.linearVelocity = new Vector2(p.rb2D.linearVelocity.x, p.jumpForce);
+                
+                if (p.visualManager != null)
+                {
+                    p.visualManager.TriggerJumpStretch();
+                }
+            }
             else
+            {
                 p.rb2D.linearVelocity = new Vector2(p.rb2D.linearVelocity.x, p.rb2D.linearVelocity.y);
+            }
         }
     }
 
@@ -109,7 +118,7 @@ public class PlayerState_Burst : IPlayerState
             p.rb2D.linearVelocity = burstDirection * currentSpeed;
             burstTimer = burstDuration;
 
-            // ★マネージャーを叩いて上下左右固定バウンドの伸縮をセット
+            // 上下左右固定バウンドの伸縮をセット
             if (p.visualManager != null)
             {
                 p.visualManager.TriggerSquash(wallNormal, incomingVector);
@@ -117,6 +126,8 @@ public class PlayerState_Burst : IPlayerState
 
             Debug.Log($"バースト中衝突反射！ 速度: {currentSpeed}");
         }
+
+        //TimeManager.Instance.TriggerIndividualHitStop(p.gameObject, collision.gameObject, 0.03f);
     }
 
     public void Exit()
