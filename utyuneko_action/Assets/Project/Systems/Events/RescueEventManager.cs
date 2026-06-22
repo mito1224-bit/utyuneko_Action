@@ -151,6 +151,11 @@ public class RescueEventManager : MonoBehaviour
                 playerController.TransitionToState(playerController.StateNormal);
             }
 
+            if (hosaBubble != null)
+            {
+                hosaBubble.StartFadeOut();
+            }
+
             StartCoroutine(RescueEventTimelineRoutine());
         }
     }

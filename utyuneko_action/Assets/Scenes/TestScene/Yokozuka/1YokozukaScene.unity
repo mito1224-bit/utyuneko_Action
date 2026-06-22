@@ -337,10 +337,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6b9eee37852e04c42ae26d1cf6163177, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AfterImageEffect
-  afterImagePrefab: {fileID: 7374766668121083705, guid: 6396d535b50282641aac5e41cec5a522, type: 3}
+  afterImageMaterial: {fileID: 2100000, guid: 9f19f50ccc5e7624ca47a943877f29d1, type: 2}
   spawnInterval: 0.1
-  fadeSpeed: 4
+  fadeSpeed: 3
   alpha: 0.6
+  followSpeed: 1
 --- !u!114 &89922772
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -368,7 +369,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b60c16b9da78d34e8ced07e9ff1d36f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController
-  moveSpeed: 8
+  moveSpeed: 10
   jumpForce: 10
   groundLayer:
     serializedVersion: 2
@@ -3274,7 +3275,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1828718867
 Transform:
   m_ObjectHideFlags: 0

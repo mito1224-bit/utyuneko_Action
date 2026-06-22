@@ -94,11 +94,9 @@ public class HosaState_Follow : IHosaState
         // アニメーションの切り替え
         if (currentDistance > 0.1f)
         {
-            if (h.anim != null) h.anim.SetBool("isWalk", true);
         }
         else
         {
-            if (h.anim != null) h.anim.SetBool("isWalk", false);
         }
     }
 
@@ -109,6 +107,5 @@ public class HosaState_Follow : IHosaState
 
     public void Exit()
     {
-        if (h.anim != null) h.anim.SetBool("isWalk", false);
     }
 }
