@@ -40,6 +40,8 @@ public class GameManager : MonoBehaviour
         }
     }
 
+
+
     // ====================================================================
     // 全自動窓口関数（API）
     // ====================================================================
@@ -47,8 +49,8 @@ public class GameManager : MonoBehaviour
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         // ハブエリアやタイトル画面など、データキューブがないシーンは無視する
-        if (scene.name == "TitleScene" || scene.name == "LogoScene"||
-            scene.name == "StageSelect" || scene.name == "ResultScene") return;
+        if (scene.name == "TitleScene" || scene.name == "LogoScene"
+           || scene.name == "ResultScene") return;
 
         // 今のシーンのデータを取得または新規作成
         StageProgressData stage = GetOrCreateStageData(scene.name);
