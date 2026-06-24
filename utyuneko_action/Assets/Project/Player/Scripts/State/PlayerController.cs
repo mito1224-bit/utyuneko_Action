@@ -17,6 +17,7 @@ public class PlayerController : MonoBehaviour, IEventActor
     [Range(0f, 1f)]
     public float reflectEfficiency = 0.8f;
     public int maxBurstCount = 3;
+    public int maxReflect = 3;
     [HideInInspector] public int currentBurstCount = 0;
     public bool canCancelBurstWithJump = true;
 
