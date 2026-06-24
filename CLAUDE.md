@@ -63,8 +63,19 @@ Each enemy composes multiple scripts rather than one monolithic class:
 | `EnemyDirectionalReaction.cs` | Direction-dependent reflect/pierce reaction logic |
 | `EnemyKnockback.cs` | Knockback-on-defeat: blink, ground-hit despawn, linger/fallback timers (see 作業メモ) |
 | `EnemyAttack.cs` | Fixed-pattern `StraightBullet` firing |
-| `EnemyTargetAttack.cs` | Line-of-sight homing bullets |
+| `EnemyTargetAttack.cs` | Line-of-sight homing bullets (`Physics.Raycast` — still 3D) |
 | `PierceZoneTrigger.cs` | Child trigger collider that allows pierce-through from a specific face |
+
+**Optional behavior/attack modules** — each is a self-contained `MonoBehaviour` (no `RequireComponent`) you drop onto a base enemy to give it an attack pattern. They share two conventions: contact damage/reflection is left to `EnemyCollision` (typically `Reflect`) and player i-frames to `PlayerHealth` (decoupled — they don't check invincibility themselves), and they **suspend themselves while `EnemyKnockback.IsActive || IsDying`** (so hitting the enemy interrupts its attack). Several render a runtime-generated translucent disc mesh (`Shader.Find("Sprites/Default")`, freed in `OnDestroy`) to show their range in the Game view. All are 2D (`Physics2D`). See 作業メモ for per-field tuning notes.
+
+| Script | Behavior |
+|---|---|
+| `EnemyShield.cs` | Blocks (nullifies) damage from its facing arc (`shieldHalfAngle`); only killable from behind. Front auto-follows `EnemyMovement.moveDirection` |
+| `EnemyAreaAttack.cs` | Periodic self-centered AoE: cooldown → telegraph → active window (`OverlapCircleAll`) |
+| `EnemySniper.cs` | Aim (sight line tracks) → lock → fire laser (`CircleCast`); `LineRenderer` beam, muzzle `aimPivot` follows |
+| `EnemyCharger.cs` | Idle → windup (locks/tracks aim dir) → charge (raycast wall stop) → self-stun on wall hit |
+| `EnemyBomber.cs` | Proximity countdown (accelerating blink) → explosion (`OverlapCircleAll`), self-destruct or reset |
+| `EnemyBlackHole.cs` | Pulls player `Rigidbody2D` toward center via `FixedUpdate` `AddForce`; damage is from the body's `EnemyCollision(Reflect)` |
 
 **Collision types** (`EnemyCollision.CollisionType`):
 - `Reflect` – knocks player back unless player is in Burst (then it reflects like a wall); always deals speed-scaled damage
@@ -208,12 +219,8 @@ Scene flow / UI: `Systems/Scripts/SceneChanger.cs` (player-trigger scene load) &
   - 可視化：EnemyBomber と同じ実行時生成の塗りつぶし円メッシュ。ただし**頂点カラーで中心濃→外周透明**のグラデ＋`swirlSpeed` で渦回転（`showRuntimeRange`/`edgeColor`/`coreColor`、Sprites/Default、`OnDestroy` で破棄）
   - セットアップ想定：`EnemyCollision.collisionType=Reflect` ＋本体コライダー ＋ `EnemyBlackHole`。`pullRadius`/`pullForce` は Inspector で要調整。プレハブ化は各シーンで要対応
   - 注意: 吸引は物理（`FixedUpdate`/`AddForce`）なのでチャージ中のスロー（`Time.timeScale`）の影響を受ける＝他エネミーと同じ。バースト中も吸引自体は効く（無敵なので当たってもダメージは無し）
--別種類のEnemy(上から優先順位が高い順) ※盾敵・範囲攻撃敵・スナイパー・突進敵・自爆敵・ブラックホール=実装済（次は「倒すと分裂して2体に増える敵」）
--仕様
--向いている方向に盾を持っている敵（盾の反対側から倒せるようにする）
--一定の時間で自分を中心とした設定範囲に攻撃を出す敵
--プレイヤーが射程に入ったら射線が出て一定時間経つと射線が止まりその場所にレーザーを出す敵（つまりスナイパー）
--突進のみのEnemy、壁に当たった時に自らスタンを食らう
--射程に入るとカウントダウンが始まり時間が経つと爆発する敵
--敵を中心にブラックホールがあり入ったら吸い込まれて敵に当たるとダメージを喰らう
--倒すと分裂して2体に増える敵
+-別種類のEnemy ※盾敵・範囲攻撃敵・スナイパー・突進敵・自爆敵・ブラックホール=実装済。「倒すと分裂して2体に増える敵」は**実装不要になった（中止）**。突進敵は2026/06/17にプレイヤー方向突進を手直し（上記参照）
+追加したい仕様内容
+・新しくエネミーにモデルが追加されたので、EnemyMovementに追加したい処理があります。
+Enemyの進行方向に合わせて角度を変えたいです。角度は左向き（－ｘ）側に移動時50度と右向き（+x）側に移動時310度にしたいです。角度が変わるときは急に変わるのではなく、50度から310度まで増加、310度から50度まで減らすようにして、自然に角度が変わるようにしたい。
+・ボスの弾を反射する際、弾をボスのバリアの方向に飛ばすのではなく、プレイヤーが当たった角度通りに飛ばすようにしたい。

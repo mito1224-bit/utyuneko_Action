@@ -38,6 +38,23 @@ public class EnemyMovement : MonoBehaviour
     public float reverseCooldown = 0.2f;
     private float reverseTimer = 0f;
 
+    [Header("進行方向に合わせた回転")]
+    [Tooltip("進行方向に合わせてモデルの角度を変える")]
+    public bool rotateToMoveDirection = true;
+    [Tooltip("回転させる軸（追加された3Dモデルの振り向きは通常Y軸）")]
+    public RotationAxis rotationAxis = RotationAxis.Y;
+    [Tooltip("左向き（-x）へ移動中の角度（度）")]
+    public float leftAngle = 50f;
+    [Tooltip("右向き（+x）へ移動中の角度（度）")]
+    public float rightAngle = -50f;
+    [Tooltip("振り向くときに必ず通過させる角度（度）。前面を通したいなら前面の角度（既定180）、背面を通したいなら0などを指定")]
+    public float turnViaAngle = 0f;
+    [Tooltip("角度を変える速さ（度/秒）。急変させず自然に振り向かせる")]
+    public float rotationSpeed = 360f;
+    private float currentAngle;  // 現在の角度。左右の角度間を線形に補間する（turnViaAngle を経由して行き来）
+
+    public enum RotationAxis { X, Y, Z }
+
     [Header("元位置へ戻る（吹き飛ばし後）")]
     [Tooltip("吹き飛ばされたあと、収まったら元の位置へ戻す")]
     public bool returnToStart = true;
@@ -64,6 +81,9 @@ public class EnemyMovement : MonoBehaviour
     void Start()
     {
         startPosition = transform.position;
+        // 初期の進行方向に合わせて角度を初期化（最初の1フレームから正しい向きにする）
+        currentAngle = TargetAngle();
+        ApplyRotation();
     }
 
     void Update()
@@ -75,6 +95,9 @@ public class EnemyMovement : MonoBehaviour
             returnTimer = 0f;
             return;
         }
+
+        // 進行方向に合わせて滑らかに振り向く（戻り中も含め、吹き飛び中以外は常に更新）
+        if (rotateToMoveDirection) UpdateFacing();
 
         // 吹き飛びが収まっていて元位置から離れているなら、待ってから戻る
         if (returnToStart && displaced)
@@ -90,8 +113,10 @@ public class EnemyMovement : MonoBehaviour
 
     private void Move()
     {
-        // 指定した方向へ速度を掛けて移動
-        transform.Translate(moveDirection.normalized * moveSpeed * Time.deltaTime);
+        // 指定した方向へ速度を掛けて移動。
+        // ※ Space.World を明示。既定の Space.Self だと回転した分だけ移動方向もローカル軸で傾き、
+        //   Y回転で奥/手前（ワールドZ）へ流れてエネミーが小さく（遠くに）なってしまうため。
+        transform.Translate(moveDirection.normalized * moveSpeed * Time.deltaTime, Space.World);
     }
 
     private void HandleDirectionChange()
@@ -157,6 +182,51 @@ public class EnemyMovement : MonoBehaviour
     {
         // 移動方向を反転させる（例: 左なら右へ）
         moveDirection = -moveDirection;
+    }
+
+    /// <summary>
+    /// 進行方向に応じた目標角度へ向けて、毎フレーム少しずつ角度を変える。
+    /// 右目標は turnViaAngle（既定180=前面）を必ず通る表現に変換しているため、
+    /// Mathf.MoveTowards の線形補間で前面を経由して自然に振り向く（背面=0度側を通らない）。
+    /// </summary>
+    private void UpdateFacing()
+    {
+        float target = TargetAngle();
+        currentAngle = Mathf.MoveTowards(currentAngle, target, rotationSpeed * Time.deltaTime);
+        ApplyRotation();
+    }
+
+    // 進行方向（x成分）から目標角度を決める。横移動が無いときは現在角度を維持。
+    private float TargetAngle()
+    {
+        if (moveDirection.x < 0f) return leftAngle;        // 左向き
+        if (moveDirection.x > 0f) return RightTargetAngle(); // 右向き（前面を通る表現に変換）
+        return currentAngle;
+    }
+
+    /// <summary>
+    /// rightAngle を「leftAngle から turnViaAngle を通って到達できる」角度表現に変換して返す。
+    /// 例: leftAngle=50, rightAngle=-50, turnViaAngle=180 のとき 310 を返す（50→180→310 と前面を経由）。
+    /// rightAngle が -50 でも 310 でも同じ結果になるので、保存値に依らず必ず前面を通る。
+    /// </summary>
+    private float RightTargetAngle()
+    {
+        // leftAngle を基準に [leftAngle, leftAngle+360) の範囲へ正規化
+        float r0 = leftAngle + Mathf.Repeat(rightAngle - leftAngle, 360f);
+        float via = leftAngle + Mathf.Repeat(turnViaAngle - leftAngle, 360f);
+        // via が左→右（増加方向）の経路上にあるならそのまま、無ければ逆回り（360引く）にして via を通す
+        return (via <= r0) ? r0 : r0 - 360f;
+    }
+
+    // 選択した軸へ currentAngle を適用する（他の軸は0）。
+    private void ApplyRotation()
+    {
+        switch (rotationAxis)
+        {
+            case RotationAxis.X: transform.localRotation = Quaternion.Euler(currentAngle, 0f, 0f); break;
+            case RotationAxis.Y: transform.localRotation = Quaternion.Euler(0f, currentAngle, 0f); break;
+            default:             transform.localRotation = Quaternion.Euler(0f, 0f, currentAngle); break;
+        }
     }
 
     /// <summary>
