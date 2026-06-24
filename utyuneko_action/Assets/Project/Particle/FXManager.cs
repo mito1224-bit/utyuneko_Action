@@ -30,7 +30,6 @@ public class FXManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject); // ƒV[ƒ“‘JˆÚ‚µ‚Ä‚àÁ‚³‚È‚¢
             InitDictionary();
         }
         else
