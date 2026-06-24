@@ -1,37 +1,37 @@
-//using UnityEngine;
+ï»¿//using UnityEngine;
 //using UnityEngine.SceneManagement;
 //using UnityEngine.UI;
-//using UnityEngine.InputSystem; // 1. V‚µ‚¢Input System‚ğg‚¤‚½‚ß‚É’Ç‰Á
+//using UnityEngine.InputSystem; // 1. æ–°ã—ã„Input Systemã‚’ä½¿ã†ãŸã‚ã«è¿½åŠ 
 
 //public class TitleManager : MonoBehaviour
 //{
-//    [Header("‰æ–Ê‘S‘Ì‚ğ•¢‚¤ƒtƒF[ƒh—p‰æ‘œi•j")]
+//    [Header("ç”»é¢å…¨ä½“ã‚’è¦†ã†ãƒ•ã‚§ãƒ¼ãƒ‰ç”¨ç”»åƒï¼ˆé»’ï¼‰")]
 //    [SerializeField] private Image fadeImage;
-//    [Header("ƒtƒF[ƒh‚³‚¹‚éƒ{ƒ^ƒ“ƒOƒ‹[ƒv")]
+//    [Header("ãƒ•ã‚§ãƒ¼ãƒ‰ã•ã›ã‚‹ãƒœã‚¿ãƒ³ã‚°ãƒ«ãƒ¼ãƒ—")]
 //    [SerializeField] private CanvasGroup buttonGroup;
 
-//    [Header("ƒtƒF[ƒh‘¬“x‚Ìİ’è")]
-//    [SerializeField] private float sceneFadeInSpeed = 1.5f; // ƒV[ƒ“‘S‘Ì‚ÌƒtƒF[ƒhƒCƒ“i‚¶‚í[‚Á‚Æ’x‚ßj
-//    [SerializeField] private float buttonFadeSpeed = 4.0f;  // ƒ{ƒ^ƒ“‚ÌƒtƒF[ƒhiƒTƒb‚Æ‘¬‚ßj
+//    [Header("ãƒ•ã‚§ãƒ¼ãƒ‰é€Ÿåº¦ã®è¨­å®š")]
+//    [SerializeField] private float sceneFadeInSpeed = 1.5f; // ã‚·ãƒ¼ãƒ³å…¨ä½“ã®ãƒ•ã‚§ãƒ¼ãƒ‰ã‚¤ãƒ³ï¼ˆã˜ã‚ãƒ¼ã£ã¨é…ã‚ï¼‰
+//    [SerializeField] private float buttonFadeSpeed = 4.0f;  // ãƒœã‚¿ãƒ³ã®ãƒ•ã‚§ãƒ¼ãƒ‰ï¼ˆã‚µãƒƒã¨é€Ÿã‚ï¼‰
 
-//    [Header("ƒ{ƒ^ƒ“‚Ì“o˜^iã‚©‚ç‡”Ô‚Éj")]
+//    [Header("ãƒœã‚¿ãƒ³ã®ç™»éŒ²ï¼ˆä¸Šã‹ã‚‰é †ç•ªã«ï¼‰")]
 //    [SerializeField] private Button startButton;
 //    [SerializeField] private Button settingButton;
 //    [SerializeField] private Button endButton;
 
-//    [Header("ƒQ[ƒ€I—¹‚ÌŠm”F‰æ–ÊiPanelj")]
+//    [Header("ã‚²ãƒ¼ãƒ çµ‚äº†ã®ç¢ºèªç”»é¢ï¼ˆPanelï¼‰")]
 //    [SerializeField] private GameObject confirmPanel;
 
-//    [Header("Šm”F‰æ–Ê‚Ìƒ{ƒ^ƒ“")]
+//    [Header("ç¢ºèªç”»é¢ã®ãƒœã‚¿ãƒ³")]
 //    [SerializeField] private Button yesButton;
 //    [SerializeField] private Button noButton;
 
 //    private enum TitleState
 //    {
-//        SceneFadingIn,    // 1. •‰æ–Ê‚ª‚¶‚í[‚Á‚Æ“§–¾‚É‚È‚èAƒV[ƒ“‘S‘Ì‚ªoŒ»’†
-//        WaitingForEnter,  // 2. ƒV[ƒ“‚ªo‚«‚Á‚ÄAEnter“ü—Í‚ğ‘Ò‚Á‚Ä‚¢‚éó‘Ô
-//        ButtonsFadingIn,  // 3. Enter‚ª‰Ÿ‚³‚ê‚ÄAƒ{ƒ^ƒ“‚ªƒtƒF[ƒhƒCƒ“’†
-//        ActiveMenu        // 4. ƒ{ƒ^ƒ“‚ào‚«‚Á‚ÄAƒƒjƒ…[‘€ì‚ª‚Å‚«‚éó‘Ô
+//        SceneFadingIn,    // 1. é»’ç”»é¢ãŒã˜ã‚ãƒ¼ã£ã¨é€æ˜ã«ãªã‚Šã€ã‚·ãƒ¼ãƒ³å…¨ä½“ãŒå‡ºç¾ä¸­
+//        WaitingForEnter,  // 2. ã‚·ãƒ¼ãƒ³ãŒå‡ºãã£ã¦ã€Enterå…¥åŠ›ã‚’å¾…ã£ã¦ã„ã‚‹çŠ¶æ…‹
+//        ButtonsFadingIn,  // 3. EnterãŒæŠ¼ã•ã‚Œã¦ã€ãƒœã‚¿ãƒ³ãŒãƒ•ã‚§ãƒ¼ãƒ‰ã‚¤ãƒ³ä¸­
+//        ActiveMenu        // 4. ãƒœã‚¿ãƒ³ã‚‚å‡ºãã£ã¦ã€ãƒ¡ãƒ‹ãƒ¥ãƒ¼æ“ä½œãŒã§ãã‚‹çŠ¶æ…‹
 //    }
 //    private TitleState currentState = TitleState.SceneFadingIn;
 
@@ -42,7 +42,7 @@
 //    {
 //        if (confirmPanel != null) confirmPanel.SetActive(false);
 
-//        // ƒ{ƒ^ƒ“‚ÍÅ‰‚ÍŠ®‘S‚É“§–¾‚É‚µ‚Ä‚¨‚­
+//        // ãƒœã‚¿ãƒ³ã¯æœ€åˆã¯å®Œå…¨ã«é€æ˜ã«ã—ã¦ãŠã
 //        if (buttonGroup != null)
 //        {
 //            buttonGroup.alpha = 0;
@@ -50,37 +50,37 @@
 //            buttonGroup.blocksRaycasts = false;
 //        }
 
-//        // ƒtƒF[ƒh‰æ‘œi•j‚ğŠmÀ‚É•\¦E—LŒø‰»‚µ‚Ä‚¨‚­
+//        // ãƒ•ã‚§ãƒ¼ãƒ‰ç”»åƒï¼ˆé»’ï¼‰ã‚’ç¢ºå®Ÿã«è¡¨ç¤ºãƒ»æœ‰åŠ¹åŒ–ã—ã¦ãŠã
 //        if (fadeImage != null)
 //        {
 //            fadeImage.gameObject.SetActive(true);
 //            Color c = fadeImage.color;
-//            c.a = 1.0f; // Š®‘S‚É^‚Á•
+//            c.a = 1.0f; // å®Œå…¨ã«çœŸã£é»’
 //            fadeImage.color = c;
 //        }
 //    }
 
 //    void Update()
 //    {
-//        // ƒL[ƒ{[ƒh‚ªÚ‘±‚³‚ê‚Ä‚¢‚È‚¢ê‡‚Íˆ—‚ğƒXƒLƒbƒvi”O‚Ì‚½‚ß‚ÌˆÀ‘Sôj
+//        // ã‚­ãƒ¼ãƒœãƒ¼ãƒ‰ãŒæ¥ç¶šã•ã‚Œã¦ã„ãªã„å ´åˆã¯å‡¦ç†ã‚’ã‚¹ã‚­ãƒƒãƒ—ï¼ˆå¿µã®ãŸã‚ã®å®‰å…¨ç­–ï¼‰
 //        if (Keyboard.current == null) return;
 
 //        switch (currentState)
 //        {
 //            // ==========================================
-//            // ƒXƒeƒbƒv1: •‰æ–Ê‚ğ“§–¾‚É‚µ‚Ä‚¢‚«AƒV[ƒ“‘S‘Ì‚ğo‚·
+//            // ã‚¹ãƒ†ãƒƒãƒ—1: é»’ç”»é¢ã‚’é€æ˜ã«ã—ã¦ã„ãã€ã‚·ãƒ¼ãƒ³å…¨ä½“ã‚’å‡ºã™
 //            // ==========================================
 //            case TitleState.SceneFadingIn:
 //                if (fadeImage != null)
 //                {
 //                    Color c = fadeImage.color;
-//                    c.a -= Time.deltaTime * sceneFadeInSpeed; // ƒAƒ‹ƒtƒ@’l‚ğŒ¸‚ç‚·i“§–¾‚É‚·‚éj
+//                    c.a -= Time.deltaTime * sceneFadeInSpeed; // ã‚¢ãƒ«ãƒ•ã‚¡å€¤ã‚’æ¸›ã‚‰ã™ï¼ˆé€æ˜ã«ã™ã‚‹ï¼‰
 
 //                    if (c.a <= 0.0f)
 //                    {
 //                        c.a = 0.0f;
-//                        fadeImage.gameObject.SetActive(false); // Š®‘S‚É“§–¾‚É‚È‚Á‚½‚ç×–‚‚È‚Ì‚Å”ñƒAƒNƒeƒBƒu‚É
-//                        currentState = TitleState.WaitingForEnter; // Enter‘Ò‚¿‚Ö
+//                        fadeImage.gameObject.SetActive(false); // å®Œå…¨ã«é€æ˜ã«ãªã£ãŸã‚‰é‚ªé­”ãªã®ã§éã‚¢ã‚¯ãƒ†ã‚£ãƒ–ã«
+//                        currentState = TitleState.WaitingForEnter; // Enterå¾…ã¡ã¸
 //                    }
 //                    fadeImage.color = c;
 //                }
@@ -91,10 +91,10 @@
 //                break;
 
 //            // ==========================================
-//            // ƒXƒeƒbƒv2: ƒ{ƒ^ƒ“‚È‚µi”wŒi‚Æƒ^ƒCƒgƒ‹‚Ì‚İj‚Ìó‘Ô‚ÅEnter‚ğ‘Ò‚Â
+//            // ã‚¹ãƒ†ãƒƒãƒ—2: ãƒœã‚¿ãƒ³ãªã—ï¼ˆèƒŒæ™¯ã¨ã‚¿ã‚¤ãƒˆãƒ«ã®ã¿ï¼‰ã®çŠ¶æ…‹ã§Enterã‚’å¾…ã¤
 //            // ==========================================
 //            case TitleState.WaitingForEnter:
-//                // 2. EnterƒL[‚Ü‚½‚ÍSpaceƒL[‚ª‰Ÿ‚³‚ê‚½‚©”»’è
+//                // 2. Enterã‚­ãƒ¼ã¾ãŸã¯Spaceã‚­ãƒ¼ãŒæŠ¼ã•ã‚ŒãŸã‹åˆ¤å®š
 //                if (Keyboard.current.enterKey.wasPressedThisFrame || Keyboard.current.spaceKey.wasPressedThisFrame)
 //                {
 //                    currentState = TitleState.ButtonsFadingIn;
@@ -102,7 +102,7 @@
 //                break;
 
 //            // ==========================================
-//            // ƒXƒeƒbƒv3: ƒ{ƒ^ƒ“‚ğƒTƒb‚ÆƒtƒF[ƒhƒCƒ“
+//            // ã‚¹ãƒ†ãƒƒãƒ—3: ãƒœã‚¿ãƒ³ã‚’ã‚µãƒƒã¨ãƒ•ã‚§ãƒ¼ãƒ‰ã‚¤ãƒ³
 //            // ==========================================
 //            case TitleState.ButtonsFadingIn:
 //                if (buttonGroup != null)
@@ -115,13 +115,13 @@
 //                        buttonGroup.blocksRaycasts = true;
 //                        currentState = TitleState.ActiveMenu;
 
-//                        SelectButton(); // Å‰‚Ìƒ{ƒ^ƒ“‚ğ‘I‘ğó‘Ô‚É
+//                        SelectButton(); // æœ€åˆã®ãƒœã‚¿ãƒ³ã‚’é¸æŠçŠ¶æ…‹ã«
 //                    }
 //                }
 //                break;
 
 //            // ==========================================
-//            // ƒXƒeƒbƒv4: ƒƒjƒ…[‘€ì
+//            // ã‚¹ãƒ†ãƒƒãƒ—4: ãƒ¡ãƒ‹ãƒ¥ãƒ¼æ“ä½œ
 //            // ==========================================
 //            case TitleState.ActiveMenu:
 //                HandleMenuInput();
@@ -135,19 +135,19 @@
 
 //        if (isInConfirmMenu)
 //        {
-//            // ¶–îˆó ‚Ü‚½‚Í AƒL[
+//            // å·¦çŸ¢å° ã¾ãŸã¯ Aã‚­ãƒ¼
 //            if (keyboard.leftArrowKey.wasPressedThisFrame || keyboard.aKey.wasPressedThisFrame)
 //            {
 //                selectedIndex = 0;
 //                SelectConfirmButton();
 //            }
-//            // ‰E–îˆó ‚Ü‚½‚Í DƒL[
+//            // å³çŸ¢å° ã¾ãŸã¯ Dã‚­ãƒ¼
 //            if (keyboard.rightArrowKey.wasPressedThisFrame || keyboard.dKey.wasPressedThisFrame)
 //            {
 //                selectedIndex = 1;
 //                SelectConfirmButton();
 //            }
-//            // Enter ‚Ü‚½‚Í SpaceƒL[
+//            // Enter ã¾ãŸã¯ Spaceã‚­ãƒ¼
 //            if (keyboard.enterKey.wasPressedThisFrame || keyboard.spaceKey.wasPressedThisFrame)
 //            {
 //                if (selectedIndex == 0) OnConfirmYes();
@@ -156,19 +156,19 @@
 //            return;
 //        }
 
-//        // ‰º–îˆó ‚Ü‚½‚Í SƒL[
+//        // ä¸‹çŸ¢å° ã¾ãŸã¯ Sã‚­ãƒ¼
 //        if (keyboard.downArrowKey.wasPressedThisFrame || keyboard.sKey.wasPressedThisFrame)
 //        {
 //            selectedIndex = (selectedIndex + 1) % 3;
 //            SelectButton();
 //        }
-//        // ã–îˆó ‚Ü‚½‚Í WƒL[
+//        // ä¸ŠçŸ¢å° ã¾ãŸã¯ Wã‚­ãƒ¼
 //        if (keyboard.upArrowKey.wasPressedThisFrame || keyboard.wKey.wasPressedThisFrame)
 //        {
 //            selectedIndex = (selectedIndex + 2) % 3;
 //            SelectButton();
 //        }
-//        // Enter ‚Ü‚½‚Í SpaceƒL[
+//        // Enter ã¾ãŸã¯ Spaceã‚­ãƒ¼
 //        if (keyboard.enterKey.wasPressedThisFrame || keyboard.spaceKey.wasPressedThisFrame)
 //        {
 //            if (selectedIndex == 0) OnStart();
@@ -191,7 +191,7 @@
 //    }
 
 //    void OnStart() { SceneManager.LoadScene("Stage1"); }
-//    void OnSetting() { Debug.Log("İ’è–¢À‘•"); }
+//    void OnSetting() { Debug.Log("è¨­å®šæœªå®Ÿè£…"); }
 
 //    void OnEnd()
 //    {
@@ -224,9 +224,9 @@
 //        }
 //    }
 //}
-//ª“®‚­
+//â†‘å‹•ã
 
-//«‰ü‘¢‚µ‚Ä‚¢‚¢‚æ‚ñ
+//â†“æ”¹é€ ã—ã¦ã„ã„ã‚ˆã‚“
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -234,24 +234,24 @@ using UnityEngine.InputSystem;
 
 public class TitleManager : MonoBehaviour
 {
-    [Header("‰æ–Ê‘S‘Ì‚ğ•¢‚¤ƒtƒF[ƒh—p‰æ‘œi•j")]
+    [Header("ç”»é¢å…¨ä½“ã‚’è¦†ã†ãƒ•ã‚§ãƒ¼ãƒ‰ç”¨ç”»åƒï¼ˆé»’ï¼‰")]
     [SerializeField] private Image fadeImage;
-    [Header("ƒtƒF[ƒh‚³‚¹‚éƒ{ƒ^ƒ“ƒOƒ‹[ƒv")]
+    [Header("ãƒ•ã‚§ãƒ¼ãƒ‰ã•ã›ã‚‹ãƒœã‚¿ãƒ³ã‚°ãƒ«ãƒ¼ãƒ—")]
     [SerializeField] private CanvasGroup buttonGroup;
 
-    [Header("ƒtƒF[ƒh‘¬“x‚Ìİ’è")]
+    [Header("ãƒ•ã‚§ãƒ¼ãƒ‰é€Ÿåº¦ã®è¨­å®š")]
     [SerializeField] private float sceneFadeInSpeed = 1.5f;
     [SerializeField] private float buttonFadeSpeed = 4.0f;
 
-    [Header("ƒ{ƒ^ƒ“‚Ì“o˜^iã‚©‚ç‡”Ô‚Éj")]
+    [Header("ãƒœã‚¿ãƒ³ã®ç™»éŒ²ï¼ˆä¸Šã‹ã‚‰é †ç•ªã«ï¼‰")]
     [SerializeField] private Button startButton;
     [SerializeField] private Button settingButton;
     [SerializeField] private Button endButton;
 
-    [Header("ƒQ[ƒ€I—¹‚ÌŠm”F‰æ–ÊiPanelj")]
+    [Header("ã‚²ãƒ¼ãƒ çµ‚äº†ã®ç¢ºèªç”»é¢ï¼ˆPanelï¼‰")]
     [SerializeField] private GameObject confirmPanel;
 
-    [Header("Šm”F‰æ–Ê‚Ìƒ{ƒ^ƒ“")]
+    [Header("ç¢ºèªç”»é¢ã®ãƒœã‚¿ãƒ³")]
     [SerializeField] private Button yesButton;
     [SerializeField] private Button noButton;
 
@@ -267,25 +267,25 @@ public class TitleManager : MonoBehaviour
     private int selectedIndex = 0;
     private bool isInConfirmMenu = false;
 
-    // V‚µ‚¢Input System‚ÌƒAƒNƒVƒ‡ƒ“ƒNƒ‰ƒX
+    // æ–°ã—ã„Input Systemã®ã‚¢ã‚¯ã‚·ãƒ§ãƒ³ã‚¯ãƒ©ã‚¹
     private GameInputActions inputActions;
-    private bool isDirectionPressed = false; // ƒXƒeƒBƒbƒN‚Ì˜A‘Å–h~—pƒtƒ‰ƒO
+    private bool isDirectionPressed = false; // ã‚¹ãƒ†ã‚£ãƒƒã‚¯ã®é€£æ‰“é˜²æ­¢ç”¨ãƒ•ãƒ©ã‚°
 
     void Awake()
     {
-        // ƒCƒ“ƒXƒ^ƒ“ƒX‚Ì¶¬
+        // ã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚¹ã®ç”Ÿæˆ
         inputActions = new GameInputActions();
     }
 
     void OnEnable()
     {
-        // ƒAƒNƒVƒ‡ƒ“ƒ}ƒbƒvuTitlev‚ğ—LŒø‰»
+        // ã‚¢ã‚¯ã‚·ãƒ§ãƒ³ãƒãƒƒãƒ—ã€ŒTitleã€ã‚’æœ‰åŠ¹åŒ–
         inputActions.Title.Enable();
     }
 
     void OnDisable()
     {
-        // –³Œø‰»
+        // ç„¡åŠ¹åŒ–
         inputActions.Title.Disable();
     }
 
@@ -334,7 +334,7 @@ public class TitleManager : MonoBehaviour
                 break;
 
             case TitleState.WaitingForEnter:
-                // SubmitƒAƒNƒVƒ‡ƒ“iEnterƒL[‚âƒQ[ƒ€ƒpƒbƒh‚Ì“ìƒ{ƒ^ƒ“j‚ª‰Ÿ‚³‚ê‚½‚©”»’è
+                // Submitã‚¢ã‚¯ã‚·ãƒ§ãƒ³ï¼ˆEnterã‚­ãƒ¼ã‚„ã‚²ãƒ¼ãƒ ãƒ‘ãƒƒãƒ‰ã®å—ãƒœã‚¿ãƒ³ï¼‰ãŒæŠ¼ã•ã‚ŒãŸã‹åˆ¤å®š
                 if (inputActions.Title.Submit.triggered)
                 {
                     currentState = TitleState.ButtonsFadingIn;
@@ -365,7 +365,6 @@ public class TitleManager : MonoBehaviour
 
     void HandleMenuInput()
     {
-        // 1. ˆÚ“®“ü—ÍiMoveƒAƒNƒVƒ‡ƒ“j‚Ìæ“¾ (Vector2)
         Vector2 moveInput = inputActions.Title.Move.ReadValue<Vector2>();
 
         int verticalInput = 0;
@@ -375,10 +374,10 @@ public class TitleManager : MonoBehaviour
         {
             if (!isDirectionPressed)
             {
-                if (moveInput.y > 0.5f) verticalInput = 1;   // ã
-                if (moveInput.y < -0.5f) verticalInput = -1; // ‰º
-                if (moveInput.x > 0.5f) horizontalInput = 1; // ‰E
-                if (moveInput.x < -0.5f) horizontalInput = -1;// ¶
+                if (moveInput.y > 0.5f) verticalInput = 1;   // ä¸Š
+                if (moveInput.y < -0.5f) verticalInput = -1; // ä¸‹
+                if (moveInput.x > 0.5f) horizontalInput = 1; // å³
+                if (moveInput.x < -0.5f) horizontalInput = -1;// å·¦
                 isDirectionPressed = true;
             }
         }
@@ -387,145 +386,25 @@ public class TitleManager : MonoBehaviour
             isDirectionPressed = false;
         }
 
-        // 2. Œˆ’èEƒLƒƒƒ“ƒZƒ‹“ü—Í‚Ìæ“¾išƒL[ƒ{[ƒh‚ÌEnter/Space‚à‚±‚±‚ÉŠÜ‚Ü‚ê‚Ü‚·j
-        bool isSubmitTriggered = inputActions.Title.Submit.triggered;
+        // ã‚­ãƒ£ãƒ³ã‚»ãƒ«ï¼ˆæˆ»ã‚‹ãƒœã‚¿ãƒ³ï¼‰ã®åˆ¤å®šã ã‘ã¯æ®‹ã™
         bool isCancelTriggered = inputActions.Title.Cancel.triggered;
 
-        // --- ƒƒjƒ…[ˆ— ---
         if (isInConfirmMenu)
         {
-            // ƒLƒƒƒ“ƒZƒ‹
             if (isCancelTriggered)
             {
                 OnConfirmNo();
                 return;
             }
 
-            // ¶‰E“ü—Í
-            if (horizontalInput < 0)
-            {
-                selectedIndex = 0; // Yes
-                SelectConfirmButton();
-            }
-            if (horizontalInput > 0)
-            {
-                selectedIndex = 1; // No
-                SelectConfirmButton();
-            }
+            if (horizontalInput < 0) { selectedIndex = 0; SelectConfirmButton(); }
+            if (horizontalInput > 0) { selectedIndex = 1; SelectConfirmButton(); }
 
-            // Œˆ’èiš‚±‚±‚ğ‘‚«Š·‚¦‚Ü‚·Ij
-            if (isSubmitTriggered)
-            {
-                // y–\”­ƒK[ƒhIzƒL[ƒ{[ƒh‚ÌEnter‚âSpace‚ª‚Ü‚¾u‰Ÿ‚µ‚Á‚Ï‚È‚µvó‘Ô‚È‚çA
-                // ‘O‚Ì‰æ–Ê‚©‚ç‚Ì˜A‘Åi2dŒŸoj‚Æ‚İ‚È‚µ‚ÄA‚±‚ÌƒtƒŒ[ƒ€‚Ìˆ—‚ğ–³‹‚·‚éI
-                if (Keyboard.current != null &&
-                   (Keyboard.current.enterKey.isPressed || Keyboard.current.spaceKey.isPressed))
-                {
-                    return;
-                }
-
-                if (selectedIndex == 0) OnConfirmYes();
-                else OnConfirmNo();
-            }
             return;
         }
 
-        // ’Êíƒƒjƒ…[‚Ìã‰º“ü—Í
-        if (verticalInput < 0) // ‰º
-        {
-            selectedIndex = (selectedIndex + 1) % 3;
-            SelectButton();
-        }
-        if (verticalInput > 0) // ã
-        {
-            selectedIndex = (selectedIndex + 2) % 3;
-            SelectButton();
-        }
-
-        // Œˆ’èiš‚±‚±‚¾‚¯‚Å”»’è‚ğŠ®Œ‹‚³‚¹‚éIj
-        if (isSubmitTriggered)
-        {
-            if (selectedIndex == 0) OnStart();
-            else if (selectedIndex == 1) OnSetting();
-            else if (selectedIndex == 2) OnEnd();
-        }
-        //// 1. ˆÚ“®“ü—ÍiMoveƒAƒNƒVƒ‡ƒ“j‚Ìæ“¾ (Vector2)
-        //Vector2 moveInput = inputActions.Title.Move.ReadValue<Vector2>();
-
-        //// ƒXƒeƒBƒbƒN‚â\šƒL[‚Ìu“|‚µn‚ßv‚¾‚¯‚ğŒŸ’m‚·‚éŠÈˆÕƒGƒ~ƒ…ƒŒ[ƒg
-        //int verticalInput = 0;
-        //int horizontalInput = 0;
-
-        //if (moveInput.magnitude > 0.5f)
-        //{
-        //    if (!isDirectionPressed)
-        //    {
-        //        if (moveInput.y > 0.5f) verticalInput = 1;   // ã
-        //        if (moveInput.y < -0.5f) verticalInput = -1; // ‰º
-        //        if (moveInput.x > 0.5f) horizontalInput = 1; // ‰E
-        //        if (moveInput.x < -0.5f) horizontalInput = -1;// ¶
-        //        isDirectionPressed = true;
-        //    }
-        //}
-        //else
-        //{
-        //    isDirectionPressed = false;
-        //}
-
-        //// 2. Œˆ’èEƒLƒƒƒ“ƒZƒ‹“ü—Í‚Ìæ“¾
-        //bool isSubmitTriggered = inputActions.Title.Submit.triggered;
-        //bool isCancelTriggered = inputActions.Title.Cancel.triggered;
-
-        //// --- ƒƒjƒ…[ˆ— ---
-        //if (isInConfirmMenu)
-        //{
-        //    // ƒLƒƒƒ“ƒZƒ‹i“Œƒ{ƒ^ƒ““™j‚Å–ß‚é
-        //    if (isCancelTriggered)
-        //    {
-        //        OnConfirmNo();
-        //        return;
-        //    }
-
-        //    // ¶‰E“ü—Í
-        //    if (horizontalInput < 0)
-        //    {
-        //        selectedIndex = 0; // Yes
-        //        SelectConfirmButton();
-        //    }
-        //    if (horizontalInput > 0)
-        //    {
-        //        selectedIndex = 1; // No
-        //        SelectConfirmButton();
-        //    }
-
-        //    // Œˆ’è
-        //    if (isSubmitTriggered)
-        //    {
-        //        if (selectedIndex == 0) OnConfirmYes();
-        //        else OnConfirmNo();
-        //    }
-        //    return;
-        //}
-
-        //// ’Êíƒƒjƒ…[‚Ìã‰º“ü—Í
-        //if (verticalInput < 0) // ‰º
-        //{
-        //    selectedIndex = (selectedIndex + 1) % 3;
-        //    SelectButton();
-        //}
-        //if (verticalInput > 0) // ã
-        //{
-        //    selectedIndex = (selectedIndex + 2) % 3;
-        //    SelectButton();
-        //}
-
-        //// Œˆ’è
-        //if (isSubmitTriggered)
-        //{
-        //    if (selectedIndex == 0) OnStart();
-        //    else if (selectedIndex == 1) OnSetting();
-        //    else if (selectedIndex == 2) OnEnd();
-        //}
+        if (verticalInput < 0) { selectedIndex = (selectedIndex + 1) % 3; SelectButton(); }
+        if (verticalInput > 0) { selectedIndex = (selectedIndex + 2) % 3; SelectButton(); }
     }
 
     void SelectButton()
@@ -541,10 +420,10 @@ public class TitleManager : MonoBehaviour
         if (noButton != null && selectedIndex == 1) noButton.Select();
     }
 
-    void OnStart() { SceneManager.LoadScene("Stage1"); }
-    void OnSetting() { Debug.Log("İ’è–¢À‘•"); }
+    public void OnStart() { SceneManager.LoadScene("Stage1"); }
+    public void OnSetting() { Debug.Log("è¨­å®šæœªå®Ÿè£…"); }
 
-    void OnEnd()
+    public void OnEnd()
     {
         if (confirmPanel != null)
         {
@@ -555,7 +434,7 @@ public class TitleManager : MonoBehaviour
         }
     }
 
-    void OnConfirmYes()
+    public void OnConfirmYes()
     {
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;
@@ -564,7 +443,7 @@ public class TitleManager : MonoBehaviour
 #endif
     }
 
-    void OnConfirmNo()
+    public void OnConfirmNo()
     {
         if (confirmPanel != null)
         {
