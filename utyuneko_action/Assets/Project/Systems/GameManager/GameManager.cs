@@ -17,8 +17,6 @@ public class GameManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject); // シーン切り替えでも消さない
-
             // セーブファイルの保存先パス（PCやスマホの安全な自動生成フォルダ）
             saveFilePath = Path.Combine(Application.persistentDataPath, "savedata.json");
 
