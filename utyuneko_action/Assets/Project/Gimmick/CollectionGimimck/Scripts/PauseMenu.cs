@@ -18,6 +18,9 @@ public class PauseMenu : MonoBehaviour
     private bool isPaused = false;
     private Vector3 playerInitialPosition;
     private GameObject playerObj;
+    private PlayerController playerController;
+
+    GameInputActions ac;
 
     void Start()
     {
@@ -30,13 +33,14 @@ public class PauseMenu : MonoBehaviour
         if (playerObj != null)
         {
             playerInitialPosition = playerObj.transform.position;
+            playerController = playerObj.GetComponent<PlayerController>();
         }
     }
 
     void Update()
     {
         // Escキー または Pキーでポーズの開閉切り替え
-        if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.P))
+        if (Input.GetKeyDown(KeyCode.Escape))
         {
             if (isPaused) ResumeGame();
             else PauseGame();
@@ -51,6 +55,12 @@ public class PauseMenu : MonoBehaviour
         pauseMenuPanel.SetActive(true);
         Time.timeScale = 0f; // ★ゲーム内の時間を完全に停止させる
 
+        if (playerController != null && playerController.inputActions != null)
+        {
+            playerController.inputActions.Player.Disable();
+            Debug.Log("【ポーズ】プレイヤーの入力を無効化しました。");
+        }
+
         // 開いた瞬間の最新の取得数をDataManagerから吸い上げて表示
         if (DataManager.Instance != null)
         {
@@ -64,10 +74,16 @@ public class PauseMenu : MonoBehaviour
 
     public void ResumeGame()
     {
-        isPaused = true; // フラグ更新
         pauseMenuPanel.SetActive(false);
         Time.timeScale = 1f; // ★ゲーム内の時間を動かす
-        isPaused = false;
+        isPaused = false;    // フラグを戻す（trueにしていたバグもついでに修正）
+
+        // ★【追加】ゲーム再開時にプレイヤーの入力を再び有効化する
+        if (playerController != null && playerController.inputActions != null)
+        {
+            playerController.inputActions.Player.Enable();
+            Debug.Log("【再開】プレイヤーの入力を有効化しました。");
+        }
     }
 
     // ─── ボタン用関数 ───

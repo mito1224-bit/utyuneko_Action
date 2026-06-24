@@ -2,53 +2,65 @@ using UnityEngine;
 
 public class CameraFollowWithZoom : MonoBehaviour
 {
-    [Header("’Ç]‘ÎÛi‹ó—“‚È‚ç‹N“®‚ÉPlayerƒ^ƒO‚©‚ç©“®æ“¾‚µ‚Ü‚·j")]
+    [Header("è¿½å¾“å¯¾è±¡ï¼ˆç©ºæ¬„ãªã‚‰èµ·å‹•æ™‚ã«Playerã‚¿ã‚°ã‹ã‚‰è‡ªå‹•å–å¾—ã—ã¾ã™ï¼‰")]
     public Transform target;
 
-    [Header("Šî–{‚ÌˆÊ’uƒIƒtƒZƒbƒg")]
+    [Header("åŸºæœ¬ã®ä½ç½®ã‚ªãƒ•ã‚»ãƒƒãƒˆ")]
     public Vector3 offset = new Vector3(0, 5, -10);
 
-    [Header("ˆÊ’u’Ç]‚Ì‚È‚ß‚ç‚©‚³")]
+    [Header("ä½ç½®è¿½å¾“ã®ãªã‚ã‚‰ã‹ã•")]
     public float positionSmoothSpeed = 10f;
 
-    [Header("Z²ƒY[ƒ€‚Ì’²®i‚‚³‚É‰‚¶‚½ˆø‚«—Êj")]
+    // --- è¿½åŠ ï¼šé€²è¡Œæ–¹å‘ã¸ã®ã‚«ãƒ¡ãƒ©å…ˆè¡Œè¡¨ç¤ºè¨­å®š ---
+    [Header("â˜…é€²è¡Œæ–¹å‘ã¸ã®å…ˆè¡Œè¡¨ç¤ºï¼ˆLook Aheadï¼‰")]
+    [Tooltip("ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®é€Ÿåº¦ã«ã©ã‚Œãã‚‰ã„ã‚«ãƒ¡ãƒ©ã‚’å…ˆè¡Œã•ã›ã‚‹ã‹")]
+    public float lookAheadFactor = 0.5f;
+    [Tooltip("å…ˆè¡Œè¡¨ç¤ºã®æœ€å¤§è·é›¢")]
+    public Vector2 maxLookAhead = new Vector2(3f, 2f);
+    [Tooltip("å…ˆè¡Œè¡¨ç¤ºãŒåˆ‡ã‚Šæ›¿ã‚ã‚‹ï¼ˆæˆ»ã‚‹ï¼‰ã¨ãã®ãªã‚ã‚‰ã‹ã•")]
+    public float lookAheadSmoothSpeed = 5f;
+    // ----------------------------------------
+
+    [Header("Zè»¸ã‚ºãƒ¼ãƒ ã®èª¿æ•´ï¼ˆé«˜ã•ã«å¿œã˜ãŸå¼•ãé‡ï¼‰")]
     public float heightThreshold = 3f;
     public float minZOffset = -10f;
     public float maxZOffset = -20f;
     public float zoomSensitivity = 2f;
     public float zoomSmoothSpeed = 5f;
 
-    [Header("ƒoƒEƒ“ƒhŒyŒ¸—p")]
+    [Header("ãƒã‚¦ãƒ³ãƒ‰è»½æ¸›ç”¨")]
     public float heightFilterSpeed = 2f;
 
-    [Header("2D’n–Ê‚Ì”»’èİ’è")]
+    [Header("2Dåœ°é¢ã®åˆ¤å®šè¨­å®š")]
     public LayerMask groundLayer2D = ~0;
 
-    [Header("ƒJƒƒ‰‚ÌŠ®‘SŒÅ’èƒ‚[ƒh")]
+    [Header("ã‚«ãƒ¡ãƒ©ã®å®Œå…¨å›ºå®šãƒ¢ãƒ¼ãƒ‰")]
     public bool isLocked = false;
     public Vector3 lockedPosition;
     private float lockedZOffset;
 
-    [Header("šƒJƒƒ‰‘¤‚©‚ç‚ÌƒuƒŒEƒKƒ^‚Â‚«‘Îô")]
-    [Tooltip("ON‚É‚·‚é‚ÆA‹N“®‚ÉƒvƒŒƒCƒ„[‚ÌRigidbody2D‚Ì•âŠÔ(Interpolate)‚ğƒJƒƒ‰‘¤‚©‚ç‹­§“I‚É—LŒø‰»‚µ‚ÄƒuƒŒ‚ğ~‚ß‚Ü‚·B")]
+    [Header("â˜…ã‚«ãƒ¡ãƒ©å´ã‹ã‚‰ã®ãƒ–ãƒ¬ãƒ»ã‚¬ã‚¿ã¤ãå¯¾ç­–")]
+    [Tooltip("ONã«ã™ã‚‹ã¨ã€èµ·å‹•æ™‚ã«ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®Rigidbody2Dã®è£œé–“(Interpolate)ã‚’ã‚«ãƒ¡ãƒ©å´ã‹ã‚‰å¼·åˆ¶çš„ã«æœ‰åŠ¹åŒ–ã—ã¦ãƒ–ãƒ¬ã‚’æ­¢ã‚ã¾ã™ã€‚")]
     public bool autoEnablePlayerInterpolate = true;
 
-    [Tooltip("ON‚É‚·‚é‚ÆAƒJƒƒ‰‚ÌXV‚ğFixedUpdate(•¨—“¯Šú)‚Ås‚¢‚Ü‚·Bƒo[ƒXƒg‚ÌƒuƒŒ‚ª“‚¢ê‡‚Íƒ`ƒFƒbƒN‚ğ“ü‚ê‚Ä‚­‚¾‚³‚¢B")]
+    [Tooltip("ONã«ã™ã‚‹ã¨ã€ã‚«ãƒ¡ãƒ©ã®æ›´æ–°ã‚’FixedUpdate(ç‰©ç†åŒæœŸ)ã§è¡Œã„ã¾ã™ã€‚ãƒãƒ¼ã‚¹ãƒˆæ™‚ã®ãƒ–ãƒ¬ãŒé…·ã„å ´åˆã¯ãƒã‚§ãƒƒã‚¯ã‚’å…¥ã‚Œã¦ãã ã•ã„ã€‚")]
     public bool updateInFixedUpdate = false;
 
-    [Header("?? ƒfƒoƒbƒOİ’èiŒ©‚¦‚È‚­‚³‚¹‚éƒgƒŠƒK[j")]
-    [Tooltip("ON‚É‚·‚é‚ÆAƒQ[ƒ€‰æ–Ê‚Ì¶ã‚ÉŒ»İ‚ÌƒJƒƒ‰‚ÌZÀ•WiƒY[ƒ€ó‘Ôj‚ğƒŠƒAƒ‹ƒ^ƒCƒ€•\¦‚µ‚Ü‚·B")]
+    [Header("?? ãƒ‡ãƒãƒƒã‚°è¨­å®šï¼ˆè¦‹ãˆãªãã•ã›ã‚‹ãƒˆãƒªã‚¬ãƒ¼ï¼‰")]
+    [Tooltip("ONã«ã™ã‚‹ã¨ã€ã‚²ãƒ¼ãƒ ç”»é¢ã®å·¦ä¸Šã«ç¾åœ¨ã®ã‚«ãƒ¡ãƒ©ã®Zåº§æ¨™ï¼ˆã‚ºãƒ¼ãƒ çŠ¶æ…‹ï¼‰ã‚’ãƒªã‚¢ãƒ«ã‚¿ã‚¤ãƒ è¡¨ç¤ºã—ã¾ã™ã€‚")]
     public bool showZDebugText = true;
 
     private float filteredFloatingHeight;
     private float currentDynamicZ;
     private Rigidbody2D targetRb2D;
 
+    // è¿½åŠ ï¼šç¾åœ¨ã®å…ˆè¡Œé‡ã‚’ç®¡ç†ã™ã‚‹å¤‰æ•°
+    private Vector2 currentLookAhead;
+
     void Start()
     {
         currentDynamicZ = offset.z;
 
-        // yC³zƒCƒ“ƒXƒyƒNƒ^[‚ª‹ó—“‚Ìê‡APlayerƒ^ƒO‚©‚ç©“®æ“¾
         if (target == null)
         {
             GameObject playerObj = GameObject.FindWithTag("Player");
@@ -58,19 +70,18 @@ public class CameraFollowWithZoom : MonoBehaviour
             }
             else
             {
-                Debug.LogError("[CameraFollowWithZoom] 'Player' ƒ^ƒO‚Ì‚Â‚¢‚½ƒIƒuƒWƒFƒNƒg‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñBƒvƒŒƒCƒ„[‚Ìƒ^ƒO‚ğŠm”F‚µ‚Ä‚­‚¾‚³‚¢B");
+                Debug.LogError("[CameraFollowWithZoom] 'Player' ã‚¿ã‚°ã®ã¤ã„ãŸã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆãŒè¦‹ã¤ã‹ã‚Šã¾ã›ã‚“ã€‚ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ã‚¿ã‚°ã‚’ç¢ºèªã—ã¦ãã ã•ã„ã€‚");
             }
         }
 
-        // ƒ^[ƒQƒbƒg‚ªŒ©‚Â‚©‚Á‚½ê‡‚Ì‰Šú‰»ˆ—
         if (target != null)
         {
-            if (autoEnablePlayerInterpolate)
+            // é€²è¡Œæ–¹å‘ã‚’å–å¾—ã™ã‚‹ãŸã‚ã€å¸¸ã«Rigidbody2Dã®å–å¾—ã‚’è©¦ã¿ã‚‹ã‚ˆã†ã«å¤‰æ›´
+            target.TryGetComponent<Rigidbody2D>(out targetRb2D);
+
+            if (autoEnablePlayerInterpolate && targetRb2D != null)
             {
-                if (target.TryGetComponent<Rigidbody2D>(out targetRb2D))
-                {
-                    targetRb2D.interpolation = RigidbodyInterpolation2D.Interpolate;
-                }
+                targetRb2D.interpolation = RigidbodyInterpolation2D.Interpolate;
             }
 
             Vector3 startPos = target.position + offset;
@@ -100,7 +111,7 @@ public class CameraFollowWithZoom : MonoBehaviour
         if (target == null) return;
 
         // --------------------------------------------------
-        // 1. ’Êí‚Ì‚İ“®‚­F’n–Ê‚©‚ç‚Ì‚‚³‚É‰‚¶‚½©“®ZƒY[ƒ€ŒvZ
+        // 1. é€šå¸¸æ™‚ã®ã¿å‹•ãï¼šåœ°é¢ã‹ã‚‰ã®é«˜ã•ã«å¿œã˜ãŸè‡ªå‹•Zã‚ºãƒ¼ãƒ è¨ˆç®—
         // --------------------------------------------------
         float targetZOffset = offset.z;
 
@@ -132,7 +143,26 @@ public class CameraFollowWithZoom : MonoBehaviour
         currentDynamicZ = Mathf.Lerp(currentDynamicZ, targetZOffset, zoomSmoothSpeed * deltaTime);
 
         // --------------------------------------------------
-        // 2. ÅI“I‚ÈƒJƒƒ‰ˆÊ’u‚ÌŒvZ‚ÆˆÚ“®
+        // ã€è¿½åŠ ã€‘é€²è¡Œæ–¹å‘ã¸ã®å…ˆè¡Œè¡¨ç¤ºï¼ˆLook Aheadï¼‰ã®è¨ˆç®—
+        // --------------------------------------------------
+        Vector2 targetLookAhead = Vector2.zero;
+
+        // ãƒ­ãƒƒã‚¯ä¸­ã§ã¯ãªãã€ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã«Rigidbody2DãŒã¤ã„ã¦ã„ã‚‹å ´åˆã®ã¿è¨ˆç®—
+        if (!isLocked && targetRb2D != null)
+        {
+            // é€Ÿåº¦ã«å¿œã˜ã¦ãšã‚‰ã™é‡ã‚’æ±ºå®šï¼ˆUnityã®ãƒãƒ¼ã‚¸ãƒ§ãƒ³ã«ã‚ˆã£ã¦ã¯ .linearVelocity ã®å ´åˆãŒã‚ã‚Šã¾ã™ï¼‰
+            targetLookAhead = targetRb2D.linearVelocity * lookAheadFactor;
+
+            // ãšã‚‰ã™é‡ãŒè¨­å®šã—ãŸæœ€å¤§å€¤ã‚’è¶…ãˆãªã„ã‚ˆã†ã«åˆ¶é™
+            targetLookAhead.x = Mathf.Clamp(targetLookAhead.x, -maxLookAhead.x, maxLookAhead.x);
+            targetLookAhead.y = Mathf.Clamp(targetLookAhead.y, -maxLookAhead.y, maxLookAhead.y);
+        }
+
+        // å…ˆè¡Œé‡ã‚’ãªã‚ã‚‰ã‹ã«å¤‰åŒ–ã•ã›ã‚‹
+        currentLookAhead = Vector2.Lerp(currentLookAhead, targetLookAhead, lookAheadSmoothSpeed * deltaTime);
+
+        // --------------------------------------------------
+        // 2. æœ€çµ‚çš„ãªã‚«ãƒ¡ãƒ©ä½ç½®ã®è¨ˆç®—ã¨ç§»å‹•
         // --------------------------------------------------
         Vector3 targetPosition;
 
@@ -142,7 +172,8 @@ public class CameraFollowWithZoom : MonoBehaviour
         }
         else
         {
-            targetPosition = target.position + offset;
+            // åŸºæœ¬ä½ç½®ã«ã€è¨ˆç®—ã—ãŸå…ˆè¡Œé‡ï¼ˆLook Aheadï¼‰ã‚’è¶³ã—ç®—ã™ã‚‹
+            targetPosition = target.position + offset + new Vector3(currentLookAhead.x, currentLookAhead.y, 0f);
             targetPosition.z = currentDynamicZ;
         }
 
@@ -166,7 +197,7 @@ public class CameraFollowWithZoom : MonoBehaviour
         style.padding = new RectOffset(10, 10, 5, 5);
 
         string status = isLocked ? "<color=red>LOCKED</color>" : "NORMAL";
-        string debugMessage = $"[Camera Z] Current: {currentDynamicZ:F2}  (Limit: {maxZOffset} ` {minZOffset})  [{status}]";
+        string debugMessage = $"[Camera Z] Current: {currentDynamicZ:F2}  (Limit: {maxZOffset} ï½ {minZOffset})  [{status}]";
 
         GUILayout.BeginArea(new Rect(10, 10, 600, 40));
         GUILayout.Label(debugMessage, style);
@@ -188,42 +219,42 @@ public class CameraFollowWithZoom : MonoBehaviour
 
 //public class CameraFollowWithZoom : MonoBehaviour
 //{
-//    [Header("’Ç]‘ÎÛ")]
+//    [Header("è¿½å¾“å¯¾è±¡ï¼ˆç©ºæ¬„ãªã‚‰èµ·å‹•æ™‚ã«Playerã‚¿ã‚°ã‹ã‚‰è‡ªå‹•å–å¾—ã—ã¾ã™ï¼‰")]
 //    public Transform target;
 
-//    [Header("Šî–{‚ÌˆÊ’uƒIƒtƒZƒbƒg")]
+//    [Header("åŸºæœ¬ã®ä½ç½®ã‚ªãƒ•ã‚»ãƒƒãƒˆ")]
 //    public Vector3 offset = new Vector3(0, 5, -10);
 
-//    [Header("ˆÊ’u’Ç]‚Ì‚È‚ß‚ç‚©‚³")]
+//    [Header("ä½ç½®è¿½å¾“ã®ãªã‚ã‚‰ã‹ã•")]
 //    public float positionSmoothSpeed = 10f;
 
-//    [Header("Z²ƒY[ƒ€‚Ì’²®i‚‚³‚É‰‚¶‚½ˆø‚«—Êj")]
+//    [Header("Zè»¸ã‚ºãƒ¼ãƒ ã®èª¿æ•´ï¼ˆé«˜ã•ã«å¿œã˜ãŸå¼•ãé‡ï¼‰")]
 //    public float heightThreshold = 3f;
 //    public float minZOffset = -10f;
 //    public float maxZOffset = -20f;
 //    public float zoomSensitivity = 2f;
 //    public float zoomSmoothSpeed = 5f;
 
-//    [Header("ƒoƒEƒ“ƒhŒyŒ¸—p")]
+//    [Header("ãƒã‚¦ãƒ³ãƒ‰è»½æ¸›ç”¨")]
 //    public float heightFilterSpeed = 2f;
 
-//    [Header("2D’n–Ê‚Ì”»’èİ’è")]
+//    [Header("2Dåœ°é¢ã®åˆ¤å®šè¨­å®š")]
 //    public LayerMask groundLayer2D = ~0;
 
-//    [Header("ƒJƒƒ‰‚ÌŠ®‘SŒÅ’èƒ‚[ƒh")]
+//    [Header("ã‚«ãƒ¡ãƒ©ã®å®Œå…¨å›ºå®šãƒ¢ãƒ¼ãƒ‰")]
 //    public bool isLocked = false;
 //    public Vector3 lockedPosition;
 //    private float lockedZOffset;
 
-//    [Header("šƒJƒƒ‰‘¤‚©‚ç‚ÌƒuƒŒEƒKƒ^‚Â‚«‘Îô")]
-//    [Tooltip("ON‚É‚·‚é‚ÆA‹N“®‚ÉƒvƒŒƒCƒ„[‚ÌRigidbody2D‚Ì•âŠÔ(Interpolate)‚ğƒJƒƒ‰‘¤‚©‚ç‹­§“I‚É—LŒø‰»‚µ‚ÄƒuƒŒ‚ğ~‚ß‚Ü‚·B")]
+//    [Header("â˜…ã‚«ãƒ¡ãƒ©å´ã‹ã‚‰ã®ãƒ–ãƒ¬ãƒ»ã‚¬ã‚¿ã¤ãå¯¾ç­–")]
+//    [Tooltip("ONã«ã™ã‚‹ã¨ã€èµ·å‹•æ™‚ã«ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®Rigidbody2Dã®è£œé–“(Interpolate)ã‚’ã‚«ãƒ¡ãƒ©å´ã‹ã‚‰å¼·åˆ¶çš„ã«æœ‰åŠ¹åŒ–ã—ã¦ãƒ–ãƒ¬ã‚’æ­¢ã‚ã¾ã™ã€‚")]
 //    public bool autoEnablePlayerInterpolate = true;
 
-//    [Tooltip("ON‚É‚·‚é‚ÆAƒJƒƒ‰‚ÌXV‚ğFixedUpdate(•¨—“¯Šú)‚Ås‚¢‚Ü‚·Bƒo[ƒXƒg‚ÌƒuƒŒ‚ª“‚¢ê‡‚Íƒ`ƒFƒbƒN‚ğ“ü‚ê‚Ä‚­‚¾‚³‚¢B")]
+//    [Tooltip("ONã«ã™ã‚‹ã¨ã€ã‚«ãƒ¡ãƒ©ã®æ›´æ–°ã‚’FixedUpdate(ç‰©ç†åŒæœŸ)ã§è¡Œã„ã¾ã™ã€‚ãƒãƒ¼ã‚¹ãƒˆæ™‚ã®ãƒ–ãƒ¬ãŒé…·ã„å ´åˆã¯ãƒã‚§ãƒƒã‚¯ã‚’å…¥ã‚Œã¦ãã ã•ã„ã€‚")]
 //    public bool updateInFixedUpdate = false;
 
-//    [Header("?? ƒfƒoƒbƒOİ’èiŒ©‚¦‚È‚­‚³‚¹‚éƒgƒŠƒK[j")]
-//    [Tooltip("ON‚É‚·‚é‚ÆAƒQ[ƒ€‰æ–Ê‚Ì¶ã‚ÉŒ»İ‚ÌƒJƒƒ‰‚ÌZÀ•WiƒY[ƒ€ó‘Ôj‚ğƒŠƒAƒ‹ƒ^ƒCƒ€•\¦‚µ‚Ü‚·B")]
+//    [Header("?? ãƒ‡ãƒãƒƒã‚°è¨­å®šï¼ˆè¦‹ãˆãªãã•ã›ã‚‹ãƒˆãƒªã‚¬ãƒ¼ï¼‰")]
+//    [Tooltip("ONã«ã™ã‚‹ã¨ã€ã‚²ãƒ¼ãƒ ç”»é¢ã®å·¦ä¸Šã«ç¾åœ¨ã®ã‚«ãƒ¡ãƒ©ã®Zåº§æ¨™ï¼ˆã‚ºãƒ¼ãƒ çŠ¶æ…‹ï¼‰ã‚’ãƒªã‚¢ãƒ«ã‚¿ã‚¤ãƒ è¡¨ç¤ºã—ã¾ã™ã€‚")]
 //    public bool showZDebugText = true;
 
 //    private float filteredFloatingHeight;
@@ -234,6 +265,21 @@ public class CameraFollowWithZoom : MonoBehaviour
 //    {
 //        currentDynamicZ = offset.z;
 
+//        // ã€ä¿®æ­£ã€‘ã‚¤ãƒ³ã‚¹ãƒšã‚¯ã‚¿ãƒ¼ãŒç©ºæ¬„ã®å ´åˆã€Playerã‚¿ã‚°ã‹ã‚‰è‡ªå‹•å–å¾—
+//        if (target == null)
+//        {
+//            GameObject playerObj = GameObject.FindWithTag("Player");
+//            if (playerObj != null)
+//            {
+//                target = playerObj.transform;
+//            }
+//            else
+//            {
+//                Debug.LogError("[CameraFollowWithZoom] 'Player' ã‚¿ã‚°ã®ã¤ã„ãŸã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆãŒè¦‹ã¤ã‹ã‚Šã¾ã›ã‚“ã€‚ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ã‚¿ã‚°ã‚’ç¢ºèªã—ã¦ãã ã•ã„ã€‚");
+//            }
+//        }
+
+//        // ã‚¿ãƒ¼ã‚²ãƒƒãƒˆãŒè¦‹ã¤ã‹ã£ãŸå ´åˆã®åˆæœŸåŒ–å‡¦ç†
 //        if (target != null)
 //        {
 //            if (autoEnablePlayerInterpolate)
@@ -271,7 +317,7 @@ public class CameraFollowWithZoom : MonoBehaviour
 //        if (target == null) return;
 
 //        // --------------------------------------------------
-//        // 1. ’Êí‚Ì‚İ“®‚­F’n–Ê‚©‚ç‚Ì‚‚³‚É‰‚¶‚½©“®ZƒY[ƒ€ŒvZ
+//        // 1. é€šå¸¸æ™‚ã®ã¿å‹•ãï¼šåœ°é¢ã‹ã‚‰ã®é«˜ã•ã«å¿œã˜ãŸè‡ªå‹•Zã‚ºãƒ¼ãƒ è¨ˆç®—
 //        // --------------------------------------------------
 //        float targetZOffset = offset.z;
 
@@ -300,11 +346,10 @@ public class CameraFollowWithZoom : MonoBehaviour
 //            targetZOffset = lockedZOffset;
 //        }
 
-//        // Z²‚Ìˆø‚«iƒY[ƒ€j‚ğ‚È‚ß‚ç‚©‚É•Ï‰»‚³‚¹‚é
 //        currentDynamicZ = Mathf.Lerp(currentDynamicZ, targetZOffset, zoomSmoothSpeed * deltaTime);
 
 //        // --------------------------------------------------
-//        // 2. ÅI“I‚ÈƒJƒƒ‰ˆÊ’u‚ÌŒvZ‚ÆˆÚ“®
+//        // 2. æœ€çµ‚çš„ãªã‚«ãƒ¡ãƒ©ä½ç½®ã®è¨ˆç®—ã¨ç§»å‹•
 //        // --------------------------------------------------
 //        Vector3 targetPosition;
 
@@ -318,11 +363,9 @@ public class CameraFollowWithZoom : MonoBehaviour
 //            targetPosition.z = currentDynamicZ;
 //        }
 
-//        // ƒJƒƒ‰‚ğ‚È‚ß‚ç‚©‚É–Ú•WˆÊ’u‚ÖˆÚ“®‚³‚¹‚é
 //        transform.position = Vector3.Lerp(transform.position, targetPosition, positionSmoothSpeed * deltaTime);
 //    }
 
-//    // šC³‰ÓŠFƒGƒ‰[‚Ìo‚½”wŒi‰æ‘œ‚ÌŠ„‚è“–‚Ä‚ğ’¼‚µ‚Ü‚µ‚½
 //    void OnGUI()
 //    {
 //        if (!showZDebugText) return;
@@ -332,17 +375,15 @@ public class CameraFollowWithZoom : MonoBehaviour
 //        style.fontStyle = FontStyle.Bold;
 //        style.normal.textColor = Color.cyan;
 
-//        // •¶š‚ÌŒã‚ë‚É”–‚¢•”wŒi‚ğ•~‚­
 //        Texture2D bgTex = new Texture2D(1, 1);
 //        bgTex.SetPixel(0, 0, new Color(0f, 0f, 0f, 0.6f));
 //        bgTex.Apply();
 
-//        // yC³“_z’¼Ú‚Å‚Í‚È‚­Anormali’Êíj‚Ìó‘Ô‚Ì”wŒi‚ÉƒZƒbƒg‚µ‚Ü‚·
 //        style.normal.background = bgTex;
 //        style.padding = new RectOffset(10, 10, 5, 5);
 
 //        string status = isLocked ? "<color=red>LOCKED</color>" : "NORMAL";
-//        string debugMessage = $"[Camera Z] Current: {currentDynamicZ:F2}  (Limit: {maxZOffset} ` {minZOffset})  [{status}]";
+//        string debugMessage = $"[Camera Z] Current: {currentDynamicZ:F2}  (Limit: {maxZOffset} ï½ {minZOffset})  [{status}]";
 
 //        GUILayout.BeginArea(new Rect(10, 10, 600, 40));
 //        GUILayout.Label(debugMessage, style);
@@ -360,407 +401,4 @@ public class CameraFollowWithZoom : MonoBehaviour
 //    {
 //        isLocked = false;
 //    }
-//}
-
-//public class CameraFollowWithZoom : MonoBehaviour
-//{
-//    [Header("’Ç]‘ÎÛ")]
-//    public Transform target;
-
-//    [Header("Šî–{‚ÌˆÊ’uƒIƒtƒZƒbƒg")]
-//    public Vector3 offset = new Vector3(0, 5, -10);
-
-//    [Header("ˆÊ’u’Ç]‚Ì‚È‚ß‚ç‚©‚³")]
-//    public float positionSmoothSpeed = 3f;
-
-//    [Header("‹–ìŠpiFOVj‚Ì’²®")]
-//    public float heightThreshold = 3f;
-//    public float minFOV = 60f;
-//    public float maxFOV = 90f;
-//    public float fovSensitivity = 2f;
-//    public float fovSmoothSpeed = 5f;
-
-//    [Header("ƒoƒEƒ“ƒhŒyŒ¸—p")]
-//    public float heightFilterSpeed = 2f;
-
-//    [Header("2D’n–Ê‚Ì”»’èİ’è")]
-//    public LayerMask groundLayer2D = ~0;
-
-//    [Header("ƒJƒƒ‰‚ÌŠ®‘SŒÅ’èƒ‚[ƒh")]
-//    public bool isLocked = false;
-//    public Vector3 lockedPosition;
-//    private float lockedZOffset; // ?? ŒÅ’è’†ê—p‚ÌZƒIƒtƒZƒbƒgiˆø‚«—Êj‚ğ•Û‘¶‚·‚é•Ï”
-
-//    private Camera cam;
-//    private float filteredFloatingHeight;
-
-//    void Start()
-//    {
-//        cam = GetComponent<Camera>();
-//        if (cam != null) cam.fieldOfView = minFOV;
-
-//        if (target != null)
-//        {
-//            transform.position = target.position + offset;
-//        }
-//    }
-
-//    void LateUpdate()
-//    {
-//        if (target == null || cam == null) return;
-
-//        Vector3 targetPosition;
-//        float currentZOffset = offset.z; // ’Êí‚ÌZˆÊ’u
-
-//        // --------------------------------------------------
-//        // 1. ˆÊ’u‚ÆZ²‚ÌŒvZ
-//        // --------------------------------------------------
-//        if (isLocked)
-//        {
-//            // ŒÅ’è‚Íw’è‚³‚ê‚½ˆÊ’u‚ğg‚¤‚ªAZ²‚¾‚¯‚ÍƒGƒŠƒAê—p‚Ìˆø‚«—ÊilockedZOffsetj‚É‚·‚é
-//            targetPosition = new Vector3(lockedPosition.x, lockedPosition.y, lockedZOffset);
-//        }
-//        else
-//        {
-//            // ’Êí‚ÍƒvƒŒƒCƒ„[‚ğƒkƒ‹ƒb‚Æ’Ç]
-//            targetPosition = target.position + offset;
-//        }
-
-//        // ƒJƒƒ‰‚ğ‚È‚ß‚ç‚©‚É–Ú•WˆÊ’uiZ‚Ìˆø‚«‚àŠÜ‚Şj‚ÖˆÚ“®‚³‚¹‚é
-//        transform.position = Vector3.Lerp(transform.position, targetPosition, positionSmoothSpeed * Time.deltaTime);
-
-//        // --------------------------------------------------
-//        // 2. ’Êí‚Ì‚İ“®‚­F’n–Ê‚©‚ç‚Ì‚‚³‚É‰‚¶‚½©“®FOVŒvZi‚±‚ê‚Ü‚Å‚Ì‹@”\j
-//        // --------------------------------------------------
-//        float targetFOV = minFOV;
-
-//        if (!isLocked)
-//        {
-//            float currentFloatingHeight = 0f;
-//            Vector2 rayStart = new Vector2(target.position.x, target.position.y);
-//            RaycastHit2D hit = Physics2D.Raycast(rayStart, Vector2.down, 100f, groundLayer2D);
-
-//            if (hit.collider != null)
-//            {
-//                currentFloatingHeight = target.position.y - hit.point.y;
-//            }
-
-//            filteredFloatingHeight = Mathf.Lerp(filteredFloatingHeight, currentFloatingHeight, heightFilterSpeed * Time.deltaTime);
-
-//            if (filteredFloatingHeight > heightThreshold)
-//            {
-//                float excessHeight = filteredFloatingHeight - heightThreshold;
-//                targetFOV = minFOV + (excessHeight * fovSensitivity);
-//                targetFOV = Mathf.Clamp(targetFOV, minFOV, maxFOV);
-//            }
-//        }
-//        else
-//        {
-//            // ƒ{ƒXíiŒÅ’èj’†‚ÍAFOV‚ğ’Êí‚ÌŠî–{ƒTƒCƒYiminFOVj‚ÅŒÅ’è‚µ‚Ä‚¨‚­
-//            targetFOV = minFOV;
-//        }
-
-//        // FOV‚ğ•ÏX
-//        cam.fieldOfView = Mathf.Lerp(cam.fieldOfView, targetFOV, fovSmoothSpeed * Time.deltaTime);
-//    }
-
-//    // ??yC³zˆø”‚ğuŒÅ’è’†‚ÌZÀ•Wv‚É•ÏX
-//    public void LockCamera(Vector3 positionToLock, float targetZValue)
-//    {
-//        lockedPosition = positionToLock;
-//        lockedZOffset = targetZValue; // ŒÅ’è’†‚ÌZˆÊ’uiˆø‚«—Êj‚ğ•Û‘¶
-//        isLocked = true;
-//    }
-
-//    public void UnlockCamera()
-//    {
-//        isLocked = false;
-//    }
-//}
-
-//using UnityEngine;
-
-//public class CameraFollowWithZoom : MonoBehaviour
-//{
-//    [Header("’Ç]‘ÎÛ")]
-//    public Transform target;
-
-//    [Header("Šî–{‚ÌˆÊ’uƒIƒtƒZƒbƒg")]
-//    public Vector3 offset = new Vector3(0, 5, -10);
-
-//    [Header("ˆÊ’u’Ç]‚Ì‚È‚ß‚ç‚©‚³")]
-//    public float positionSmoothSpeed = 3f;
-
-//    [Header("‹–ìŠpiFOVj‚Ì’²®")]
-//    public float heightThreshold = 3f;
-//    public float minFOV = 60f;
-//    public float maxFOV = 90f;
-//    public float fovSensitivity = 2f;
-//    public float fovSmoothSpeed = 5f;
-
-//    [Header("ƒoƒEƒ“ƒhŒyŒ¸—p")]
-//    public float heightFilterSpeed = 2f;
-
-//    [Header("2D’n–Ê‚Ì”»’èİ’è")]
-//    public LayerMask groundLayer2D = ~0;
-
-//    [Header("ƒJƒƒ‰‚ÌŠ®‘SŒÅ’èƒ‚[ƒh")]
-//    public bool isLocked = false;
-//    public Vector3 lockedPosition;
-//    private float lockedFOV; // ?? ŒÅ’è’†ê—p‚ÌFOV‚ğ•Û‘¶‚·‚é•Ï”
-
-//    private Camera cam;
-//    private float filteredFloatingHeight;
-
-//    void Start()
-//    {
-//        cam = GetComponent<Camera>();
-//        if (cam != null) cam.fieldOfView = minFOV;
-
-//        if (target != null)
-//        {
-//            transform.position = target.position + offset;
-//        }
-//    }
-
-//    void LateUpdate()
-//    {
-//        if (target == null || cam == null) return;
-
-//        Vector3 targetPosition;
-//        float targetFOV = minFOV; // Šî–{‚Ìƒ^[ƒQƒbƒgFOV
-
-//        // ?? ŒÅ’èƒ‚[ƒh‚Ì”»’è
-//        if (isLocked)
-//        {
-//            targetPosition = lockedPosition;
-//            transform.position = Vector3.Lerp(transform.position, targetPosition, positionSmoothSpeed * Time.deltaTime);
-
-//            // ?? ŒÅ’è’†‚ÍAƒGƒŠƒA‚©‚çw’è‚³‚ê‚½uê—p‚ÌFOVv‚ğƒ^[ƒQƒbƒg‚É‚·‚é
-//            targetFOV = lockedFOV;
-//        }
-//        else
-//        {
-//            // ’Êí‚ÌˆÚ“®ˆ—
-//            targetPosition = target.position + offset;
-//            transform.position = Vector3.Lerp(transform.position, targetPosition, positionSmoothSpeed * Time.deltaTime);
-
-//            // ’Êí‚Íu’n–Ê‚©‚ç‚Ì‚‚³v‚É‰‚¶‚Ä©“®ŒvZ‚·‚éi‚±‚ê‚Ü‚Å‚Ì‹@”\j
-//            float currentFloatingHeight = 0f;
-//            Vector2 rayStart = new Vector2(target.position.x, target.position.y);
-//            RaycastHit2D hit = Physics2D.Raycast(rayStart, Vector2.down, 100f, groundLayer2D);
-
-//            if (hit.collider != null)
-//            {
-//                currentFloatingHeight = target.position.y - hit.point.y;
-//            }
-
-//            filteredFloatingHeight = Mathf.Lerp(filteredFloatingHeight, currentFloatingHeight, heightFilterSpeed * Time.deltaTime);
-
-//            if (filteredFloatingHeight > heightThreshold)
-//            {
-//                float excessHeight = filteredFloatingHeight - heightThreshold;
-//                targetFOV = minFOV + (excessHeight * fovSensitivity);
-//                targetFOV = Mathf.Clamp(targetFOV, minFOV, maxFOV);
-//            }
-//        }
-
-//        // ÅI“I‚ÈFOV‚Ì•ÏXiŒÅ’è’†‚à’Êí‚àƒkƒ‹ƒb‚Æ•Ï‰»‚·‚éj
-//        cam.fieldOfView = Mathf.Lerp(cam.fieldOfView, targetFOV, fovSmoothSpeed * Time.deltaTime);
-//    }
-
-//    // ??yC³zˆø”‚Éuˆø‚­‚½‚ß‚ÌFOVv‚ğ’Ç‰Á
-//    public void LockCamera(Vector3 positionToLock, float targetFovValue)
-//    {
-//        lockedPosition = positionToLock;
-//        lockedFOV = targetFovValue; // ŒÅ’è’†‚ÌFOV‚ğ•Û‘¶
-//        isLocked = true;
-//    }
-
-//    public void UnlockCamera()
-//    {
-//        isLocked = false;
-//    }
-//}
-
-//[Header("’Ç]‘ÎÛ")]
-//public Transform target;
-
-//[Header("Šî–{‚ÌˆÊ’uƒIƒtƒZƒbƒg")]
-//public Vector3 offset = new Vector3(0, 5, -10);
-
-//[Header("ˆÊ’u’Ç]‚Ì‚È‚ß‚ç‚©‚³")]
-//[Tooltip("”’l‚ğ¬‚³‚­‚·‚é‚Ù‚ÇƒJƒƒ‰‚ªƒkƒ‹ƒb‚Æ’x‚ê‚Ä’Ç]‚µAƒvƒŒƒCƒ„[‚Ì’µ‚Ë‚É‚æ‚éc—h‚ê‚ğ‹zû‚µ‚Ü‚·")]
-//public float positionSmoothSpeed = 3f;
-
-//[Header("‹–ìŠpiFOVj‚Ì’²®")]
-//public float heightThreshold = 3f;  // ’n–Ê‚©‚ç‚±‚Ì‚‚³iƒ†ƒjƒbƒgj‚ğ•‚‚¢‚½‚çL‚°‚é
-//public float minFOV = 60f;
-//public float maxFOV = 90f;
-//public float fovSensitivity = 2f;
-//public float fovSmoothSpeed = 5f;
-
-//[Header("ƒoƒEƒ“ƒhŒyŒ¸—piFOV‚ÌLk—pj")]
-//public float heightFilterSpeed = 2f;
-
-//[Header("2D’n–Ê‚Ì”»’èİ’è")]
-//public LayerMask groundLayer2D = ~0;
-
-//[Header("yV‹@”\zƒJƒƒ‰‚ÌˆÚ“®§ŒÀ”ÍˆÍ")]
-//public bool useBounds = false; // ”ÍˆÍ§ŒÀ‚ğ—LŒø‚É‚·‚é‚©iƒgƒŠƒK[‚ªON‚É‚µ‚Ü‚·j
-//public Vector2 minBounds;      // ‰æ–Ê‚Ì’†S‚ªs‚¯‚éÅ¬‚Ì(X, Y)
-//public Vector2 maxBounds;      // ‰æ–Ê‚Ì’†S‚ªs‚¯‚éÅ‘å‚Ì(X, Y)
-
-//private Camera cam;
-//private float filteredFloatingHeight;
-
-//void Start()
-//{
-//    cam = GetComponent<Camera>();
-//    if (cam != null) cam.fieldOfView = minFOV;
-
-//    // ƒQ[ƒ€ŠJn‚ÉƒJƒƒ‰‚ª‰“‚­‚©‚ç‚·‚Á”ò‚ñ‚Å‚­‚é‚Ì‚ğ–h‚®‚½‚ßA‰ŠúˆÊ’u‚ğ‡‚í‚¹‚é
-//    if (target != null)
-//    {
-//        transform.position = target.position + offset;
-//    }
-//}
-
-//void LateUpdate()
-//{
-//    if (target == null || cam == null) return;
-
-//    // --------------------------------------------------
-//    // 1. ’Êí‚Ì–Ú•WˆÊ’u‚ğŒvZ‚µALerp‚Å‚È‚ß‚ç‚©‚É’Ç]
-//    // --------------------------------------------------
-//    Vector3 targetPosition = target.position + offset;
-
-//    // --------------------------------------------------
-//    // 2. yV‹@”\z‚à‚µ”ÍˆÍ§ŒÀ‚ªON‚È‚çA–Ú•WˆÊ’u‚ğlŠp‚¢˜g‚Ì’†‚É•Â‚¶‚ß‚é
-//    // --------------------------------------------------
-//    if (useBounds)
-//    {
-//        float clampedX = Mathf.Clamp(targetPosition.x, minBounds.x, maxBounds.x);
-//        float clampedY = Mathf.Clamp(targetPosition.y, minBounds.y, maxBounds.y);
-
-//        // Z²iƒJƒƒ‰‚Ì‰œs‚«j‚Í‚»‚Ì‚Ü‚Ü‚ÉAX‚ÆY‚¾‚¯‚ğ§ŒÀ
-//        targetPosition = new Vector3(clampedX, clampedY, targetPosition.z);
-//    }
-
-//    // ÀÛ‚ÉƒJƒƒ‰‚ğˆÚ“®‚³‚¹‚é
-//    transform.position = Vector3.Lerp(transform.position, targetPosition, positionSmoothSpeed * Time.deltaTime);
-
-//    // --------------------------------------------------
-//    // 3. 2DƒŒƒCƒLƒƒƒXƒg‚Å’n–Ê‚Ì‚‚³‚ğ’²‚×AFOV‚ğ‚È‚ß‚ç‚©‚ÉŒvZ
-//    // --------------------------------------------------
-//    float currentFloatingHeight = 0f;
-//    Vector2 rayStart = new Vector2(target.position.x, target.position.y);
-//    RaycastHit2D hit = Physics2D.Raycast(rayStart, Vector2.down, 100f, groundLayer2D);
-
-//    if (hit.collider != null)
-//    {
-//        currentFloatingHeight = target.position.y - hit.point.y;
-//    }
-
-//    // FOVŒvZ—p‚Ì‚‚³‚ğ‚È‚ß‚ç‚©‚É‚·‚éiƒoƒEƒ“ƒh‚Å‚ÌƒOƒƒ“ƒOƒƒ“–h~j
-//    filteredFloatingHeight = Mathf.Lerp(filteredFloatingHeight, currentFloatingHeight, heightFilterSpeed * Time.deltaTime);
-
-//    // FOV‚ÌŒvZ
-//    float targetFOV = minFOV;
-//    if (filteredFloatingHeight > heightThreshold)
-//    {
-//        float excessHeight = filteredFloatingHeight - heightThreshold;
-//        targetFOV = minFOV + (excessHeight * fovSensitivity);
-//        targetFOV = Mathf.Clamp(targetFOV, minFOV, maxFOV);
-//    }
-
-//    // FOV‚ğ•ÏX
-//    cam.fieldOfView = Mathf.Lerp(cam.fieldOfView, targetFOV, fovSmoothSpeed * Time.deltaTime);
-//}
-
-//// ŠO•”iƒGƒŠƒAƒgƒŠƒK[j‚©‚çƒJƒƒ‰‚Ì”ÍˆÍ‚ğã‘‚«‚·‚é‚½‚ß‚ÌŠÖ”
-//public void SetBounds(Vector2 min, Vector2 max)
-//{
-//    minBounds = min;
-//    maxBounds = max;
-//    useBounds = true;
-//}
-
-//// §ŒÀ‚ğ‰ğœ‚µ‚ÄŒ³‚Ì©—R‚È’Ç]‚É–ß‚·ŠÖ”
-//public void ClearBounds()
-//{
-//    useBounds = false;
-//}
-//[Header("’Ç]‘ÎÛ")]
-//public Transform target;
-
-//[Header("Šî–{‚ÌˆÊ’uƒIƒtƒZƒbƒg")]
-//public Vector3 offset = new Vector3(0, 5, -10);
-
-//[Header("yV‹@”\zˆÊ’u’Ç]‚Ì‚È‚ß‚ç‚©‚³")]
-//[Tooltip("”’l‚ğ¬‚³‚­‚·‚é‚Ù‚ÇƒJƒƒ‰‚ªƒkƒ‹ƒb‚Æ’x‚ê‚Ä’Ç]‚µAƒvƒŒƒCƒ„[‚Ì’µ‚Ë‚É‚æ‚éc—h‚ê‚ğ‹zû‚µ‚Ü‚·")]
-//public float positionSmoothSpeed = 3f;
-
-//[Header("‹–ìŠpiFOVj‚Ì’²®")]
-//public float heightThreshold = 3f;
-//public float minFOV = 60f;
-//public float maxFOV = 90f;
-//public float fovSensitivity = 2f;
-//public float fovSmoothSpeed = 5f;
-
-//[Header("ƒoƒEƒ“ƒhŒyŒ¸—piFOV‚ÌLk—pj")]
-//public float heightFilterSpeed = 2f;
-
-//[Header("2D’n–Ê‚Ì”»’èİ’è")]
-//public LayerMask groundLayer2D = ~0;
-
-//private Camera cam;
-//private float filteredFloatingHeight;
-
-//void Start()
-//{
-//    cam = GetComponent<Camera>();
-//    if (cam != null) cam.fieldOfView = minFOV;
-
-//    // ƒQ[ƒ€ŠJn‚ÉƒJƒƒ‰‚ª‰“‚­‚©‚ç‚·‚Á”ò‚ñ‚Å‚­‚é‚Ì‚ğ–h‚®‚½‚ßA‰ŠúˆÊ’u‚ğ‡‚í‚¹‚é
-//    if (target != null)
-//    {
-//        transform.position = target.position + offset;
-//    }
-//}
-
-//void LateUpdate()
-//{
-//    if (target == null || cam == null) return;
-
-//    // 1. y‚±‚±‚ğ‰ü—ÇzüŒ`•âŠÔiLerpj‚ğg‚Á‚ÄAƒJƒƒ‰ˆÊ’u‚ğƒkƒ‹ƒb‚Æ’Ç]‚³‚¹‚é
-//    Vector3 targetPosition = target.position + offset;
-
-//    // Œ»İ‚ÌƒJƒƒ‰ˆÊ’u‚©‚çA–Ú•WˆÊ’u‚ÉŒü‚¯‚ÄupositionSmoothSpeedv‚Ì‹­‚³‚ÅŠŠ‚ç‚©‚É‹ß‚Ã‚¯‚é
-//    transform.position = Vector3.Lerp(transform.position, targetPosition, positionSmoothSpeed * Time.deltaTime);
-
-//    // 2. 2DƒŒƒCƒLƒƒƒXƒg‚Å’n–Ê‚Ì‚‚³‚ğ’²‚×‚é
-//    float currentFloatingHeight = 0f;
-//    Vector2 rayStart = new Vector2(target.position.x, target.position.y);
-//    RaycastHit2D hit = Physics2D.Raycast(rayStart, Vector2.down, 100f, groundLayer2D);
-
-//    if (hit.collider != null)
-//    {
-//        currentFloatingHeight = target.position.y - hit.point.y;
-//    }
-
-//    // 3. FOVŒvZ—p‚Ì‚‚³‚ğ‚È‚ß‚ç‚©‚É‚·‚é
-//    filteredFloatingHeight = Mathf.Lerp(filteredFloatingHeight, currentFloatingHeight, heightFilterSpeed * Time.deltaTime);
-
-//    // 4. FOV‚ÌŒvZ
-//    float targetFOV = minFOV;
-//    if (filteredFloatingHeight > heightThreshold)
-//    {
-//        float excessHeight = filteredFloatingHeight - heightThreshold;
-//        targetFOV = minFOV + (excessHeight * fovSensitivity);
-//        targetFOV = Mathf.Clamp(targetFOV, minFOV, maxFOV);
-//    }
-
-//    // 5. FOV‚ğ•ÏX
-//    cam.fieldOfView = Mathf.Lerp(cam.fieldOfView, targetFOV, fovSmoothSpeed * Time.deltaTime);
 //}

@@ -1,0 +1,62 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1304084335368583057
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4518837020636630075}
+  - component: {fileID: 5684466578245486926}
+  m_Layer: 0
+  m_Name: FXManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4518837020636630075
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1304084335368583057}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -17.3806, y: 8.2401, z: 27.68329}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5684466578245486926
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1304084335368583057}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 69d23679d59fc43468cd5e45269ce881, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FXManager
+  fxList:
+  - type: 0
+    prefab: {fileID: 4813042502827182270, guid: 1e7cb5627b2635440bda01edd9b1322f, type: 3}
+    vfxDestroyDelay: 0
+  - type: 1
+    prefab: {fileID: 6207478079302127823, guid: 352ece6454065c6439a230849a322260, type: 3}
+    vfxDestroyDelay: 0
+  - type: 2
+    prefab: {fileID: 1000393680648668903, guid: 1695a6b43c016dd44afc93cc5bad521c, type: 3}
+    vfxDestroyDelay: 0
+  - type: 3
+    prefab: {fileID: 3998159691057479557, guid: 09641a25f4780d346b6ec23b1b004cd3, type: 3}
+    vfxDestroyDelay: 0
+  - type: 4
+    prefab: {fileID: 9172571921106444741, guid: 9e8b1e2dc26e5cd46b430721b2bece15, type: 3}
+    vfxDestroyDelay: 0
