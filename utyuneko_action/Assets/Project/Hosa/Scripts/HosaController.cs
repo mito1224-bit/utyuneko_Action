@@ -1,6 +1,7 @@
 using UnityEngine;
 
-public class HosaController : MonoBehaviour
+[RequireComponent(typeof(Rigidbody2D), typeof(CircleCollider2D))]
+public class HosaController : MonoBehaviour, IEventActor
 {
     private IHosaState currentState;
 
@@ -9,6 +10,7 @@ public class HosaController : MonoBehaviour
     public HosaState_Follow StateFollow { get; private set; }
 
     // 各種コンポーネントの隠しプロパティ
+    [HideInInspector] public Rigidbody2D rb2D;
     [HideInInspector] public Animator anim;
     [HideInInspector] public Transform playerTransform;
 
@@ -21,6 +23,7 @@ public class HosaController : MonoBehaviour
 
     void Start()
     {
+        rb2D = GetComponent<Rigidbody2D>();
         anim = GetComponentInChildren<Animator>();
 
         GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
@@ -57,5 +60,36 @@ public class HosaController : MonoBehaviour
 
         currentState = newState;
         currentState.Enter(this);
+    }
+
+    /// <summary>
+    /// 外部（イベントマネージャー）から呼ばれるリアクション窓口
+    /// </summary>
+    public void PlayReaction(ImageBubble.StampType type, float duration = 2.0f)
+    {
+        // 種類に応じて「体（アニメーションや物理）」のリアクションだけを自分が担当する
+        switch (type)
+        {
+            case ImageBubble.StampType.OK:
+                break;
+            case ImageBubble.StampType.Question:
+                break;
+            case ImageBubble.StampType.Surprise:
+                break;
+            case ImageBubble.StampType.Doya:
+                break;
+            case ImageBubble.StampType.Sweat:
+                break;
+            case ImageBubble.StampType.Hatena:
+                break;
+            case ImageBubble.StampType.Joy:
+                break;
+            case ImageBubble.StampType.Gift:
+                break;
+            case ImageBubble.StampType.Star:
+                break;
+            case ImageBubble.StampType.Go:
+                break;
+        }
     }
 }

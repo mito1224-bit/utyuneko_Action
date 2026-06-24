@@ -5,6 +5,7 @@ public class PlayerState_Burst : IPlayerState
     private PlayerController p;
 
     private bool isCharge = false;
+    private int reflectCount = 0;
     private float burstDuration = 5.0f;
     private float burstTimer;
     private Vector2 burstDirection;
@@ -16,12 +17,14 @@ public class PlayerState_Burst : IPlayerState
         p = player;
         isCharge = false;
 
+        reflectCount = 0;
+
         if (p.anim != null)
         {
             p.anim.SetBool("isBurst", true);
         }
 
-        p.OnCollisionEnterEvent += OnCollisionEnter;
+        p.OnCollisionEnterEvent += OnCollisionStay;
 
         if (p.useTrail && p.trailRenderer != null) p.trailRenderer.enabled = true;
         if (p.useAfterImage && p.afterImageEffect != null) p.afterImageEffect.enabled = true;
@@ -67,9 +70,18 @@ public class PlayerState_Burst : IPlayerState
             p.TransitionToState(p.StateNormal);
 
             if (p.canCancelBurstWithJump)
+            {
                 p.rb2D.linearVelocity = new Vector2(p.rb2D.linearVelocity.x, p.jumpForce);
+                
+                if (p.visualManager != null)
+                {
+                    p.visualManager.TriggerJumpStretch();
+                }
+            }
             else
+            {
                 p.rb2D.linearVelocity = new Vector2(p.rb2D.linearVelocity.x, p.rb2D.linearVelocity.y);
+            }
         }
     }
 
@@ -87,7 +99,7 @@ public class PlayerState_Burst : IPlayerState
         }
     }
 
-    private void OnCollisionEnter(Collision2D collision)
+    private void OnCollisionStay(Collision2D collision)
     {
         if (((1 << collision.gameObject.layer) & p.GetGroundLayerMask()) != 0)
         {
@@ -109,20 +121,30 @@ public class PlayerState_Burst : IPlayerState
             p.rb2D.linearVelocity = burstDirection * currentSpeed;
             burstTimer = burstDuration;
 
-            // ★マネージャーを叩いて上下左右固定バウンドの伸縮をセット
+            // 上下左右固定バウンドの伸縮をセット
             if (p.visualManager != null)
             {
                 p.visualManager.TriggerSquash(wallNormal, incomingVector);
             }
 
+            reflectCount++;
+            //反射回数が最大反射回数を超えていたら通常状態に遷移
+            if (p.maxReflect < reflectCount)
+            {
+                p.TransitionToState(p.StateNormal);
+                p.rb2D.linearVelocity = new Vector2(p.rb2D.linearVelocity.x * 0.5f, p.rb2D.linearVelocity.y * 0.5f);
+            }
+
             Debug.Log($"バースト中衝突反射！ 速度: {currentSpeed}");
         }
+
+        //TimeManager.Instance.TriggerIndividualHitStop(p.gameObject, collision.gameObject, 0.03f);
     }
 
     public void Exit()
     {
         Debug.Log("バースト終了");
-        p.OnCollisionEnterEvent -= OnCollisionEnter;
+        p.OnCollisionEnterEvent -= OnCollisionStay;
 
         // 空中チャージへの遷移時以外ならアニメーションを戻す
         if (p.anim != null && !isCharge)

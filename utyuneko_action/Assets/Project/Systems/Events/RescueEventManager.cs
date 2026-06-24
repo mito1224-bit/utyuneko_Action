@@ -3,6 +3,8 @@ using UnityEngine;
 
 public class RescueEventManager : MonoBehaviour
 {
+    public static RescueEventManager Instance { get; private set; }
+
     public enum RescueState { InDanger, Thanking, Absorbing, Talking, Finished }
 
     [Header("現在のイベント状態（確認用）")]
@@ -12,16 +14,26 @@ public class RescueEventManager : MonoBehaviour
     [Header("登場オブジェクトの設定")]
     [SerializeField] private HosaController hosa;
 
-    // お互いの頭上につけた TextBubble の参照をセットしてください
-    [SerializeField] private TextBubble hosaBubble;
-    [SerializeField] private TextBubble playerBubble;
+    [Header("頭上のスタンプ吹き出し（ImageBubble）の参照")]
+    [SerializeField] private ImageBubble hosaBubble;
+    [SerializeField] private ImageBubble playerBubble;
+
+    [Header("⏱️ オート＆スキップスピード設定")]
+    [Tooltip("スタンプが自動で消えて次に進むまでの基本の時間（秒）")]
+    [SerializeField] private float defaultDisplayTime = 1.5f;
+
+    // インスペクターからスキップ時の倍速を自由に変更できるようになりました！
+    [Tooltip("長押しスキップ中に、演出や移動が何倍速になるか（デフォルトは100倍速）")]
+    [SerializeField] private float skipSpeedMultiplier = 100f;
 
     [Header("補佐の移動スピード")]
     [SerializeField] private float hosaMoveSpeed = 5f;
 
+    // 2.5Dロックオン用の調整パラメータ
     private float maxLookAngle = 30f;
     private float lookSmoothing = 12.0f;
 
+    // 2.5D回転の目標角度（Y軸）
     private float hosaInDangerYAngle = 180f;
     private float hosaRightYAngle = 310f;
     private float hosaLeftYAngle = 50f;
@@ -30,6 +42,16 @@ public class RescueEventManager : MonoBehaviour
     private Transform playerTransform;
     private PlayerController playerController;
     private Vector3 hosaFloorPosition;
+
+    /// <summary>
+    /// 今プレイヤーがスキップボタン（スペースキー or 左クリック）を長押ししているかを判定
+    /// </summary>
+    private bool IsSkipping => Input.GetKey(KeyCode.Space) || Input.GetMouseButton(0);
+
+    void Awake()
+    {
+        Instance = this;
+    }
 
     void Start()
     {
@@ -40,6 +62,11 @@ public class RescueEventManager : MonoBehaviour
             hosaFloorPosition = hosa.transform.position;
             hosa.transform.localRotation = Quaternion.Euler(0f, hosaInDangerYAngle, 0f);
             hosa.TransitionToState(hosa.StateEvent);
+
+            if (hosaBubble != null)
+            {
+                hosaBubble.ShowStamp(ImageBubble.StampType.Confusion);
+            }
         }
 
         GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
@@ -58,43 +85,21 @@ public class RescueEventManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// 毎フレーム、イベントの状態に応じてお互いの位置を滑らかにロックオンし続ける関数
-    /// </summary>
     private void KeepLookingAtEachOther()
     {
         if (hosa == null || playerTransform == null || playerController == null) return;
 
-        // ==========================================
-        // 👁️ 1. 補佐（Hosa）の視線・向き制御
-        // ==========================================
-
-        // 💡【ここが今回の最大のポイント！】
-        // 現在の状態が「吸い込み移動中〜吸引完了まで」かつ敵が存在するなら、ターゲットを敵に切り替える！
         if (currentState == RescueState.Absorbing && targetEnemy != null)
         {
-            // 🎯 敵への方向ベクトルを計算
             Vector3 dirToEnemy = targetEnemy.transform.position - hosa.transform.position;
-
-            // 敵が右にいれば右向き(310度)、左にいれば左向き(50度)を目標にする
             float targetHosaYAngle = (dirToEnemy.x > 0f) ? hosaRightYAngle : hosaLeftYAngle;
-
-            // 🛑【上下は加味しない】ので、上下の目標X角度は「常に 0f（水平）」に固定！
             float hosaAngleX = 0f;
 
-            // 敵へ向かう目標回転を作成
             Quaternion targetHosaRot = Quaternion.Euler(hosaAngleX, targetHosaYAngle, 0f);
-
-            // 敵の方へクルッと滑らかに回転させる
-            hosa.transform.localRotation = Quaternion.Lerp(
-                hosa.transform.localRotation,
-                targetHosaRot,
-                Time.deltaTime * lookSmoothing
-            );
+            hosa.transform.localRotation = Quaternion.Lerp(hosa.transform.localRotation, targetHosaRot, Time.deltaTime * lookSmoothing);
         }
         else
         {
-            // 🚶【それ以外のフェーズ（お礼や会話など）】は今まで通りプレイヤーを上下左右ロックオン！
             Vector3 dirToPlayer = playerTransform.position - hosa.transform.position;
             float targetHosaYAngle = (dirToPlayer.x > 0f) ? hosaRightYAngle : hosaLeftYAngle;
 
@@ -110,9 +115,6 @@ public class RescueEventManager : MonoBehaviour
             hosa.transform.localRotation = Quaternion.Lerp(hosa.transform.localRotation, targetHosaRot, Time.deltaTime * lookSmoothing);
         }
 
-        // ==========================================
-        // 👁️ 2. プレイヤー（dB君）から補佐への滑らかなロックオン
-        // ==========================================
         if (playerController.visualManager != null && playerController.visualManager.playerVisual != null)
         {
             Vector3 dirToHosa = hosa.transform.position - playerTransform.position;
@@ -136,7 +138,6 @@ public class RescueEventManager : MonoBehaviour
         }
     }
 
-
     public void OnEnemyDefeated(EventEnemy enemy)
     {
         if (currentState == RescueState.InDanger)
@@ -150,91 +151,110 @@ public class RescueEventManager : MonoBehaviour
                 playerController.TransitionToState(playerController.StateNormal);
             }
 
+            if (hosaBubble != null)
+            {
+                hosaBubble.StartFadeOut();
+            }
+
             StartCoroutine(RescueEventTimelineRoutine());
         }
     }
 
-    /// <summary>
-    /// 💡【新設】指定した吹き出しにセリフを表示し、プレイヤーがボタンを押して次に進むのを待つ便利な関数
-    /// </summary>
-    private IEnumerator Speak(TextBubble bubble, string text)
+    private IEnumerator Speak(ImageBubble bubble, ImageBubble.StampType stampType, float customDuration = -1f)
     {
-        bubble.DisplayText(text);
+        if (bubble == null)
+        {
+            Debug.LogError($"[RescueEventManager] 吹き出しがセットされていません：{stampType}");
+            yield break;
+        }
 
-        // 1フレーム待って、前のフレームのボタン入力をリセット
+        bubble.ShowStamp(stampType);
         yield return null;
 
-        // プレイヤーが「スペースキー」または「マウス左クリック」を押すまでループして待機
-        while (true)
+        float displayDuration = (customDuration > 0f) ? customDuration : defaultDisplayTime;
+        float elapsedTime = 0f;
+
+        while (elapsedTime < displayDuration)
         {
-            if (Input.GetKeyDown(KeyCode.Space) || Input.GetMouseButtonDown(0))
+            if (IsSkipping)
             {
-                // もし文字がまだタイピング途中なら、一瞬で全文字表示してあげる（親切設計）
-                if (bubble.IsTyping)
-                {
-                    bubble.CompleteTextImmediately(text);
-                    yield return null; // 決定の連打で次のセリフに暴発するのを防ぐために1コマ待つ
-                }
-                else
-                {
-                    // 文字が出きった状態でボタンが押されたら、このセリフを終了して次へ！
-                    break;
-                }
+                break;
             }
+
+            elapsedTime += Time.deltaTime;
             yield return null;
         }
 
-        bubble.CloseBubble(); // 吹き出しを閉じる
+        bubble.StartFadeOut();
     }
 
     /// <summary>
-    /// ✨ SANABI風に生まれ変わったドラマチック・タイムライン！
+    /// 長押しスキップに対応した、演出用のディレイ関数
+    /// </summary>
+    private IEnumerator Wait(float duration)
+    {
+        float elapsedTime = 0f;
+        while (elapsedTime < duration)
+        {
+            // スキップ中なら skipSpeedMultiplier（100倍）の速さで時間を進める！
+            float deltaTime = IsSkipping ? (Time.deltaTime * skipSpeedMultiplier) : Time.deltaTime;
+            elapsedTime += deltaTime;
+            yield return null;
+        }
+    }
+
+    /// <summary>
+    /// 敵の吸引演出も100%倍速連動するシネマティック・タイムライン
     /// </summary>
     private IEnumerator RescueEventTimelineRoutine()
     {
-        // ==========================================
-        // 🎬 1. 補佐救出して補佐がお礼を言う
-        // ==========================================
-        Debug.Log("補佐：お礼");
-        yield return StartCoroutine(Speak(hosaBubble, "ひゃああっ！ ……あ、助けていただき、ありがとうございます！"));
+        yield return StartCoroutine(Wait(2.0f));
 
         // ==========================================
-        // 🎬 2. 補佐が敵に近づいていくことを主人公は疑問に思う
+        // 1. 補佐救出して補佐がお礼を言う
         // ==========================================
-        // 移動フラグを立てる（LateUpdate が自動で敵ロックオンに切り替えてくれます！）
+        yield return StartCoroutine(Speak(hosaBubble, ImageBubble.StampType.Joy));
+        yield return StartCoroutine(Wait(0.5f));
+
+        // ==========================================
+        // 2. 補佐が敵に近づいていくのをdB君が「❓」と思う
+        // ==========================================
         currentState = RescueState.Absorbing;
 
-        // 主人公が「？」を出す（補佐は移動開始）
-        Coroutine playerQuestion = StartCoroutine(Speak(playerBubble, "……？"));
+        Coroutine playerQuestion = StartCoroutine(Speak(playerBubble, ImageBubble.StampType.Question));
 
         if (targetEnemy != null && hosa != null)
         {
             Vector3 targetPosition = targetEnemy.transform.position + Vector3.up * 1.5f;
             while (Vector3.Distance(hosa.transform.position, targetPosition) > 0.05f)
             {
-                hosa.transform.position = Vector3.MoveTowards(hosa.transform.position, targetPosition, hosaMoveSpeed * Time.deltaTime);
+                float currentMoveSpeed = IsSkipping ? hosaMoveSpeed * skipSpeedMultiplier : hosaMoveSpeed;
+
+                hosa.transform.position = Vector3.MoveTowards(hosa.transform.position, targetPosition, currentMoveSpeed * Time.deltaTime);
                 yield return null;
             }
             hosa.transform.position = targetPosition;
         }
 
-        // 主人公がボタンを押して「？」を閉じるのを待つ
         yield return playerQuestion;
 
         // ==========================================
-        // 🎬 3. 敵が補佐に吸い込まれて行って主人公はびっくりする
+        // 3. 敵が補佐に吸い込まれて行って主人公はびっくりする
         // ==========================================
-        float shrinkTime = 1.0f;
-        if (targetEnemy != null && hosa != null) targetEnemy.StartAbsorb(hosa.transform, shrinkTime);
+        float baseShrinkTime = 1.0f;
+        float currentShrinkTime = IsSkipping ? (baseShrinkTime / skipSpeedMultiplier) : baseShrinkTime;
 
-        if (playerController != null)
+        if (targetEnemy != null && hosa != null)
         {
-            playerController.PlayReaction(PlayerVisualManager.ReactionType.Surprise);
+            targetEnemy.StartAbsorb(hosa.transform, currentShrinkTime);
         }
 
-        // 吸い込みアニメ中に主人公が「！！」と驚く
-        yield return StartCoroutine(Speak(playerBubble, "！！"));
-        yield return new WaitForSeconds(0.5f); // 吸い込み完了の余韻
+        // 驚きのスタンプをドン！
+        yield return StartCoroutine(Speak(playerBubble, ImageBubble.StampType.Surprise));
+
+        float baseWaitTime = 0.5f;
+        float currentWaitTime = IsSkipping ? (baseWaitTime / skipSpeedMultiplier) : baseWaitTime;
+        yield return new WaitForSeconds(currentWaitTime);
 
         // ==========================================
         // 🎬 4. 補佐が降りてきて自慢げにする
@@ -244,48 +264,41 @@ public class RescueEventManager : MonoBehaviour
             Vector3 targetDropPosition = new Vector3(hosa.transform.position.x, hosaFloorPosition.y, hosa.transform.position.z);
             while (Vector3.Distance(hosa.transform.position, targetDropPosition) > 0.05f)
             {
-                hosa.transform.position = Vector3.MoveTowards(hosa.transform.position, targetDropPosition, hosaMoveSpeed * Time.deltaTime);
+                // 💡【修正】ここもインスペクターの倍速設定を反映！
+                float currentDropSpeed = IsSkipping ? hosaMoveSpeed * skipSpeedMultiplier : hosaMoveSpeed;
+
+                hosa.transform.position = Vector3.MoveTowards(hosa.transform.position, targetDropPosition, currentDropSpeed * Time.deltaTime);
                 yield return null;
             }
             hosa.transform.position = targetDropPosition;
         }
 
-        // 状態を会話モードに戻す（LateUpdate がお互いロックオンに戻してくれます！）
         currentState = RescueState.Talking;
-        yield return StartCoroutine(Speak(hosaBubble, "ふふん、どうです？ 私だって、ただ守られてるだけじゃないんですよ！"));
+        yield return StartCoroutine(Speak(hosaBubble, ImageBubble.StampType.Doya));
 
         // ==========================================
-        // 🎬 5. 補佐が今データ世界はバグに支配されてることを説明する
+        // 🎬 5. オートスタンプ会話劇
         // ==========================================
-        // Rich Textタグを使って、バグの文字を赤くガタガタ震わせる（TextMeshProの神機能！）
-        yield return StartCoroutine(Speak(hosaBubble, "……冗談はさておき。いま、このデータ世界は恐ろしい <color=red><shake>【バグ】</shake></color> に支配されかけています。"));
-
-        // ==========================================
-        // 🎬 6. 主人公が協力を申し出る
-        // ==========================================
-        yield return StartCoroutine(Speak(playerBubble, "（……静かに拳を握り、補佐を見つめる）"));
-
-        // ==========================================
-        // 🎬 7. 補佐が喜ぶ
-        // ==========================================
-        yield return StartCoroutine(Speak(hosaBubble, "えっ……？ 一緒に戦ってくれるんですか……！？ やったあぁ！"));
-
-        // ==========================================
-        // 🎬 8. 補佐がプレゼントをくれる ➔ 9. 主人公の疑問
-        // ==========================================
-        yield return StartCoroutine(Speak(hosaBubble, "それなら、あなたにこれを受け取ってほしいです！"));
-        yield return StartCoroutine(Speak(playerBubble, "（データ容量拡張ドライブを手に入れた！ ……これなんだろう？）"));
-
-        // ==========================================
-        // 🎬 10. もらって喜ぶ ➔ 11. よし行こうと合図
-        // ==========================================
-        yield return StartCoroutine(Speak(hosaBubble, "これを使えば、あなたのバーストの威力がさらに上がります！相棒、よろしく頼みます！"));
-        yield return StartCoroutine(Speak(playerBubble, "（……心強い相棒ができた！ よし、行こう！）"));
-
-        // ==========================================
-        // 🎬 12. 補佐も行こうと返してイベント終了
-        // ==========================================
-        yield return StartCoroutine(Speak(hosaBubble, "はい！ 私のナビゲート、期待してくださいね！"));
+        yield return StartCoroutine(Speak(hosaBubble, ImageBubble.StampType.Right));
+        yield return StartCoroutine(Wait(0.5f));
+        yield return StartCoroutine(Speak(hosaBubble, ImageBubble.StampType.Enemy));
+        yield return StartCoroutine(Wait(0.5f));
+        yield return StartCoroutine(Speak(hosaBubble, ImageBubble.StampType.Denger));
+        yield return StartCoroutine(Wait(0.5f));
+        yield return StartCoroutine(Speak(hosaBubble, ImageBubble.StampType.Fellow));
+        yield return StartCoroutine(Wait(0.5f));
+        yield return StartCoroutine(Speak(playerBubble, ImageBubble.StampType.Surprise));
+        yield return StartCoroutine(Wait(0.5f));
+        yield return StartCoroutine(Speak(playerBubble, ImageBubble.StampType.Maru));
+        yield return StartCoroutine(Wait(0.5f));
+        yield return StartCoroutine(Speak(playerBubble, ImageBubble.StampType.OK));
+        yield return StartCoroutine(Wait(0.5f));
+        yield return StartCoroutine(Speak(hosaBubble, ImageBubble.StampType.Joy));
+        yield return StartCoroutine(Wait(0.5f));
+        yield return StartCoroutine(Speak(hosaBubble, ImageBubble.StampType.Go));
+        yield return StartCoroutine(Wait(0.5f));
+        yield return StartCoroutine(Speak(playerBubble, ImageBubble.StampType.OK));
+        yield return StartCoroutine(Wait(0.5f));
 
         CompleteEvent();
     }
@@ -303,7 +316,7 @@ public class RescueEventManager : MonoBehaviour
         if (hosa != null)
         {
             hosa.transform.localRotation = Quaternion.identity;
-            hosa.TransitionToState(hosa.StateFollow); // 🔓 吸い取った場所からフワッとプレイヤーを追尾！
+            hosa.TransitionToState(hosa.StateFollow);
         }
 
         if (GameManager.Instance != null)
