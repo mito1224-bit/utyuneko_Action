@@ -30,7 +30,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 80}
-  m_LocalScale: {x: 16, y: 100, z: 16}
+  m_LocalScale: {x: 16, y: 500, z: 16}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -132,7 +132,7 @@ MonoBehaviour:
   coplanarAngleThreshold: 1
   renderMode: 0
   neonMaterial: {fileID: 2100000, guid: 8ab168a1b071a6242a678d631d709025, type: 2}
-  lineWidth: 0.08
+  lineWidth: 0.1
   neonColor: {r: 0, g: 1, b: 1, a: 1}
   tintEmissionWithNeonColor: 0
   emissionIntensity: 2
