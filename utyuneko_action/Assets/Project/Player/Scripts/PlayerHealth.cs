@@ -78,6 +78,8 @@ public class PlayerHealth : MonoBehaviour
 
         // 3. ダメージ適用
         SoundManager.Instance.PlaySE(SeType.PlayerEnemyAttackHit);
+        SoundManager.Instance.FadeBGMVolume(0.2f, 0.0f);
+        SoundManager.Instance.FadeBGMVolume(1.0f, 2.0f);
 
         currentHealth -= damageAmount;
         currentHealth = Mathf.Max(-1, currentHealth); // HPが-1以下にならないようにロック

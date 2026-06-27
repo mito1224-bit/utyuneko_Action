@@ -1,10 +1,23 @@
 ﻿using System.Collections;
+using System.Collections.Generic; // 💡 HashSetを使うために必要
 using UnityEngine;
 using UnityEngine.UI;
 
 public class BaseEventManager : MonoBehaviour
 {
-    [Header("🎬 スキップ・フェード設定")]
+    // ===================================================================
+    // ゲーム中のすべてのイベントを全自動で一括監視するグローバルインフラ
+    // ===================================================================
+    private static HashSet<BaseEventManager> activeManagers = new HashSet<BaseEventManager>();
+
+    /// <summary>
+    /// 現在、シーン内のいずれかのイベントマネージャーが演出・イベントを実行中かどうか
+    /// 💡 GameplayCanvasController などの外部スクリプトからは、この1行をチェックするだけでよくなります！
+    /// </summary>
+    public static bool IsAnyEventPlaying => activeManagers.Count > 0;
+
+
+    [Header("スキップ・フェード設定")]
     [Tooltip("このイベントで長押しスキップを許可するかどうか（オープニング等はチェックを外す）")]
     [SerializeField] private bool allowSkip = true;
 
@@ -13,7 +26,7 @@ public class BaseEventManager : MonoBehaviour
     [SerializeField] private float fadeInDuration = 0.3f;
     [SerializeField] private float fadeOutSpeed = 2.0f;
 
-    [Header("📦 動的生成するUIプレハブの設定")]
+    [Header("動的生成するUIプレハブの設定")]
     [SerializeField] private GameObject eventCanvasPrefab;
 
     protected GameObject spawnedCanvasInstance;
@@ -148,13 +161,9 @@ public class BaseEventManager : MonoBehaviour
             yield return null;
         }
 
-        // フェードアウトが終わったら、新設した共通の終了関数を呼ぶ
         EndEvent();
     }
 
-    // ===================================================================
-    // フェードなしで即座にイベントを安全に完全終了させる共通の出口
-    // ===================================================================
     protected void EndEvent()
     {
         isEventActive = false;
@@ -162,7 +171,6 @@ public class BaseEventManager : MonoBehaviour
         isFadingIn = false;
         skipHoldTimer = 0f;
 
-        // 生成したキャンバス（裏で生き残っていたプレハブ）を確実に破壊！
         if (spawnedCanvasInstance != null)
         {
             Destroy(spawnedCanvasInstance);
@@ -173,11 +181,16 @@ public class BaseEventManager : MonoBehaviour
         OnEventFullyCompleted();
     }
 
-    protected virtual void OnSkipWarp() { EndEvent(); }
+    protected virtual void OnSkipWarp() { }
     protected virtual void OnEventFullyCompleted() { }
 
+    // ===================================================================
+    // プレイヤーの操作を奪う・返す瞬間に、自動でリストに登録・解除する
+    // ===================================================================
     protected void BlockPlayerInput()
     {
+        activeManagers.Add(this); // 登録（UI隠して！の合図）
+
         if (playerController != null && playerController.inputActions != null)
         {
             playerController.inputActions.Player.Disable();
@@ -187,12 +200,20 @@ public class BaseEventManager : MonoBehaviour
 
     protected void BenjaminReleasePlayerInput()
     {
+        activeManagers.Remove(this); // 解除
         if (playerController != null && playerController.inputActions != null) playerController.inputActions.Player.Enable();
     }
 
     protected void ReleasePlayerInput()
     {
+        activeManagers.Remove(this); // 解除（UI戻して！の合図）
         if (playerController != null && playerController.inputActions != null) playerController.inputActions.Player.Enable();
+    }
+
+    // 【安全対策】シーン切り替えやオブジェクト破棄時にゴミが残らないように自動お掃除
+    protected virtual void OnDestroy()
+    {
+        activeManagers.Remove(this);
     }
 
     protected IEnumerator Wait(float duration) { yield return new WaitForSecondsRealtime(duration); }

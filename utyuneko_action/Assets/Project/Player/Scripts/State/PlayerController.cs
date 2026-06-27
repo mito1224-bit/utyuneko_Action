@@ -80,6 +80,7 @@ public class PlayerController : MonoBehaviour, IEventActor
 
     private ImageBubble imageBubble;
 
+    public PlayerState_None StateNone { get; private set; }
     public PlayerState_Normal StateNormal { get; private set; }
     public PlayerState_Charge StateCharge { get; private set; }
     public PlayerState_Burst StateBurst { get; private set; }
@@ -89,6 +90,7 @@ public class PlayerController : MonoBehaviour, IEventActor
     {
         inputActions = new GameInputActions();
 
+        StateNone = new PlayerState_None();
         StateNormal = new PlayerState_Normal();
         StateCharge = new PlayerState_Charge();
         StateBurst = new PlayerState_Burst();
