@@ -11,6 +11,7 @@ public class PlayerChargeGauge : MonoBehaviour
     [SerializeField] private float reloadSpeed = 8f; // 地面に着いた時にゲージが溜まる速度
 
     private float targetFillAmount = 1f;
+    private float oldAmount = 1f;
 
     void Start()
     {
@@ -21,6 +22,8 @@ public class PlayerChargeGauge : MonoBehaviour
 
     void Update()
     {
+        oldAmount = gaugeImage.fillAmount;
+
         if (playerController == null || gaugeImage == null) return;
 
         // プレイヤーの着地状態・残弾数からゲージの目標値を計算
@@ -54,6 +57,11 @@ public class PlayerChargeGauge : MonoBehaviour
             // 通常時の増減処理
             if (gaugeImage.fillAmount > targetFillAmount)
             {
+                if (oldAmount != targetFillAmount)
+                {
+                    SoundManager.Instance.PlaySE(SeType.PlayerChargingUp);
+                }
+
                 gaugeImage.fillAmount = targetFillAmount;
             }
             else

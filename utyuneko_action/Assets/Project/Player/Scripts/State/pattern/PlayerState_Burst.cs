@@ -17,6 +17,8 @@ public class PlayerState_Burst : IPlayerState
         p = player;
         isCharge = false;
 
+        SoundManager.Instance.PlaySE(SeType.PlayerBurstBegin);
+
         reflectCount = 0;
 
         if (p.anim != null)
@@ -103,6 +105,8 @@ public class PlayerState_Burst : IPlayerState
     {
         if (((1 << collision.gameObject.layer) & p.GetGroundLayerMask()) != 0)
         {
+            SoundManager.Instance.PlaySE(SeType.PlayerWallHit);
+
             Vector2 incomingVector = lastVelocity;
             if (incomingVector.magnitude < 1f) return;
 
