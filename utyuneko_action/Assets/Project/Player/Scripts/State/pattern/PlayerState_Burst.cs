@@ -74,7 +74,10 @@ public class PlayerState_Burst : IPlayerState
             if (p.canCancelBurstWithJump)
             {
                 p.rb2D.linearVelocity = new Vector2(p.rb2D.linearVelocity.x, p.jumpForce);
-                
+
+                SoundManager.Instance.PlaySE(SeType.PlayerJump);
+                SoundManager.Instance.PlaySE(SeType.PlayerJump2);
+
                 if (p.visualManager != null)
                 {
                     p.visualManager.TriggerJumpStretch();

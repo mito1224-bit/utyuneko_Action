@@ -69,20 +69,6 @@ public class PlayerState_Normal : IPlayerState
             {
                 p.visualManager.TriggerJumpStretch();
             }
-
-            if (p.currentBurstCount > 0)
-            {
-                p.currentBurstCount = 0;
-            }
-        }
-
-        if (p.IsGrounded() && p.rb2D.linearVelocity.y <= 0.01f)
-        {
-            if (p.currentBurstCount > 0)
-            {
-                p.currentBurstCount = 0;
-                Debug.Log("バースト回数がリセット");
-            }
         }
     }
 
@@ -166,8 +152,11 @@ public class PlayerState_Normal : IPlayerState
         //「前フレームは空中だった」かつ「今フレームは接地している」なら着地した瞬間！
         if (isGroundedNow && !wasGroundedLastFrame)
         {
-            SoundManager.Instance.PlaySE(SeType.PlayerLanding);
-            SoundManager.Instance.PlaySE(SeType.PlayerLanding2);
+            if (!BaseEventManager.IsAnyEventPlaying)
+            {
+                SoundManager.Instance.PlaySE(SeType.PlayerLanding);
+                SoundManager.Instance.PlaySE(SeType.PlayerLanding2);
+            }
 
             // 下方向にしっかり落ちている時だけ潰す（床を歩いている時の誤作動防止）
             if (p.rb2D.linearVelocity.y <= 0.1f)

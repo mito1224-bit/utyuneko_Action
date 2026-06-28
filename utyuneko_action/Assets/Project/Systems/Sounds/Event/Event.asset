@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: Event
   m_EditorClassIdentifier: Assembly-CSharp::AudioBank
   seList:
-  - seType: 48
+  - seType: 900
     clip: {fileID: 8300000, guid: a1b442d302524f5458d9aae63960b805, type: 3}
     volume: 1

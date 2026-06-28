@@ -20,7 +20,7 @@ public class EventEnemy : MonoBehaviour
 
     private Rigidbody2D rb;
     private Animator anim; // アニメーションを止めるためのコンポーネント用
-    private bool isDefeated = false; // 二重撃破防止フラグ
+    public bool isDefeated = false; // 二重撃破防止フラグ
 
     void Start()
     {
@@ -64,7 +64,7 @@ public class EventEnemy : MonoBehaviour
         }
     }
 
-    // Is TriggerがOFFなので「Collision2D」で受け取る
+
     private void OnCollisionEnter2D(Collision2D collision)
     {
         if (isDefeated) return;
@@ -75,6 +75,8 @@ public class EventEnemy : MonoBehaviour
 
             if (p != null && p.CurrentState is PlayerState_Burst)
             {
+                SoundManager.Instance.PlaySE(SeType.EnemyDie);
+
                 // プレイヤーの位置を渡して撃破処理へ
                 Defeated(collision.transform.position);
 

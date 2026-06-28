@@ -144,6 +144,8 @@ public class RescueEventManager : BaseEventManager
             hosaBubble.ShowStamp(ImageBubble.StampType.Confusion);
         }
 
+        SoundManager.Instance.PlayLoopSE(hosa.gameObject, SeType.HosaConfusion);
+
         // 🛑【修正】ReleasePlayerInput() を削除（カメラ側のプレハブで制御するため）
 
         // 💡【安全弁】もしこの1.5秒の間にすでに敵が倒されて本番（InEvent）になっていたら、
@@ -189,9 +191,11 @@ public class RescueEventManager : BaseEventManager
     // ===================================================================
     private IEnumerator RescueEventTimelineRoutine()
     {
-        yield return StartCoroutine(Wait(2.0f));
+        SoundManager.Instance.StopLoopSE(hosa.gameObject);
 
         SoundManager.Instance.FadeBGMVolume(0.3f, 1.0f);
+
+        yield return StartCoroutine(Wait(2.0f));
 
         // 1. お礼を言う
         yield return StartCoroutine(Speak(hosaBubble, ImageBubble.StampType.Joy));
@@ -265,6 +269,8 @@ public class RescueEventManager : BaseEventManager
     protected override void OnSkipWarp()
     {
         Debug.Log("暗転の裏側でイベント終了状態へ強制ワープ処理を実行中...");
+
+        SoundManager.Instance.FadeBGMVolume(1.0f, 1.0f);
 
         if (hosaBubble != null) hosaBubble.StartFadeOut();
         if (playerBubble != null) playerBubble.StartFadeOut();

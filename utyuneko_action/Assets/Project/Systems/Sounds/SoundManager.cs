@@ -23,73 +23,84 @@ public enum BgmType
 // ===================================================================
 public enum SeType
 {
-    None,
-    [InspectorName("Player/Jump")] PlayerJump,
-    [InspectorName("Player/Jump2")] PlayerJump2,
-    [InspectorName("Player/Landing")] PlayerLanding,
-    [InspectorName("Player/Landing2")] PlayerLanding2,
-    [InspectorName("Player/Charging")] PlayerCharging,
-    [InspectorName("Player/ChargingUp")] PlayerChargingUp,
-    [InspectorName("Player/BurstBegin")] PlayerBurstBegin,
-    [InspectorName("Player/WallHit")] PlayerWallHit,
-    [InspectorName("Player/EnemyAttackHit")] PlayerEnemyAttackHit,
-    [InspectorName("Player/IconPop")] PlayerIconPop,
-    [InspectorName("Player/AttackHit")] PlayerAttackHit,
-    [InspectorName("Player/Die")] PlayerDie,
-    [InspectorName("Player/Recovery")] PlayerRecovery,
-    [InspectorName("Player/PlayerConfusion")] PlayerConfusion,
+    None = 0,
 
-    [InspectorName("PlayerUI/ChargOK")] ChargOK,
+    //【100番台】Player関連
+    [InspectorName("Player/Jump")] PlayerJump = 100,
+    [InspectorName("Player/Jump2")] PlayerJump2 = 101,
+    [InspectorName("Player/Landing")] PlayerLanding = 102,
+    [InspectorName("Player/Landing2")] PlayerLanding2 = 103,
+    [InspectorName("Player/Charging")] PlayerCharging = 104,
+    [InspectorName("Player/ChargingUp")] PlayerChargingUp = 105,
+    [InspectorName("Player/BurstBegin")] PlayerBurstBegin = 106,
+    [InspectorName("Player/WallHit")] PlayerWallHit = 107,
+    [InspectorName("Player/EnemyAttackHit")] PlayerEnemyAttackHit = 108,
+    [InspectorName("Player/IconPop")] PlayerIconPop = 109,
+    [InspectorName("Player/AttackHit")] PlayerAttackHit = 110,
+    [InspectorName("Player/Die")] PlayerDie = 111,
+    [InspectorName("Player/Recovery")] PlayerRecovery = 112,
+    [InspectorName("Player/PlayerConfusion")] PlayerConfusion = 113,
 
-    [InspectorName("Hosa/HosaConfusion")] HosaConfusion,
-    [InspectorName("Hosa/Action")] HosaAction,
-    [InspectorName("Hosa/Suction")] HosaSuction,
+    [InspectorName("PlayerUI/ChargOK")] ChargOK = 150,
 
-    [InspectorName("Enemy/Die")] EnemyDie,
-    [InspectorName("Enemy/ShieldHit")] EnemyShieldHit,
-    [InspectorName("Enemy/RangeAttack")] EnemyRangeAttack,
-    [InspectorName("Enemy/Charge")] EnemyCharge,
-    [InspectorName("Enemy/ChargeWallHit")] EnemyChargeWallHit,
-    [InspectorName("Enemy/Confusion")] EnemyConfusion,
-    [InspectorName("Enemy/SniperAttack")] EnemySniperAttack,
-    [InspectorName("Enemy/ExplosionDelay")] EnemyExplosionDelay,
-    [InspectorName("Enemy/Explosion")] EnemyExplosion,
-    [InspectorName("Enemy/Suction")] EnemySuction,
+    //【200番台】Hosa関連
+    [InspectorName("Hosa/HosaConfusion")] HosaConfusion = 200,
+    [InspectorName("Hosa/Action")] HosaAction = 201,
+    [InspectorName("Hosa/Suction")] HosaSuction = 202,
 
-    [InspectorName("UI/Select")] UiSelect,
-    [InspectorName("UI/Enter")] UiEnter,
-    [InspectorName("UI/Cancel")] UiCancel,
-    [InspectorName("UI/GameEnd")] UiGameEnd,
-    [InspectorName("UI/Pose")] UiPose,
-    [InspectorName("UI/PoseCancel")] UiPoseCancel,
+    //【300番台】Enemy関連
+    [InspectorName("Enemy/Die")] EnemyDie = 300,
+    [InspectorName("Enemy/ShieldHit")] EnemyShieldHit = 301,
+    [InspectorName("Enemy/RangeAttack")] EnemyRangeAttack = 302,
+    [InspectorName("Enemy/Charge")] EnemyCharge = 303,
+    [InspectorName("Enemy/ChargeWallHit")] EnemyChargeWallHit = 304,
+    [InspectorName("Enemy/Confusion")] EnemyConfusion = 305,
+    [InspectorName("Enemy/SniperAttack")] EnemySniperAttack = 306,
+    [InspectorName("Enemy/ExplosionDelay")] EnemyExplosionDelay = 307,
+    [InspectorName("Enemy/Explosion")] EnemyExplosion = 308,
+    [InspectorName("Enemy/Suction")] EnemySuction = 309,
 
-    [InspectorName("Gimmick/AccelerationFloor")] GimmickAccelerationFloor,
-    [InspectorName("Gimmick/AccelerationWall")] GimmickAccelerationWall,
-    [InspectorName("Gimmick/Cannon")] GimmickCannon,
-    [InspectorName("Gimmick/Warp")] GimmickWarp,
-    [InspectorName("Gimmick/Key_Move")] GimmickKey_Move,
-    [InspectorName("Gimmick/key_Hold")] Gimmickkey_Hold,
+    //【400番台】UI関連
+    [InspectorName("UI/Select")] UiSelect = 400,
+    [InspectorName("UI/Enter")] UiEnter = 401,
+    [InspectorName("UI/Cancel")] UiCancel = 402,
+    [InspectorName("UI/GameEnd")] UiGameEnd = 403,
+    [InspectorName("UI/Pose")] UiPose = 404,
+    [InspectorName("UI/PoseCancel")] UiPoseCancel = 405,
 
-    [InspectorName("Item/BitGet")] ItemBitGet,
-    [InspectorName("Item/DataGet")] ItemDataGet,
-    [InspectorName("Item/CoreGet")] ItemCoreGet,
+    //【500番台】Gimmick関連
+    [InspectorName("Gimmick/AccelerationFloor")] GimmickAccelerationFloor = 500,
+    [InspectorName("Gimmick/AccelerationWall")] GimmickAccelerationWall = 501,
+    [InspectorName("Gimmick/Cannon")] GimmickCannon = 502,
+    [InspectorName("Gimmick/Warp")] GimmickWarp = 503,
+    [InspectorName("Gimmick/Key_Move")] GimmickKey_Move = 504,
+    [InspectorName("Gimmick/key_Hold")] Gimmickkey_Hold = 505,
 
-    [InspectorName("Stage/GateIn")] StageGateIn,
-    [InspectorName("Stage/Goal")] StageGoal,
+    //【600番台】Item関連
+    [InspectorName("Item/BitGet")] ItemBitGet = 600,
+    [InspectorName("Item/DataGet")] ItemDataGet = 601,
+    [InspectorName("Item/CoreGet")] ItemCoreGet = 602,
 
-    [InspectorName("Result/ScoreUp")] ResultScoreUp,
-    [InspectorName("Result/DataGet")] ResultDataGet,
+    //【700番台】Stage関連
+    [InspectorName("Stage/GateIn")] StageGateIn = 700,
+    [InspectorName("Stage/Goal")] StageGoal = 701,
 
-    [InspectorName("Event/Opening")] EventOpening,
+    //【800番台】Result関連
+    [InspectorName("Result/ScoreUp")] ResultScoreUp = 800,
+    [InspectorName("Result/DataGet")] ResultDataGet = 801,
 
-    [InspectorName("Logo/Cat")] LogoCat,
+    //【900番台】Event関連
+    [InspectorName("Event/Opening")] EventOpening = 900,
+
+    //【1000番台】その他ロゴ等
+    [InspectorName("Logo/Cat")] LogoCat = 1000,
 }
 
 public class SoundManager : MonoBehaviour
 {
     public static SoundManager Instance { get; private set; }
 
-    [Header("オーディオリキサー設定")]
+    [Header("オーディオミキサー設定")]
     [Tooltip("MainMixer アセットをここにドラッグ＆ドロップ！")]
     [SerializeField] private AudioMixer mainMixer;
 
@@ -103,7 +114,16 @@ public class SoundManager : MonoBehaviour
     [Header("SE設定（オーディオバンク方式）")]
     [Tooltip("作成した各オーディオバンク（Player用、Enemy用など）をここに登録する")]
     [SerializeField] private List<AudioBank> audioBanks = new List<AudioBank>();
-    private AudioSource seSource;
+
+    // ===================================================================
+    // 🛠️【大手術】SEのピッチ上書きバグを根絶する複数スピーカー（プール）インフラ
+    // ===================================================================
+    [Header("単発SEの同時再生制限数")]
+    [Tooltip("同時に鳴らせる単発SEの最大数（12〜16個あれば激しい戦闘でも音が途切れません）")]
+    [SerializeField] private int sePoolSize = 12;
+
+    private List<AudioSource> sePoolSources = new List<AudioSource>();
+    private int sePoolIndex = 0;
 
     private Dictionary<GameObject, AudioSource> activeLoopSources = new Dictionary<GameObject, AudioSource>();
 
@@ -139,13 +159,29 @@ public class SoundManager : MonoBehaviour
         AudioSource[] sources = GetComponents<AudioSource>();
 
         bgmSource = (sources.Length > 0) ? sources[0] : gameObject.AddComponent<AudioSource>();
-        seSource = (sources.Length > 1) ? sources[1] : gameObject.AddComponent<AudioSource>();
+        AudioSource baseSeSource = (sources.Length > 1) ? sources[1] : gameObject.AddComponent<AudioSource>();
 
         bgmSource.loop = true;
         bgmSource.playOnAwake = false;
 
-        seSource.loop = false;
-        seSource.playOnAwake = false;
+        baseSeSource.loop = false;
+        baseSeSource.playOnAwake = false;
+
+        // ===================================================================
+        // 🏗️ 起動時に、設定された数だけSE用のAudioSourceを裏側で全自動量産する
+        // ===================================================================
+        sePoolSources.Clear();
+        for (int i = 0; i < sePoolSize; i++)
+        {
+            AudioSource pSource = gameObject.AddComponent<AudioSource>();
+            pSource.loop = false;
+            pSource.playOnAwake = false;
+
+            // インスペクターやミキサーの設定（SEボリュームグループなど）を全自動で完全同期！
+            pSource.outputAudioMixerGroup = baseSeSource.outputAudioMixerGroup;
+
+            sePoolSources.Add(pSource);
+        }
     }
 
     public void SetGlobalBgmVolume(float volume)
@@ -167,7 +203,7 @@ public class SoundManager : MonoBehaviour
     }
 
     // ===================================================================
-    // BGM 再生ロジック
+    // BGM 再生ロジック（既存のまま）
     // ===================================================================
     public void PlayBGM(BgmType type, float fadeDuration = 0.5f)
     {
@@ -223,11 +259,6 @@ public class SoundManager : MonoBehaviour
         bgmFadeCoroutine = null;
     }
 
-    /// <summary>
-    /// 現在流れているBGMの音量を、イベント演出用に指定時間で下げる/戻す関数
-    /// </summary>
-    /// <param name="targetMultiplier">元の音量に対する倍率（0.0で無音、0.3で元の30%の音量、1.0で通常に戻る）</param>
-    /// <param name="duration">音量変化にかける時間（秒）</param>
     public void FadeBGMVolume(float targetMultiplier, float duration)
     {
         if (currentPlayingBgm == null || currentPlayingBgm.clip == null) return;
@@ -239,7 +270,6 @@ public class SoundManager : MonoBehaviour
     private IEnumerator FadeBGMVolumeRoutine(float targetMultiplier, float duration)
     {
         float startVolume = bgmSource.volume;
-        // アセット自体が持つ本来の音量に対して掛け算する（グローバル設定を壊さないため）
         float targetVolume = currentPlayingBgm.volume * Mathf.Clamp01(targetMultiplier);
         float elapsed = 0f;
 
@@ -261,19 +291,26 @@ public class SoundManager : MonoBehaviour
     // ===================================================================
 
     /// <summary>
-    /// SEを一発再生する（ピッチの基準値と、そこからのランダムな揺れ幅を指定可能）
+    /// 🛠️【神アップデート】PlayOneShotを廃止し、プールされた独立スピーカーで再生！
+    /// これにより、後からどんなピッチのSEが鳴ろうが、再生中の音が上書きされることは100%なくなります！
     /// </summary>
-    /// <param name="type">SEの種類</param>
-    /// <param name="basePitch">基準となる音程（1.0が標準、1.2で高く、0.8で低く鳴る）</param>
-    /// <param name="pitchRandomness">鳴るたびにズレるランダム幅（デフォルトは0.08の微小な揺れ）</param>
     public void PlaySE(SeType type, float basePitch = 1.0f, float pitchRandomness = 0.08f)
     {
         SeData data = GetSeDataFromLibrary(type);
         if (data.clip == null) return;
 
-        // 指定されたベースピッチを中心に、指定された幅でランダム化
-        seSource.pitch = basePitch + Random.Range(-pitchRandomness, pitchRandomness);
-        seSource.PlayOneShot(data.clip, data.volume);
+        if (sePoolSources.Count == 0) return;
+
+        // 🔄 プールから、現在順番が回ってきたAudioSourceを1個つまみ上げる
+        AudioSource source = sePoolSources[sePoolIndex];
+        sePoolIndex = (sePoolIndex + 1) % sePoolSources.Count; // 次のためにインデックスを進める
+
+        // 独立したAudioSourceに対してピッチとボリュームを設定して、通常の「Play()」で再生！
+        source.pitch = basePitch + Random.Range(-pitchRandomness, pitchRandomness);
+        source.volume = data.volume;
+        source.clip = data.clip;
+
+        source.Play(); // これで他の音のピッチを一切汚さずに個別に鳴らせます！
     }
 
     private BgmData GetBgmDataFromLibrary(BgmType type)
@@ -295,13 +332,9 @@ public class SoundManager : MonoBehaviour
         return new SeData { clip = null, volume = 1f };
     }
 
-    /// <summary>
-    /// その場にループ用スピーカーを自動生成して再生する（ピッチ変更・ランダム対応版）
-    /// </summary>
-    /// <param name="owner">鳴らしたいオブジェクト自身（this.gameObject を入れる）</param>
-    /// <param name="type">SEの種類</param>
-    /// <param name="basePitch">基準となる音程（1.0が標準）</param>
-    /// <param name="pitchRandomness">再生時のランダム幅（ループ音は違和感が出やすいため、デフォルトは0.0の固定）</param>
+    // ===================================================================
+    // ループSE 再生ロジック（既存のまま）
+    // ===================================================================
     public void PlayLoopSE(GameObject owner, SeType type, float basePitch = 1.0f, float pitchRandomness = 0.0f)
     {
         if (owner == null) return;
@@ -313,7 +346,7 @@ public class SoundManager : MonoBehaviour
         if (data.clip == null) return;
 
         AudioSource newSource = owner.AddComponent<AudioSource>();
-        newSource.outputAudioMixerGroup = seSource.outputAudioMixerGroup;
+        newSource.outputAudioMixerGroup = seSourcePoolCompatible(); // 下のヘルパーを活用
 
         newSource.clip = data.clip;
         newSource.volume = data.volume;
@@ -325,6 +358,13 @@ public class SoundManager : MonoBehaviour
         newSource.Play();
 
         activeLoopSources[owner] = newSource;
+    }
+
+    // 互換性維持のための内部ヘルパー
+    private AudioMixerGroup seSourcePoolCompatible()
+    {
+        if (sePoolSources.Count > 0 && sePoolSources[0] != null) return sePoolSources[0].outputAudioMixerGroup;
+        return null;
     }
 
     public void StopLoopSE(GameObject owner)

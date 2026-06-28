@@ -179,9 +179,17 @@ public class PlayerHealth : MonoBehaviour
     {
         // 当たった相手が「DamageSource」スクリプトを持っているか調べる
         DamageSource source = hitObject.GetComponent<DamageSource>();
+        EventEnemy eventEnemy = hitObject.GetComponent<EventEnemy>();
+        if(eventEnemy)
+        {
+            if (eventEnemy.isDefeated) return;
+        }
 
         if (source != null)
         {
+            if (hitObject.CompareTag("Enemy") && 
+                p.CurrentState == p.StateBurst) return;
+
             // 持っていたら設定されているダメージ量を喰らう
             TakeDamage(source.damageAmount);
         }

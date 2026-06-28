@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: Stage
   m_EditorClassIdentifier: Assembly-CSharp::AudioBank
   seList:
-  - seType: 42
-    clip: {fileID: 8300000, guid: 9545480cb385b6c42afe6beaa01fda29, type: 3}
+  - seType: 700
+    clip: {fileID: 0}
     volume: 1
-  - seType: 43
+  - seType: 701
     clip: {fileID: 0}
     volume: 1

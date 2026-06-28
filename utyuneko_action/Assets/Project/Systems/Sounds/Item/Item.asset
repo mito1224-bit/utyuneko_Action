@@ -13,12 +13,12 @@ MonoBehaviour:
   m_Name: Item
   m_EditorClassIdentifier: Assembly-CSharp::AudioBank
   seList:
-  - seType: 39
-    clip: {fileID: 8300000, guid: 7b800cb02960e8d419b7881941122d00, type: 3}
-    volume: 1
-  - seType: 40
+  - seType: 600
     clip: {fileID: 0}
     volume: 1
-  - seType: 41
+  - seType: 601
+    clip: {fileID: 0}
+    volume: 1
+  - seType: 602
     clip: {fileID: 0}
     volume: 1

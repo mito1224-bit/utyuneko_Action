@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: Result
   m_EditorClassIdentifier: Assembly-CSharp::AudioBank
   seList:
-  - seType: 44
+  - seType: 800
     clip: {fileID: 0}
     volume: 1
-  - seType: 45
+  - seType: 801
     clip: {fileID: 8300000, guid: ac5341c221ac1f645a36c2a5c49e75f8, type: 3}
     volume: 1

@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: PlayerUI
   m_EditorClassIdentifier: Assembly-CSharp::AudioBank
   seList:
-  - seType: 13
+  - seType: 150
     clip: {fileID: 8300000, guid: 2efed368aaecd55429d59050033b653a, type: 3}
     volume: 1

@@ -13,12 +13,12 @@ MonoBehaviour:
   m_Name: Hosa
   m_EditorClassIdentifier: Assembly-CSharp::AudioBank
   seList:
-  - seType: 14
+  - seType: 200
     clip: {fileID: 8300000, guid: fad6225072900544eba8d4cf1420cdcd, type: 3}
     volume: 1
-  - seType: 15
+  - seType: 201
     clip: {fileID: 8300000, guid: 66e2c7cefeb96ab4584adc2c00a88110, type: 3}
     volume: 1
-  - seType: 16
+  - seType: 202
     clip: {fileID: 0}
     volume: 1

@@ -13,21 +13,21 @@ MonoBehaviour:
   m_Name: UI
   m_EditorClassIdentifier: Assembly-CSharp::AudioBank
   seList:
-  - seType: 27
+  - seType: 400
     clip: {fileID: 8300000, guid: 114c085583605f14a95a2d5b791b910a, type: 3}
     volume: 1
-  - seType: 28
+  - seType: 401
     clip: {fileID: 8300000, guid: ec608407f4b323545b57405611edca6c, type: 3}
     volume: 1
-  - seType: 29
+  - seType: 402
     clip: {fileID: 8300000, guid: 2257ca6151c434849aca0cd4e170dd83, type: 3}
     volume: 1
-  - seType: 30
+  - seType: 403
     clip: {fileID: 8300000, guid: a1158fd159c840141b4c88050acf9ee3, type: 3}
     volume: 1
-  - seType: 31
+  - seType: 404
     clip: {fileID: 8300000, guid: bbaf494751b0da24bb7a1fb93c305944, type: 3}
     volume: 1
-  - seType: 32
+  - seType: 405
     clip: {fileID: 8300000, guid: 8c790928407cfa14bbfb89d2b41a3d93, type: 3}
     volume: 1

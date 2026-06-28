@@ -13,21 +13,21 @@ MonoBehaviour:
   m_Name: Gimmick
   m_EditorClassIdentifier: Assembly-CSharp::AudioBank
   seList:
-  - seType: 33
+  - seType: 500
     clip: {fileID: 0}
     volume: 1
-  - seType: 34
+  - seType: 501
     clip: {fileID: 0}
     volume: 1
-  - seType: 35
+  - seType: 502
     clip: {fileID: 0}
     volume: 1
-  - seType: 36
+  - seType: 503
     clip: {fileID: 8300000, guid: cac8d970deac21e4485003199d9dcf35, type: 3}
     volume: 1
-  - seType: 37
+  - seType: 504
     clip: {fileID: 0}
     volume: 1
-  - seType: 38
+  - seType: 505
     clip: {fileID: 8300000, guid: 0e4681ea3b6d4ad42ab322db8b0f4d21, type: 3}
     volume: 1

@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: Logo
   m_EditorClassIdentifier: Assembly-CSharp::AudioBank
   seList:
-  - seType: 47
+  - seType: 1000
     clip: {fileID: 8300000, guid: 7cbf83b6527cb3347bf74c3abe78f0b1, type: 3}
     volume: 1

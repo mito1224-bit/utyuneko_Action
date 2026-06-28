@@ -13,33 +13,33 @@ MonoBehaviour:
   m_Name: Enemy
   m_EditorClassIdentifier: Assembly-CSharp::AudioBank
   seList:
-  - seType: 17
+  - seType: 300
+    clip: {fileID: 8300000, guid: 24536cf2fd6b7f042ba71eeb50c9e4d6, type: 3}
+    volume: 1
+  - seType: 301
     clip: {fileID: 0}
     volume: 1
-  - seType: 18
+  - seType: 302
     clip: {fileID: 0}
     volume: 1
-  - seType: 19
+  - seType: 303
     clip: {fileID: 0}
     volume: 1
-  - seType: 20
-    clip: {fileID: 0}
+  - seType: 304
+    clip: {fileID: 8300000, guid: 24536cf2fd6b7f042ba71eeb50c9e4d6, type: 3}
     volume: 1
-  - seType: 21
-    clip: {fileID: 0}
-    volume: 1
-  - seType: 22
+  - seType: 305
     clip: {fileID: 8300000, guid: fad6225072900544eba8d4cf1420cdcd, type: 3}
     volume: 1
-  - seType: 23
+  - seType: 306
     clip: {fileID: 0}
     volume: 1
-  - seType: 24
+  - seType: 307
     clip: {fileID: 0}
     volume: 1
-  - seType: 25
+  - seType: 308
     clip: {fileID: 0}
     volume: 1
-  - seType: 26
+  - seType: 309
     clip: {fileID: 0}
     volume: 1
