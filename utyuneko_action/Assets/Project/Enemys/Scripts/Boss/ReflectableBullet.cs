@@ -3,7 +3,9 @@ using UnityEngine;
 /// <summary>
 /// 反射可能なボスの弾。
 /// - 通常: StraightBullet と同じく flyDirection に直進。
-/// - Burst中プレイヤーに触れる: 方向を反転、所有者を「プレイヤー」に切り替え（reflected = true）。
+/// - Burst中プレイヤーに触れる: プレイヤーが当たった角度（＝Burstの進行方向）へ飛ばす。
+///   単純な逆向き反転だと必ずボス（来た方向）へ返ってしまうため、プレイヤーの速度方向を採用する。
+///   所有者を「プレイヤー」に切り替え（reflected = true）。
 /// - reflected 状態でボスに当たる: BossBarrier を Break() する。
 /// - 直接プレイヤーに当たる（非Burst時）: プレイヤーにダメージを与える前提のフックを呼ぶ（ここではログのみ。
 ///   既存のプレイヤーダメージ処理に接続したい場合は ApplyDamageToPlayer を編集）。
@@ -72,7 +74,7 @@ public class ReflectableBullet : MonoBehaviour
 
             if (playerIsBursting && !reflected)
             {
-                ReflectBack();
+                ReflectBack(GetPlayerHitDirection(pc, other));
                 return;
             }
 
@@ -105,14 +107,35 @@ public class ReflectableBullet : MonoBehaviour
         }
     }
 
-    private void ReflectBack()
+    private void ReflectBack(Vector3 newDirection)
     {
-        flyDirection = -flyDirection;
+        newDirection.z = 0f;
+        // プレイヤーの角度が取れない場合のみ、従来どおり来た方向へ逆反射
+        if (newDirection.sqrMagnitude < 0.0001f) newDirection = -flyDirection;
+
+        flyDirection = newDirection.normalized;
         flyDirection.z = 0f;
-        flyDirection = flyDirection.normalized;
         speed *= reflectSpeedMultiplier;
         reflected = true;
         Debug.Log("ボスの弾を反射！");
+    }
+
+    /// <summary>
+    /// プレイヤーが弾に当たった角度を求める。
+    /// Burst中は高速で移動しているので、その速度ベクトル＝当たった角度として使う。
+    /// 速度が取れないときの保険として「プレイヤー→弾」方向（押し出された向き）を返す。
+    /// </summary>
+    private Vector3 GetPlayerHitDirection(PlayerController pc, Collider playerCol)
+    {
+        if (pc != null && pc.rb2D != null)
+        {
+            Vector2 v = pc.rb2D.linearVelocity;
+            if (v.sqrMagnitude > 0.0001f) return new Vector3(v.x, v.y, 0f);
+        }
+
+        Vector3 fromPlayer = transform.position - playerCol.transform.position;
+        fromPlayer.z = 0f;
+        return fromPlayer;
     }
 
     /// <summary>
