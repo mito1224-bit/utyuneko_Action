@@ -1,99 +1,75 @@
-using System.Runtime.CompilerServices;
 using UnityEngine;
-using System.Collections;
 
 public class KeyGimmick : MonoBehaviour
 {
-    [Header("プレイヤーの跳ね返り設定")]
-    [SerializeField] private float reflexRate = 1.2f;        // プレイヤーの跳ね返り速度への反映率
-    [SerializeField] private float minImpact = 3.0f;         // 最低限の弾かれ度合い
-
-    [Header("自動レール移動の設定")]
-    [SerializeField] private float travelDuration = 0.5f;    // カギ穴に到達するまでの時間（秒）
-    [SerializeField] private float curveHeight = 0.0f;       // ★ここを 0 にすると完全な直線ルートになります。少しフワッとさせたいなら 1 などを入れてください。
-
-    [Header("目指すカギ穴（ソケット）")]
+    [Header("設定")]
+    [SerializeField] private float moveSpeed = 8.0f;
+    [SerializeField] private Transform[] pathPoints;
     [SerializeField] private KeySocket targetSocket;
 
     private Rigidbody2D myRb;
-    private Collider2D myCollider;
     private bool isFlying = false;
+    private int currentPointIndex = 0;
 
     private void Start()
     {
         myRb = GetComponent<Rigidbody2D>();
-        myCollider = GetComponent<Collider2D>();
-
-        if (myRb == null) Debug.LogError("カギに Rigidbody2D がついていません！");
-        if (targetSocket == null) Debug.LogWarning("targetSocket（カギ穴）をインスペクターで設定してください！");
+        // 最新形式：bodyTypeを使用
+        myRb.bodyType = RigidbodyType2D.Dynamic;
     }
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        // すでに飛行中（レール移動中）なら、連続で叩かれても無視する
-        if (isFlying) return;
+        if (isFlying || !other.CompareTag("Player")) return;
 
-        // プレイヤーがカギに触れた時
-        if (other.CompareTag("Player") && targetSocket != null)
+        // 1. 物理エンジンとの接続を完全に断つ
+        myRb.simulated = false;
+
+        // 2. プレイヤーを弾く処理
+        Rigidbody2D playerRb = other.GetComponent<Rigidbody2D>();
+        if (playerRb != null)
         {
-            Rigidbody2D playerRb = other.GetComponent<Rigidbody2D>();
-            if (playerRb != null)
-            {
-                isFlying = true;
+            Vector2 reflexDirection = ((Vector2)transform.position - (Vector2)targetSocket.transform.position).normalized;
+            playerRb.linearVelocity = Vector2.zero;
+            playerRb.AddForce(reflexDirection * 10f, ForceMode2D.Impulse);
+        }
 
-                // 1. プレイヤー側の挙動：カギに当たったら、プレイヤーだけを反対方向に弾く
-                float playerSpeed = playerRb.linearVelocity.magnitude;
-                if (playerSpeed < minImpact) playerSpeed = minImpact;
+        // 3. レール移動開始
+        isFlying = true;
+        currentPointIndex = 0;
+    }
 
-                // プレイヤーを弾き返す方向（カギ穴とは逆の方向へ飛ばす）
-                Vector2 reflexDirection = ((Vector2)transform.position - (Vector2)targetSocket.transform.position).normalized;
-                playerRb.linearVelocity = Vector2.zero;
-                playerRb.AddForce(reflexDirection * (playerSpeed * reflexRate), ForceMode2D.Impulse);
+    private void FixedUpdate()
+    {
+        if (!isFlying) return;
 
-                // 2. カギ側の挙動：【最重要】物理演算を完全に止めて、青い方向への移動を封じる
-                myRb.linearVelocity = Vector2.zero;
-                myRb.bodyType = RigidbodyType2D.Kinematic; // これで重力やプレイヤーの衝突によるズレが完全にゼロになります
-                if (myCollider != null) myCollider.enabled = false; // 移動中にプレイヤーとゴツゴツ当たらないようにコライダーをオフにする
-
-                // 赤い軌道（ルート）に強制的に乗せて移動させる
-                StartCoroutine(FlyOnRedRouteRoutine());
-            }
+        // 移動中は物理を無視して位置を更新し続ける
+        if (currentPointIndex < pathPoints.Length)
+        {
+            Vector2 targetPos = pathPoints[currentPointIndex].position;
+            transform.position = Vector2.MoveTowards(transform.position, targetPos, moveSpeed * Time.fixedDeltaTime);
+            if (Vector2.Distance(transform.position, targetPos) < 0.2f) currentPointIndex++;
+        }
+        else
+        {
+            // ゴール到着時
+            MoveToFinalSocket();
         }
     }
 
-    // プレイヤーがどこから当たっても、100%確実に赤いルートしか通らなくなるコルーチン
-    private IEnumerator FlyOnRedRouteRoutine()
+    private void MoveToFinalSocket()
     {
-        float elapsedTime = 0f;
-        Vector3 startPos = transform.position; // 叩かれた瞬間のカギの現在地
-        Vector3 targetPos = targetSocket.transform.position; // カギ穴の正確な位置
+        Vector2 targetPos = targetSocket.transform.position;
+        transform.position = Vector2.MoveTowards(transform.position, targetPos, moveSpeed * Time.fixedDeltaTime);
 
-        // 軌道の計算（中間地点を割り出す）
-        Vector3 midPoint = (startPos + targetPos) / 2f;
-        // curveHeightが0なら直線、数値が入っていれば上空を通る放物線のルートになります
-        Vector3 controlPoint = midPoint + Vector3.up * curveHeight;
-
-        while (elapsedTime < travelDuration)
+        if (Vector2.Distance(transform.position, targetPos) < 0.1f)
         {
-            elapsedTime += Time.deltaTime;
-            float t = elapsedTime / travelDuration;
-
-            // スムーズな加減速を適用（ベジェ曲線でルートを固定）
-            float easeT = Mathf.SmoothStep(0f, 1f, t);
-
-            Vector3 m1 = Vector3.Lerp(startPos, controlPoint, easeT);
-            Vector3 m2 = Vector3.Lerp(controlPoint, targetPos, easeT);
-
-            // カギの座標を、計算された赤いルートの上に強制的に書き換える
-            transform.position = Vector3.Lerp(m1, m2, easeT);
-
-            yield return null;
+            isFlying = false;
+            // 最後に物理を復活させる
+            myRb.simulated = true;
+            myRb.bodyType = RigidbodyType2D.Dynamic;
+            targetSocket.SendMessage("OnTriggerEnter2D", GetComponent<Collider2D>(), SendMessageOptions.DontRequireReceiver);
+            enabled = false;
         }
-
-        // 最後にカギ穴の真ん中にぴったり合わせる
-        transform.position = targetPos;
-
-        // カギ穴（KeySocket）のスクリプトを呼び出して、ガチャンとはめる仕掛けを起動
-        targetSocket.SendMessage("OnTriggerEnter2D", myCollider, SendMessageOptions.DontRequireReceiver);
     }
 }
