@@ -63,6 +63,13 @@ public class EnemyCollision : MonoBehaviour
             AutoAssignPierceColliders();
             if (pierceBodyCollider != null) pierceBodyCollider.isTrigger = false; // 床・壁にソリッドで当たる
             if (pierceDamageTrigger != null) pierceDamageTrigger.isTrigger = true;  // プレイヤー検出はトリガー
+
+            // ダメージ用トリガーが無いと OnTriggerEnter2D が発火せず、HandleHit が一度も呼ばれない
+            // ＝プレイヤーが当てても敵が絶対に死なない。コライダー1個のプレハブに Pierce を設定すると起きる。
+            // 2コライダー方式（Body=ソリッド + もう1つ=トリガー）にして両方を割り当てること。
+            if (pierceDamageTrigger == null)
+                Debug.LogWarning($"{gameObject.name}: Pierce なのにダメージ用トリガーColliderがありません。" +
+                                 "トリガーのCollider2Dを追加して pierceDamageTrigger に割り当てないと敵が死にません。", this);
         }
         else
         {

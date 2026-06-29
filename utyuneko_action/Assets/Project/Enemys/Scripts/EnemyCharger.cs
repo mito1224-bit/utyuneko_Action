@@ -71,6 +71,7 @@ public class EnemyCharger : MonoBehaviour
     private Transform player;
     private EnemyKnockback knockback;
     private Collider2D col;
+    private Rigidbody2D rb;
     private Renderer[] renderers;
 
     public bool IsStunned => phase == Phase.Stun;
@@ -79,6 +80,7 @@ public class EnemyCharger : MonoBehaviour
     {
         knockback = GetComponent<EnemyKnockback>();
         col = GetComponent<Collider2D>();
+        rb = GetComponent<Rigidbody2D>();
         renderers = GetComponentsInChildren<Renderer>();
     }
 
@@ -110,7 +112,7 @@ public class EnemyCharger : MonoBehaviour
                 break;
 
             case Phase.Charge:
-                ChargeStep();
+                // 突進の移動と壁検知は FixedUpdate（物理）側で行う（rb.MovePosition でスイープ衝突させるため）
                 break;
 
             case Phase.Stun:
@@ -122,6 +124,24 @@ public class EnemyCharger : MonoBehaviour
                 Countdown(() => phase = Phase.Idle);
                 break;
         }
+    }
+
+    // 突進の移動は物理ステップで行う。rb.MovePosition なら静的な床・壁にスイープ衝突で止まり、
+    // transform 直書きのようにすり抜けない（高速突進では Collision Detection を Continuous 推奨）。
+    void FixedUpdate()
+    {
+        if (phase != Phase.Charge) return;
+        // 吹き飛び中／死亡中は突進移動しない（中断は Update 側で処理）
+        if (knockback != null && (knockback.IsActive || knockback.IsDying)) return;
+        ChargeStep();
+    }
+
+    // 突進中に wallLayers の壁へ実際に接触したらスタン。先読み（CircleCast）が取りこぼしたときの保険。
+    void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (phase != Phase.Charge) return;
+        if ((wallLayers.value & (1 << collision.gameObject.layer)) == 0) return;
+        BeginStun();
     }
 
     private void Countdown(System.Action onElapsed)
@@ -149,6 +169,7 @@ public class EnemyCharger : MonoBehaviour
 
     private void BeginStun()
     {
+        if (rb != null) rb.linearVelocity = Vector2.zero; // 突進終了。衝突で得た残留速度を消す
         phase = Phase.Stun;
         timer = Mathf.Max(0f, stunDuration);
         blinkTimer = 0f;
@@ -156,6 +177,7 @@ public class EnemyCharger : MonoBehaviour
 
     private void BeginCooldown()
     {
+        if (rb != null) rb.linearVelocity = Vector2.zero; // 突進終了。衝突で得た残留速度を消す
         SetRenderersEnabled(true); // スタン点滅から確実に表示へ戻す
         phase = Phase.Cooldown;
         timer = Mathf.Max(0f, cooldown);
@@ -173,25 +195,29 @@ public class EnemyCharger : MonoBehaviour
 
     private void ChargeStep()
     {
-        float step = chargeSpeed * Time.deltaTime;
+        if (rb == null) return;
 
-        // 進行方向の壁を Raycast。今フレームの移動量＋余白の範囲で検知（トンネリング回避）
-        Vector2 origin = (Vector2)transform.position + chargeDir * (HalfWidth() + 0.02f);
-        RaycastHit2D hit = Physics2D.Raycast(origin, chargeDir, step + wallSkin, wallLayers);
+        float step = chargeSpeed * Time.fixedDeltaTime;
+
+        // 進行方向の壁を CircleCast で先読み。当たれば壁手前まで進んで自滅スタン。
+        // 今フレームの移動量＋余白の距離だけ先読みしてトンネリングも回避する。
+        RaycastHit2D hit = Physics2D.CircleCast(rb.position, BodyRadius(), chargeDir, step + wallSkin, wallLayers);
 
         if (hit.collider != null)
         {
-            // 壁手前まで進んで自滅スタン
+            // 壁手前（本体が wallSkin だけ残る位置）まで進んで自滅スタン
             float travel = Mathf.Max(0f, hit.distance - wallSkin);
-            transform.position += (Vector3)(chargeDir * travel);
+            rb.MovePosition(rb.position + chargeDir * travel);
             BeginStun();
             return;
         }
 
-        transform.position += (Vector3)(chargeDir * step);
+        // 物理移動。MovePosition なので静的な床・壁にはスイープ衝突で止まり transform 直書きのようにすり抜けない。
+        // 先読みが取りこぼしても物理で止まり、OnCollisionEnter2D 側でスタンする。
+        rb.MovePosition(rb.position + chargeDir * step);
 
         // 壁に当たらず保険時間を過ぎたら突進終了（スタンはしない）
-        timer -= Time.deltaTime;
+        timer -= Time.fixedDeltaTime;
         if (timer <= 0f) BeginCooldown();
     }
 
@@ -226,9 +252,13 @@ public class EnemyCharger : MonoBehaviour
         return true;
     }
 
-    private float HalfWidth()
+    // 本体のおおよその半径（CircleCast 用）。コライダーの小さい方の半幅を採用し、
+    // 円が本体内に収まるようにする（壁へ正面から当たれば前面で止まる）。
+    private float BodyRadius()
     {
-        return col != null ? col.bounds.extents.x : 0.5f;
+        if (col == null) return 0.5f;
+        Vector2 e = col.bounds.extents;
+        return Mathf.Max(0.01f, Mathf.Min(e.x, e.y));
     }
 
     // ─── スタン点滅 ───────────────────────────────
