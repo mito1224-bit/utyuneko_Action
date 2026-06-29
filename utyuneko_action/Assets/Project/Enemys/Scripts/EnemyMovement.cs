@@ -2,7 +2,9 @@ using UnityEngine;
 
 /// <summary>
 /// エネミーの左右巡回移動。
-/// transform で manual に動かす（EnemyKnockback と同じ方式で物理が衝突しない）。XY平面で動作。
+/// 移動は Rigidbody2D.MovePosition で行う（物理ステップでスイープ移動するので静的な床・壁にぶつかって止まる）。
+/// ※ Dynamic ボディを transform.Translate で動かすと「テレポート」になり壁の衝突判定をすり抜けるため使わない。
+/// Rigidbody2D が無いオブジェクトでは従来どおり transform.Translate にフォールバックする。XY平面で動作。
 ///
 /// 追加挙動:
 ///   - 斜め下へレイを飛ばし、進行方向の先に床が無ければ反転（崖から落ちない）
@@ -39,6 +41,10 @@ public class EnemyMovement : MonoBehaviour
     private float reverseTimer = 0f;
 
     [Header("進行方向に合わせた回転")]
+    [Tooltip("向き回転を当てる対象（プレイヤーに倣った Rotation 層の子。未割り当てなら従来どおりルート＝後方互換）。" +
+             "Rigidbody2D/Collider2D と同居するルートに回転を当てると2Dの当たり判定がつぶれて壁すり抜けの原因になるため、" +
+             "コライダーを持たない子（Model の親）を割り当てること")]
+    public Transform visualTransform;
     [Tooltip("進行方向に合わせてモデルの角度を変える")]
     public bool rotateToMoveDirection = true;
     [Tooltip("回転させる軸（追加された3Dモデルの振り向きは通常Y軸）")]
@@ -71,11 +77,13 @@ public class EnemyMovement : MonoBehaviour
 
     private EnemyKnockback knockback;
     private Collider2D col;
+    private Rigidbody2D rb;
 
     void Awake()
     {
         knockback = GetComponent<EnemyKnockback>();
         col = GetComponent<Collider2D>();
+        rb = GetComponent<Rigidbody2D>();
     }
 
     void Start()
@@ -99,7 +107,22 @@ public class EnemyMovement : MonoBehaviour
         // 進行方向に合わせて滑らかに振り向く（戻り中も含め、吹き飛び中以外は常に更新）
         if (rotateToMoveDirection) UpdateFacing();
 
-        // 吹き飛びが収まっていて元位置から離れているなら、待ってから戻る
+        // 復帰中は巡回の検知・反転を行わない（実移動は FixedUpdate）
+        if (returnToStart && displaced) return;
+
+        // 壁・崖検知と時間反転は moveDirection を更新するだけ（実移動は FixedUpdate の MovePosition）
+        HandleWallAndEdge();
+        if (useTimedReversal) HandleDirectionChange();
+    }
+
+    // 実際の位置移動は物理ステップで rb.MovePosition で行う。
+    // Dynamic な Rigidbody2D を transform で動かすとテレポート扱いになり静的な壁をすり抜けるため、
+    // MovePosition でスイープ移動させて床・壁にぶつかって止まるようにする。
+    void FixedUpdate()
+    {
+        // 吹き飛び中／死亡中は EnemyKnockback が transform を制御するので動かさない
+        if (knockback != null && (knockback.IsActive || knockback.IsDying)) return;
+
         if (returnToStart && displaced)
         {
             ReturnToStart();
@@ -107,16 +130,22 @@ public class EnemyMovement : MonoBehaviour
         }
 
         Move();
-        HandleWallAndEdge();
-        if (useTimedReversal) HandleDirectionChange();
     }
 
     private void Move()
     {
-        // 指定した方向へ速度を掛けて移動。
-        // ※ Space.World を明示。既定の Space.Self だと回転した分だけ移動方向もローカル軸で傾き、
-        //   Y回転で奥/手前（ワールドZ）へ流れてエネミーが小さく（遠くに）なってしまうため。
-        transform.Translate(moveDirection.normalized * moveSpeed * Time.deltaTime, Space.World);
+        // ワールド座標での移動量（回転に依らずワールド軸で動かす。Y回転で奥/手前へ流れるのを防ぐ）。
+        Vector2 delta = (Vector2)(moveDirection.normalized) * moveSpeed * Time.fixedDeltaTime;
+
+        if (rb != null)
+        {
+            // Dynamic ボディをスイープ移動。静的な床・壁に当たると止まる（transform 直書きと違いすり抜けない）
+            rb.MovePosition(rb.position + delta);
+        }
+        else
+        {
+            transform.Translate(delta, Space.World);
+        }
     }
 
     private void HandleDirectionChange()
@@ -219,13 +248,17 @@ public class EnemyMovement : MonoBehaviour
     }
 
     // 選択した軸へ currentAngle を適用する（他の軸は0）。
+    // 回転は visualTransform（プレイヤーに倣った Rotation 層の子）へ当てる。
+    // 未割り当てなら従来どおりルートへ当てる（後方互換）。ただしルートに Rigidbody2D/Collider2D が
+    // 同居している場合、ルートを回すと2Dの当たり判定がつぶれて壁すり抜けの原因になる点に注意。
     private void ApplyRotation()
     {
+        Transform t = visualTransform != null ? visualTransform : transform;
         switch (rotationAxis)
         {
-            case RotationAxis.X: transform.localRotation = Quaternion.Euler(currentAngle, 0f, 0f); break;
-            case RotationAxis.Y: transform.localRotation = Quaternion.Euler(0f, currentAngle, 0f); break;
-            default:             transform.localRotation = Quaternion.Euler(0f, 0f, currentAngle); break;
+            case RotationAxis.X: t.localRotation = Quaternion.Euler(currentAngle, 0f, 0f); break;
+            case RotationAxis.Y: t.localRotation = Quaternion.Euler(0f, currentAngle, 0f); break;
+            default:             t.localRotation = Quaternion.Euler(0f, 0f, currentAngle); break;
         }
     }
 
@@ -234,15 +267,19 @@ public class EnemyMovement : MonoBehaviour
     /// </summary>
     private void ReturnToStart()
     {
-        returnTimer += Time.deltaTime;
+        returnTimer += Time.fixedDeltaTime;
         if (returnTimer < returnDelay) return;
 
         Vector3 target = new Vector3(startPosition.x, startPosition.y, transform.position.z);
-        transform.position = Vector3.MoveTowards(transform.position, target, returnSpeed * Time.deltaTime);
+        Vector3 next = Vector3.MoveTowards(transform.position, target, returnSpeed * Time.fixedDeltaTime);
 
-        if ((transform.position - target).sqrMagnitude <= returnThreshold * returnThreshold)
+        if (rb != null) rb.MovePosition(next);
+        else transform.position = next;
+
+        if ((next - target).sqrMagnitude <= returnThreshold * returnThreshold)
         {
-            transform.position = target;
+            if (rb != null) rb.MovePosition(target);
+            else transform.position = target;
             displaced = false;
             returnTimer = 0f;
         }

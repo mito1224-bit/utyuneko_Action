@@ -147,6 +147,9 @@ public class EnemyKnockback : MonoBehaviour
     {
         Vector3 dir = transform.position - fromPosition;
         dir.z = 0f;
+        // 上から殴られたとき真下へ飛ばすと、transform 移動のため床・壁をすり抜けて落下していく。
+        // 下向き成分は消して水平のみ残し、必ず upwardBlend の上向きが効くようにする。
+       // if (dir.y < 0f) dir.y = 0f;
         if (dir.sqrMagnitude < 0.0001f) dir = Vector3.right;
         dir = dir.normalized;
 

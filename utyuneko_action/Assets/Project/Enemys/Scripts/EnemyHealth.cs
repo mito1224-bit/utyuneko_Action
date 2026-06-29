@@ -11,6 +11,11 @@ public class EnemyHealth : MonoBehaviour
     public int maxHp = 10;
     private int currentHp;
 
+    [Header("状態フラグ")]
+    [Tooltip("HPが0になって撃破された瞬間に true になる（読み取り専用。他スクリプトから参照可）")]
+    [SerializeField] private bool isDeadFlg = false;
+    public bool IsDeadFlg => isDeadFlg; // 外部からは読み取りのみ
+
     [Header("ダメージ判定設定")]
     [Tooltip("ダメージを与えるための最低スピード")]
     public float damageSpeedThreshold = 5.0f;
@@ -84,6 +89,7 @@ public class EnemyHealth : MonoBehaviour
 
     private void Die(int lastDamage, Vector3 hitFromPosition)
     {
+        isDeadFlg = true; // 撃破フラグを立てる（ノックバック処理より先に立てて同フレーム参照でも拾える）
         Debug.Log($"{gameObject.name} を撃破！");
         if (knockback != null)
         {

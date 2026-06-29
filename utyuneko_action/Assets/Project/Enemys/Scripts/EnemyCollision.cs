@@ -49,6 +49,14 @@ public class EnemyCollision : MonoBehaviour
     {
         enemyHealth = GetComponent<EnemyHealth>();
 
+        // 回転だけ固定する（Z回転フリーズ）。位置は固定しない。
+        // 巡回移動は EnemyMovement が rb.MovePosition でスイープ移動させ、静的な床・壁にぶつかって
+        // 止まる前提（CLAUDE.md 2026/06/25 のすり抜け修正）。ここで FreezeAll にして位置を固定すると
+        // MovePosition の移動・壁衝突と干渉してしまうため、位置の拘束はかけない。
+        // ※プレイヤーに押されてズレる懸念は Rigidbody2D の Mass / 衝突解決側で調整する。
+        Rigidbody2D rb = GetComponent<Rigidbody2D>();
+        if (rb != null) rb.constraints = RigidbodyConstraints2D.FreezeRotation;
+
         if (collisionType == CollisionType.Pierce)
         {
             // Pierce: 環境用のソリッドBody + プレイヤー検出用トリガーの2コライダー構成
