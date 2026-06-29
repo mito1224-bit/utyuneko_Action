@@ -14,9 +14,10 @@ public class PlayerHPBar : MonoBehaviour
     [SerializeField] private Color colorWarning = new Color(1f, 0.6f, 0f);
     [SerializeField] private Color colorDanger = new Color(1f, 0.2f, 0.2f);
 
-    // ===================================================================
-    // ⏱️【新設】オート縮小（非表示）パラメータ
-    // ===================================================================
+    [Header("背景の表示設定")]
+    [Tooltip("HPが減ったときに、後ろに灰色の背景（枠）を残すかどうか")]
+    [SerializeField] private bool showBackground = true;
+
     [Header("非戦闘時のスマート縮小設定")]
     [Tooltip("ダメージ等の変化を受けてから、フルサイズを維持する時間（秒）")]
     [SerializeField] private float displayDuration = 3.0f;
@@ -33,17 +34,12 @@ public class PlayerHPBar : MonoBehaviour
     private Coroutine[] blinkRoutines;
     private float glitchTimer = 0f;
 
-    // 内部管理用の変数
     private float displayTimer = 0f;
     private Vector3 normalScale;
 
     void Start()
     {
-        // 💡 エディタ上で設定された元々のHPバーの大きさを「通常サイズ」として記憶しておく
-        // これにより、元々のスケールが1じゃなくてもデザインが崩れなくなります
         normalScale = transform.localScale;
-
-        // ゲーム開始時はまずフルサイズで見せておく
         displayTimer = displayDuration;
 
         GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
@@ -89,7 +85,16 @@ public class PlayerHPBar : MonoBehaviour
             GameObject newCell = Instantiate(hpCellPrefab, transform);
             newCell.name = $"HP_Cell_{i}";
 
-            Image cellImage = newCell.GetComponent<Image>();
+            Transform bgTransform = newCell.transform.Find("Background");
+            if (bgTransform != null)
+            {
+                bgTransform.gameObject.SetActive(showBackground);
+            }
+
+            // 新しく作ったプレハブの子オブジェクト "Fill" からImageを探す
+            Transform fillTransform = newCell.transform.Find("Fill");
+            Image cellImage = (fillTransform != null) ? fillTransform.GetComponent<Image>() : newCell.GetComponent<Image>();
+
             if (cellImage != null)
             {
                 hpCellsList.Add(cellImage);
@@ -97,17 +102,10 @@ public class PlayerHPBar : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// プレイヤーのHPが変化した瞬間（被弾時・回復時）に自動的に呼び出される関数
-    /// </summary>
     private void RefreshHP()
     {
         if (playerHealth == null || hpCellsList.Count == 0) return;
 
-        // ===================================================================
-        // 💥【神アップデート】ダメージを喰らったらタイマーを速攻で満タンにリセット！
-        // これにより、縮んでいたHPバーが即座に「フルサイズ」へと拡張されます！
-        // ===================================================================
         displayTimer = displayDuration;
 
         int currentHealth = playerHealth.CurrentHealth;
@@ -172,23 +170,14 @@ public class PlayerHPBar : MonoBehaviour
 
     void Update()
     {
-        // ===================================================================
-        // ⏱️【新設】HPバー全体の自動サイズ制御ロジック
-        // ===================================================================
         if (displayTimer > 0f)
         {
-            // 時間をジワジワ減算していく
             displayTimer -= Time.deltaTime;
         }
 
-        // タイマーがまだ残っているなら「元の大きさ」、切れたら「縮小サイズ」を目標の型紙にする
         Vector3 targetScale = (displayTimer > 0f) ? normalScale : shrunkScale;
-
-        // 毎フレーム、Lerpを使って滑らかにサイズを伸び縮みさせる（ガタつきゼロ！）
         transform.localScale = Vector3.Lerp(transform.localScale, targetScale, Time.deltaTime * scaleSpeed);
 
-
-        // 🚨 残りHPが1（ピンチ）の時の、生存マスの明滅処理（既存のまま安全に両立！）
         if (playerHealth != null && playerHealth.CurrentHealth == 1 && hpCellsList.Count > 0)
         {
             int lastIndex = hpCellsList.Count - 1;

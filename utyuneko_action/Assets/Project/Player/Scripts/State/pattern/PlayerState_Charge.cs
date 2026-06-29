@@ -16,6 +16,9 @@ public class PlayerState_Charge : IPlayerState
         p = player;
         Debug.Log("ステート変更：チャージ開始（空中スロー）");
 
+        SoundManager.Instance.PlayLoopSE(p.gameObject, SeType.PlayerCharging);
+        SoundManager.Instance.FadeBGMVolume(0.5f, 0.5f);
+
         if (p.hoverSensor != null) p.hoverSensor.GetComponent<Collider2D>().enabled = false;
 
         // インスペクターの「useInertiaInCharge」を見て慣性を残すか、その場停止かを切り替える
@@ -167,6 +170,9 @@ public class PlayerState_Charge : IPlayerState
 
     public void Exit()
     {
+        SoundManager.Instance.StopLoopSE(p.gameObject);
+        SoundManager.Instance.FadeBGMVolume(1.0f, 0.5f);
+
         p.OnCollisionEnterEvent -= OnCollisionEnter; //
 
         if (TimeManager.Instance != null)

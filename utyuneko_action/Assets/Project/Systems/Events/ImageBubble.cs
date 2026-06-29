@@ -80,6 +80,8 @@ public class ImageBubble : MonoBehaviour
         if (spriteRenderer == null) return;
         if (currentAnimRoutine != null) StopCoroutine(currentAnimRoutine);
 
+        SoundManager.Instance.PlaySE(SeType.PlayerIconPop);
+
         switch (type) 
         {
             case StampType.OK: spriteRenderer.sprite = imgOK; break;

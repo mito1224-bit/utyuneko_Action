@@ -1,14 +1,22 @@
 ﻿using System.Collections;
 using UnityEngine;
 
-public class RescueEventManager : MonoBehaviour
+public class RescueEventManager : BaseEventManager
 {
     public static RescueEventManager Instance { get; private set; }
 
-    public enum RescueState { InDanger, Thanking, Absorbing, Talking, Finished }
+    public enum RescueState
+    {
+        BeforeArea,     // 1. まだエリアに入っていない（初期状態）
+        AreaSignShowed, // 2. エリアに入って、補佐のピンチ演出が終わった（敵撃破待ち）
+        InEvent,        // 3. 敵を倒して、お礼を言っている最中
+        Absorbing,      // 4. 補佐が敵に近づいて吸引している最中
+        Talking,        // 5. 地面に降りてスタンプ会話劇をしている最中
+        Finished        // 6. すべて終了
+    }
 
     [Header("現在のイベント状態（確認用）")]
-    [SerializeField] private RescueState currentState = RescueState.InDanger;
+    [SerializeField] private RescueState currentState = RescueState.BeforeArea;
     public RescueState CurrentState => currentState;
 
     [Header("登場オブジェクトの設定")]
@@ -18,68 +26,43 @@ public class RescueEventManager : MonoBehaviour
     [SerializeField] private ImageBubble hosaBubble;
     [SerializeField] private ImageBubble playerBubble;
 
-    [Header("⏱️ オート＆スキップスピード設定")]
-    [Tooltip("スタンプが自動で消えて次に進むまでの基本の時間（秒）")]
-    [SerializeField] private float defaultDisplayTime = 1.5f;
-
-    // インスペクターからスキップ時の倍速を自由に変更できるようになりました！
-    [Tooltip("長押しスキップ中に、演出や移動が何倍速になるか（デフォルトは100倍速）")]
-    [SerializeField] private float skipSpeedMultiplier = 100f;
-
     [Header("補佐の移動スピード")]
     [SerializeField] private float hosaMoveSpeed = 5f;
 
-    // 2.5Dロックオン用の調整パラメータ
     private float maxLookAngle = 30f;
     private float lookSmoothing = 12.0f;
 
-    // 2.5D回転の目標角度（Y軸）
     private float hosaInDangerYAngle = 180f;
     private float hosaRightYAngle = 310f;
     private float hosaLeftYAngle = 50f;
 
     private EventEnemy targetEnemy;
-    private Transform playerTransform;
-    private PlayerController playerController;
     private Vector3 hosaFloorPosition;
 
-    /// <summary>
-    /// 今プレイヤーがスキップボタン（スペースキー or 左クリック）を長押ししているかを判定
-    /// </summary>
-    private bool IsSkipping => Input.GetKey(KeyCode.Space) || Input.GetMouseButton(0);
+    // 💡【新設】エリア演出のコルーチンをピンポイントで止めるための専用の型
+    private Coroutine areaNoticeCoroutine;
 
-    void Awake()
+    protected override void Awake()
     {
+        base.Awake();
         Instance = this;
     }
 
     void Start()
     {
-        currentState = RescueState.InDanger;
+        currentState = RescueState.BeforeArea;
 
         if (hosa != null)
         {
             hosaFloorPosition = hosa.transform.position;
             hosa.transform.localRotation = Quaternion.Euler(0f, hosaInDangerYAngle, 0f);
             hosa.TransitionToState(hosa.StateEvent);
-
-            if (hosaBubble != null)
-            {
-                hosaBubble.ShowStamp(ImageBubble.StampType.Confusion);
-            }
-        }
-
-        GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
-        if (playerObj != null)
-        {
-            playerTransform = playerObj.transform;
-            playerController = playerObj.GetComponent<PlayerController>();
         }
     }
 
     void LateUpdate()
     {
-        if (currentState != RescueState.InDanger && currentState != RescueState.Finished)
+        if (currentState != RescueState.BeforeArea &&currentState != RescueState.AreaSignShowed && currentState != RescueState.Finished)
         {
             KeepLookingAtEachOther();
         }
@@ -93,9 +76,7 @@ public class RescueEventManager : MonoBehaviour
         {
             Vector3 dirToEnemy = targetEnemy.transform.position - hosa.transform.position;
             float targetHosaYAngle = (dirToEnemy.x > 0f) ? hosaRightYAngle : hosaLeftYAngle;
-            float hosaAngleX = 0f;
-
-            Quaternion targetHosaRot = Quaternion.Euler(hosaAngleX, targetHosaYAngle, 0f);
+            Quaternion targetHosaRot = Quaternion.Euler(0f, targetHosaYAngle, 0f);
             hosa.transform.localRotation = Quaternion.Lerp(hosa.transform.localRotation, targetHosaRot, Time.deltaTime * lookSmoothing);
         }
         else
@@ -138,89 +119,90 @@ public class RescueEventManager : MonoBehaviour
         }
     }
 
+    // ===================================================================
+    // 🏃‍♂️ ① 当たり判定に入った時に呼ばれる演出（操作禁止はカメラ側へ！）
+    // ===================================================================
+    public void OnAreaEntered()
+    {
+        if (currentState == RescueState.BeforeArea)
+        {
+            // 💡 後から安全に止められるように、変数に代入してキック！
+            areaNoticeCoroutine = StartCoroutine(AreaNoticeRoutine());
+        }
+    }
+
+    private IEnumerator AreaNoticeRoutine()
+    {
+        // 🛑【修正】BlockPlayerInput() を削除（カメラ側のプレハブで制御するため）
+
+        // 🎥 カメラが向くわずかなタメ
+        yield return new WaitForSecondsRealtime(0.2f);
+
+        // 補佐の頭上に「混乱スタンプ」を表示！音がピキーンと鳴る
+        if (hosaBubble != null)
+        {
+            hosaBubble.ShowStamp(ImageBubble.StampType.Confusion);
+        }
+
+        SoundManager.Instance.PlayLoopSE(hosa.gameObject, SeType.HosaConfusion);
+
+        // 🛑【修正】ReleasePlayerInput() を削除（カメラ側のプレハブで制御するため）
+
+        // 💡【安全弁】もしこの1.5秒の間にすでに敵が倒されて本番（InEvent）になっていたら、
+        // 上書きしてしまわないようにステート変更をスルーする
+        if (currentState == RescueState.BeforeArea)
+        {
+            currentState = RescueState.AreaSignShowed;
+        }
+
+        areaNoticeCoroutine = null;
+    }
+
+    // ===================================================================
+    // ⚔️ ②【包容力アップ】周りの敵を全滅させた時に呼ばれる関数
+    // ===================================================================
     public void OnEnemyDefeated(EventEnemy enemy)
     {
-        if (currentState == RescueState.InDanger)
+        // 💡【超重要バグ対策】エリア演出前（BeforeArea）だろうが、演出の途中だろうが、
+        // 敵さえ死ねば「何が何でも確実に」本番イベント（InEvent）へ引きずり込む！
+        if (currentState == RescueState.BeforeArea || currentState == RescueState.AreaSignShowed)
         {
+            // 🧼 エリア演出のコルーチンがまだ動いている途中なら、安全に緊急停止する！
+            if (areaNoticeCoroutine != null)
+            {
+                StopCoroutine(areaNoticeCoroutine);
+                areaNoticeCoroutine = null;
+            }
+
             targetEnemy = enemy;
-            currentState = RescueState.Thanking;
+            currentState = RescueState.InEvent;
 
-            if (playerController != null && playerController.inputActions != null)
-            {
-                playerController.inputActions.Player.Disable();
-                playerController.TransitionToState(playerController.StateNormal);
-            }
+            // 本格的な会話イベントが始まったので、親玉のシステム（操作ロック・UI隠し・長押し監視）をON！
+            StartEvent();
 
-            if (hosaBubble != null)
-            {
-                hosaBubble.StartFadeOut();
-            }
+            if (hosaBubble != null) hosaBubble.StartFadeOut();
 
-            StartCoroutine(RescueEventTimelineRoutine());
+            activeTimelineCoroutine = StartCoroutine(RescueEventTimelineRoutine());
         }
     }
 
-    private IEnumerator Speak(ImageBubble bubble, ImageBubble.StampType stampType, float customDuration = -1f)
-    {
-        if (bubble == null)
-        {
-            Debug.LogError($"[RescueEventManager] 吹き出しがセットされていません：{stampType}");
-            yield break;
-        }
-
-        bubble.ShowStamp(stampType);
-        yield return null;
-
-        float displayDuration = (customDuration > 0f) ? customDuration : defaultDisplayTime;
-        float elapsedTime = 0f;
-
-        while (elapsedTime < displayDuration)
-        {
-            if (IsSkipping)
-            {
-                break;
-            }
-
-            elapsedTime += Time.deltaTime;
-            yield return null;
-        }
-
-        bubble.StartFadeOut();
-    }
-
-    /// <summary>
-    /// 長押しスキップに対応した、演出用のディレイ関数
-    /// </summary>
-    private IEnumerator Wait(float duration)
-    {
-        float elapsedTime = 0f;
-        while (elapsedTime < duration)
-        {
-            // スキップ中なら skipSpeedMultiplier（100倍）の速さで時間を進める！
-            float deltaTime = IsSkipping ? (Time.deltaTime * skipSpeedMultiplier) : Time.deltaTime;
-            elapsedTime += deltaTime;
-            yield return null;
-        }
-    }
-
-    /// <summary>
-    /// 敵の吸引演出も100%倍速連動するシネマティック・タイムライン
-    /// </summary>
+    // ===================================================================
+    // 🎬 ③ 本番の一本道会話劇タイムライン
+    // ===================================================================
     private IEnumerator RescueEventTimelineRoutine()
     {
+        SoundManager.Instance.StopLoopSE(hosa.gameObject);
+
+        SoundManager.Instance.FadeBGMVolume(0.3f, 1.0f);
+
         yield return StartCoroutine(Wait(2.0f));
 
-        // ==========================================
-        // 1. 補佐救出して補佐がお礼を言う
-        // ==========================================
+        // 1. お礼を言う
         yield return StartCoroutine(Speak(hosaBubble, ImageBubble.StampType.Joy));
         yield return StartCoroutine(Wait(0.5f));
 
-        // ==========================================
-        // 2. 補佐が敵に近づいていくのをdB君が「❓」と思う
-        // ==========================================
+        // 2. 補佐が敵に近づく
         currentState = RescueState.Absorbing;
-
         Coroutine playerQuestion = StartCoroutine(Speak(playerBubble, ImageBubble.StampType.Question));
 
         if (targetEnemy != null && hosa != null)
@@ -228,46 +210,29 @@ public class RescueEventManager : MonoBehaviour
             Vector3 targetPosition = targetEnemy.transform.position + Vector3.up * 1.5f;
             while (Vector3.Distance(hosa.transform.position, targetPosition) > 0.05f)
             {
-                float currentMoveSpeed = IsSkipping ? hosaMoveSpeed * skipSpeedMultiplier : hosaMoveSpeed;
-
-                hosa.transform.position = Vector3.MoveTowards(hosa.transform.position, targetPosition, currentMoveSpeed * Time.deltaTime);
+                hosa.transform.position = Vector3.MoveTowards(hosa.transform.position, targetPosition, hosaMoveSpeed * Time.deltaTime);
                 yield return null;
             }
             hosa.transform.position = targetPosition;
         }
-
         yield return playerQuestion;
 
-        // ==========================================
-        // 3. 敵が補佐に吸い込まれて行って主人公はびっくりする
-        // ==========================================
-        float baseShrinkTime = 1.0f;
-        float currentShrinkTime = IsSkipping ? (baseShrinkTime / skipSpeedMultiplier) : baseShrinkTime;
-
+        // 3. 敵の吸引
         if (targetEnemy != null && hosa != null)
         {
-            targetEnemy.StartAbsorb(hosa.transform, currentShrinkTime);
+            targetEnemy.StartAbsorb(hosa.transform, 1.0f);
         }
 
-        // 驚きのスタンプをドン！
         yield return StartCoroutine(Speak(playerBubble, ImageBubble.StampType.Surprise));
+        yield return new WaitForSeconds(0.5f);
 
-        float baseWaitTime = 0.5f;
-        float currentWaitTime = IsSkipping ? (baseWaitTime / skipSpeedMultiplier) : baseWaitTime;
-        yield return new WaitForSeconds(currentWaitTime);
-
-        // ==========================================
-        // 🎬 4. 補佐が降りてきて自慢げにする
-        // ==========================================
+        // 4. 補佐が地面に降りてくる
         if (hosa != null)
         {
             Vector3 targetDropPosition = new Vector3(hosa.transform.position.x, hosaFloorPosition.y, hosa.transform.position.z);
             while (Vector3.Distance(hosa.transform.position, targetDropPosition) > 0.05f)
             {
-                // 💡【修正】ここもインスペクターの倍速設定を反映！
-                float currentDropSpeed = IsSkipping ? hosaMoveSpeed * skipSpeedMultiplier : hosaMoveSpeed;
-
-                hosa.transform.position = Vector3.MoveTowards(hosa.transform.position, targetDropPosition, currentDropSpeed * Time.deltaTime);
+                hosa.transform.position = Vector3.MoveTowards(hosa.transform.position, targetDropPosition, hosaMoveSpeed * Time.deltaTime);
                 yield return null;
             }
             hosa.transform.position = targetDropPosition;
@@ -276,9 +241,7 @@ public class RescueEventManager : MonoBehaviour
         currentState = RescueState.Talking;
         yield return StartCoroutine(Speak(hosaBubble, ImageBubble.StampType.Doya));
 
-        // ==========================================
-        // 🎬 5. オートスタンプ会話劇
-        // ==========================================
+        // 5. スタンプ会話劇
         yield return StartCoroutine(Speak(hosaBubble, ImageBubble.StampType.Right));
         yield return StartCoroutine(Wait(0.5f));
         yield return StartCoroutine(Speak(hosaBubble, ImageBubble.StampType.Enemy));
@@ -303,25 +266,51 @@ public class RescueEventManager : MonoBehaviour
         CompleteEvent();
     }
 
+    protected override void OnSkipWarp()
+    {
+        Debug.Log("暗転の裏側でイベント終了状態へ強制ワープ処理を実行中...");
+
+        SoundManager.Instance.FadeBGMVolume(1.0f, 1.0f);
+
+        if (hosaBubble != null) hosaBubble.StartFadeOut();
+        if (playerBubble != null) playerBubble.StartFadeOut();
+
+        if (targetEnemy != null) Destroy(targetEnemy.gameObject);
+
+        if (hosa != null)
+        {
+            Vector3 finalHosaPos = hosaFloorPosition;
+            if (targetEnemy != null)
+            {
+                finalHosaPos = new Vector3(targetEnemy.transform.position.x, hosaFloorPosition.y, hosa.transform.position.z);
+            }
+            hosa.transform.position = finalHosaPos;
+            hosa.transform.localRotation = Quaternion.identity;
+            hosa.TransitionToState(hosa.StateFollow);
+        }
+
+        currentState = RescueState.Finished;
+    }
+
+    protected override void OnEventFullyCompleted()
+    {
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.AdvanceStoryPhase();
+        }
+    }
+
     private void CompleteEvent()
     {
-        currentState = RescueState.Finished;
-        Debug.Log("イベント完了！");
-
-        if (playerController != null && playerController.inputActions != null)
-        {
-            playerController.inputActions.Player.Enable();
-        }
+        SoundManager.Instance.FadeBGMVolume(1.0f, 1.0f);
 
         if (hosa != null)
         {
             hosa.transform.localRotation = Quaternion.identity;
             hosa.TransitionToState(hosa.StateFollow);
         }
+        currentState = RescueState.Finished;
 
-        if (GameManager.Instance != null)
-        {
-            GameManager.Instance.AdvanceStoryPhase();
-        }
+        EndEvent();
     }
 }

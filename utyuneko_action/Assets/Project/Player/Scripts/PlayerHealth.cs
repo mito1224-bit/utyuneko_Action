@@ -77,6 +77,10 @@ public class PlayerHealth : MonoBehaviour
         }
 
         // 3. ダメージ適用
+        SoundManager.Instance.PlaySE(SeType.PlayerEnemyAttackHit);
+        SoundManager.Instance.FadeBGMVolume(0.2f, 0.0f);
+        SoundManager.Instance.FadeBGMVolume(1.0f, 2.0f);
+
         currentHealth -= damageAmount;
         currentHealth = Mathf.Max(-1, currentHealth); // HPが-1以下にならないようにロック
         Debug.Log($"被弾！ ダメージ: {damageAmount} / 残りHP: {currentHealth}");
@@ -131,6 +135,13 @@ public class PlayerHealth : MonoBehaviour
 
     private void Die()
     {
+        if (SoundManager.Instance != null)
+        {
+            SoundManager.Instance.StopLoopSE(p.gameObject);
+        }
+
+        SoundManager.Instance.PlaySE(SeType.PlayerDie);
+
         Debug.Log("プレイヤー死亡。ゲームオーバー処理を実行します");
         gameObject.SetActive(false);
     }
@@ -168,9 +179,17 @@ public class PlayerHealth : MonoBehaviour
     {
         // 当たった相手が「DamageSource」スクリプトを持っているか調べる
         DamageSource source = hitObject.GetComponent<DamageSource>();
+        EventEnemy eventEnemy = hitObject.GetComponent<EventEnemy>();
+        if(eventEnemy)
+        {
+            if (eventEnemy.isDefeated) return;
+        }
 
         if (source != null)
         {
+            if (hitObject.CompareTag("Enemy") && 
+                p.CurrentState == p.StateBurst) return;
+
             // 持っていたら設定されているダメージ量を喰らう
             TakeDamage(source.damageAmount);
         }
@@ -182,6 +201,8 @@ public class PlayerHealth : MonoBehaviour
 
         if (source != null)
         {
+            SoundManager.Instance.PlaySE(SeType.PlayerRecovery);
+
             // もし「全回復」にチェックが入っていたら
             if (source.isFullHeal)
             {

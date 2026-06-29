@@ -57,27 +57,17 @@ public class PlayerState_Normal : IPlayerState
             return;
         }
 
+        //ジャンプ
         if (p.inputActions.Player.Jump.triggered && p.IsGrounded())
         {
+            SoundManager.Instance.PlaySE(SeType.PlayerJump);
+            SoundManager.Instance.PlaySE(SeType.PlayerJump2);
+
             p.rb2D.linearVelocity = new Vector2(p.rb2D.linearVelocity.x, p.jumpForce);
 
             if (p.visualManager != null)
             {
                 p.visualManager.TriggerJumpStretch();
-            }
-
-            if (p.currentBurstCount > 0)
-            {
-                p.currentBurstCount = 0;
-            }
-        }
-
-        if (p.IsGrounded() && p.rb2D.linearVelocity.y <= 0.01f)
-        {
-            if (p.currentBurstCount > 0)
-            {
-                p.currentBurstCount = 0;
-                Debug.Log("バースト回数がリセット");
             }
         }
     }
@@ -141,7 +131,6 @@ public class PlayerState_Normal : IPlayerState
             }
             else
             {
-                // 💡【ここを修正！】
                 // 生の角度をそのまま入れるのではなく、180度より大きければ「右(310)」、
                 // 小さければ「左(50)」へと、近い方の綺麗な角度にカチッとスナップさせます！
                 float currentY = p.visualManager.playerVisual.localRotation.eulerAngles.y;
@@ -163,6 +152,12 @@ public class PlayerState_Normal : IPlayerState
         //「前フレームは空中だった」かつ「今フレームは接地している」なら着地した瞬間！
         if (isGroundedNow && !wasGroundedLastFrame)
         {
+            if (!BaseEventManager.IsAnyEventPlaying)
+            {
+                SoundManager.Instance.PlaySE(SeType.PlayerLanding);
+                SoundManager.Instance.PlaySE(SeType.PlayerLanding2);
+            }
+
             // 下方向にしっかり落ちている時だけ潰す（床を歩いている時の誤作動防止）
             if (p.rb2D.linearVelocity.y <= 0.1f)
             {

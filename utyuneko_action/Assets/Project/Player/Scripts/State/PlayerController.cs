@@ -50,6 +50,9 @@ public class PlayerController : MonoBehaviour, IEventActor
     public bool useTrail = true;       // トレイル演出のオンオフ
     public bool useAfterImage = true;  // 残像演出のオンオフ
 
+    [Header("リロード速度")]
+    public float reloadSpeed = 8f; // 地面に着いた時にゲージが溜まる速度
+
     [Header("Visual Manager Reference")]
     [Tooltip("演出管理コンポーネントの参照")]
     public PlayerVisualManager visualManager;
@@ -80,6 +83,7 @@ public class PlayerController : MonoBehaviour, IEventActor
 
     private ImageBubble imageBubble;
 
+    public PlayerState_None StateNone { get; private set; }
     public PlayerState_Normal StateNormal { get; private set; }
     public PlayerState_Charge StateCharge { get; private set; }
     public PlayerState_Burst StateBurst { get; private set; }
@@ -89,6 +93,7 @@ public class PlayerController : MonoBehaviour, IEventActor
     {
         inputActions = new GameInputActions();
 
+        StateNone = new PlayerState_None();
         StateNormal = new PlayerState_Normal();
         StateCharge = new PlayerState_Charge();
         StateBurst = new PlayerState_Burst();
@@ -184,7 +189,7 @@ public class PlayerController : MonoBehaviour, IEventActor
     public void OnEnemyKilledInBurst()
     {
             currentBurstCount = Mathf.Max(0, currentBurstCount - 1);
-            // currentBurstCount = 0;
+            // currentBurstCount = 0f;
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
