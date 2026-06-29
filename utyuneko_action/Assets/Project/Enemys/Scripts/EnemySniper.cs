@@ -79,6 +79,28 @@ public class EnemySniper : MonoBehaviour
     [Tooltip("銃口スプライトの基準向きの補正角（度）。既定は右(+X)向きが照準方向に一致。上向きの絵なら-90など")]
     public float aimAngleOffset = 0f;
 
+    [Header("モデルの向き（弾を打つ方向へ左右だけ向ける／Y軸）")]
+    [Tooltip("弾を打つ方向(lockedDir)の左右に合わせて向けるモデル＝Rotation層の子（プレイヤーに倣った入れ子の回転層）。" +
+             "EnemyMovement を付けない前提でスナイパー自身が回す。未指定なら何もしない。" +
+             "Rigidbody2D/Collider2D と同居するルートではなく、コライダーを持たない子を割り当てること")]
+    public Transform visualTransform;
+
+    [Tooltip("モデルを左右に向ける回転軸（追加された3Dモデルの振り向きは通常Y軸）")]
+    public RotationAxis visualRotationAxis = RotationAxis.Y;
+
+    [Tooltip("左向き（弾の方向が-x）のときの角度（度）。EnemyMovement と同じ既定")]
+    public float leftAngle = 50f;
+
+    [Tooltip("右向き（弾の方向が+x）のときの角度（度）。EnemyMovement と同じ既定")]
+    public float rightAngle = -50f;
+
+    [Tooltip("角度を変える速さ（度/秒）。0以下なら即時に切り替え")]
+    public float visualRotationSpeed = 360f;
+
+    public enum RotationAxis { X, Y, Z }
+    private float currentVisualAngle;     // 左右の角度間を補間する現在角
+    private bool hasVisualAngleInit;      // 初期角を設定済みか
+
     private enum Phase { Idle, Aim, Lock, Fire, Cooldown }
     private Phase phase = Phase.Idle;
     private float timer;
@@ -122,8 +144,9 @@ public class EnemySniper : MonoBehaviour
 
     void Update()
     {
-        // 銃口は常に現在の照準方向へ向ける（照準中は lockedDir がプレイヤーを追う）
+        // 銃口とモデルは常に現在の照準方向へ向ける（照準中は lockedDir がプレイヤーを追う）
         UpdateAimPivot();
+        UpdateModelFacing();
 
         // 吹き飛び中／死亡中は攻撃を中断
         if (knockback != null && (knockback.IsActive || knockback.IsDying))
@@ -262,6 +285,46 @@ public class EnemySniper : MonoBehaviour
         Vector3 pos = transform.position + (Vector3)offset;
         pos.z = transform.position.z; // Zは敵と同じ平面を維持
         aimPivot.position = pos;
+    }
+
+    // モデル（Rotation層）を弾を打つ方向(lockedDir)の左右に合わせて向ける。
+    // 砲台のように射線へ正確に向ける（Z軸）のではなく、左右だけ（Y軸）に振り向く＝3Dモデルが寝ない。
+    // ルートは回さず子の visualTransform だけ回すことで、ルートのコライダーをつぶさない。
+    private void UpdateModelFacing()
+    {
+        if (visualTransform == null) return;
+
+        float target = TargetVisualAngle();
+
+        // 初回は即座に目標角へ合わせる（最初の1フレームから正しい向き）
+        if (!hasVisualAngleInit)
+        {
+            currentVisualAngle = target;
+            hasVisualAngleInit = true;
+        }
+        else if (visualRotationSpeed > 0f)
+        {
+            currentVisualAngle = Mathf.MoveTowards(currentVisualAngle, target, visualRotationSpeed * Time.deltaTime);
+        }
+        else
+        {
+            currentVisualAngle = target; // 0以下なら即時切り替え
+        }
+
+        switch (visualRotationAxis)
+        {
+            case RotationAxis.X: visualTransform.localRotation = Quaternion.Euler(currentVisualAngle, 0f, 0f); break;
+            case RotationAxis.Y: visualTransform.localRotation = Quaternion.Euler(0f, currentVisualAngle, 0f); break;
+            default:             visualTransform.localRotation = Quaternion.Euler(0f, 0f, currentVisualAngle); break;
+        }
+    }
+
+    // 弾を打つ方向(lockedDir)の左右成分から目標角を決める。真上・真下（x≈0）のときは現在角を維持。
+    private float TargetVisualAngle()
+    {
+        if (lockedDir.x < 0f) return leftAngle;   // 左を狙う
+        if (lockedDir.x > 0f) return rightAngle;  // 右を狙う
+        return currentVisualAngle;
     }
 
     // 2DベクトルをZ軸回りに回す（ラジアン）
