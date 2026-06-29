@@ -6,6 +6,8 @@ public class DoorController : MonoBehaviour
     [Header("à⁄ìÆêÊÇÃÉVÅ[Éìñº")]
     [SerializeField] private string nextSceneName;
 
+    [SerializeField] private string targetSceneName = "SampleScene";
+
     private bool isPlayerInside = false;
 
     void Update()
@@ -41,7 +43,8 @@ public class DoorController : MonoBehaviour
     {
         if (!string.IsNullOrEmpty(nextSceneName))
         {
-            SceneManager.LoadScene(nextSceneName);
+            //SceneManager.LoadScene(nextSceneName);
+            TransitionManager.Instance.ChangeScene(nextSceneName, TransitionType.Wipe);
         }
         else
         {

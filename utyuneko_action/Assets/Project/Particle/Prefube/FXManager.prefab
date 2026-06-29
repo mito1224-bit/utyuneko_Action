@@ -60,3 +60,6 @@ MonoBehaviour:
   - type: 4
     prefab: {fileID: 9172571921106444741, guid: 9e8b1e2dc26e5cd46b430721b2bece15, type: 3}
     vfxDestroyDelay: 0
+  - type: 5
+    prefab: {fileID: 7844794896427113986, guid: 03d917cd2e81e3245acfa1325f82bcda, type: 3}
+    vfxDestroyDelay: 0
