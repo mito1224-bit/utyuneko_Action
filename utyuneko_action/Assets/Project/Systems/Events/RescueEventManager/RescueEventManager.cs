@@ -29,6 +29,9 @@ public class RescueEventManager : BaseEventManager
     [Header("補佐の移動スピード")]
     [SerializeField] private float hosaMoveSpeed = 5f;
 
+    [Header("イベント終了後破壊されるオブジェクト")]
+    [SerializeField] GameObject breakObject;
+
     private float maxLookAngle = 30f;
     private float lookSmoothing = 12.0f;
 
@@ -290,6 +293,11 @@ public class RescueEventManager : BaseEventManager
         }
 
         currentState = RescueState.Finished;
+
+        if (breakObject)
+        {
+            Destroy(breakObject);
+        }
     }
 
     protected override void OnEventFullyCompleted()
@@ -310,6 +318,11 @@ public class RescueEventManager : BaseEventManager
             hosa.TransitionToState(hosa.StateFollow);
         }
         currentState = RescueState.Finished;
+
+        if (breakObject)
+        {
+            Destroy(breakObject);
+        }
 
         EndEvent();
     }

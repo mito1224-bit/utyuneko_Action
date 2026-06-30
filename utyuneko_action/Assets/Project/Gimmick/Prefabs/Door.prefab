@@ -91,7 +91,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b7e14e68b66430b4d989f3d513f45298, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoorController
-  nextSceneName: 
+  nextSceneName: Stage1
+  targetSceneName: SampleScene
 --- !u!1 &2090539111883637597
 GameObject:
   m_ObjectHideFlags: 0

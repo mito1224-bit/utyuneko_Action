@@ -6,8 +6,6 @@ public class DoorController : MonoBehaviour
     [Header("ˆÚ“®æ‚ÌƒV[ƒ“–¼")]
     [SerializeField] private string nextSceneName;
 
-    [SerializeField] private string targetSceneName = "SampleScene";
-
     private bool isPlayerInside = false;
 
     void Update()

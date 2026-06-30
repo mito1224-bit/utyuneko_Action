@@ -141,9 +141,9 @@ public class CameraFollowWithZoom : MonoBehaviour
             if (targetRb2D != null)
             {
                 // 一定以上の速度（0.1f）で移動している時だけ、その物理的な移動方向に向きを更新
-                if (Mathf.Abs(targetRb2D.velocity.x) > 0.1f)
+                if (Mathf.Abs(targetRb2D.linearVelocity.x) > 0.1f)
                 {
-                    facingSign = targetRb2D.velocity.x > 0f ? 1f : -1f;
+                    facingSign = targetRb2D.linearVelocity.x > 0f ? 1f : -1f;
                 }
             }
 

@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class PlayerHealth : MonoBehaviour
 {
@@ -111,7 +112,12 @@ public class PlayerHealth : MonoBehaviour
         // 6. 死亡判定
         if (currentHealth <= 0)
         {
+            p.damageEffect.PlayDamageEffect(DamageType.Player);
             Die();
+        }
+        else
+        {
+            p.damageEffect.PlayDamageEffect(DamageType.Drone);
         }
     }
 
@@ -144,6 +150,9 @@ public class PlayerHealth : MonoBehaviour
 
         Debug.Log("プレイヤー死亡。ゲームオーバー処理を実行します");
         gameObject.SetActive(false);
+
+        string currentSceneName = SceneManager.GetActiveScene().name;
+        SceneManager.LoadScene(currentSceneName);
     }
 
     // ─── 2D用の衝突判定（Physics 2D） ───

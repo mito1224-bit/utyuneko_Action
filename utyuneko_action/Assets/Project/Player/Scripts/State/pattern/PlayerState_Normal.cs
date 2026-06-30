@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class PlayerState_Normal : IPlayerState
 {
@@ -154,8 +155,11 @@ public class PlayerState_Normal : IPlayerState
         {
             if (!BaseEventManager.IsAnyEventPlaying)
             {
-                SoundManager.Instance.PlaySE(SeType.PlayerLanding);
-                SoundManager.Instance.PlaySE(SeType.PlayerLanding2);
+                if (SceneManager.GetActiveScene().name != "TitleScene")
+                {
+                    SoundManager.Instance.PlaySE(SeType.PlayerLanding);
+                    SoundManager.Instance.PlaySE(SeType.PlayerLanding2);
+                }
             }
 
             // 下方向にしっかり落ちている時だけ潰す（床を歩いている時の誤作動防止）
