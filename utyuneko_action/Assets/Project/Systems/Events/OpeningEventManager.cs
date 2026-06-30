@@ -129,13 +129,13 @@ public class OpeningEventManager : BaseEventManager
         }
         isWaitingForTaps = false;
 
+        SoundManager.Instance.StopLoopSE(playerController.gameObject);
+
         // 4. 連打完了！「ハッ！」として起き上がる
         yield return StartCoroutine(Speak(playerBubble, ImageBubble.StampType.Surprise, 0.8f));
 
-        SoundManager.Instance.StopLoopSE(playerController.gameObject);
-
         SoundManager.Instance.PlayBGM(BgmType.StageSelect, 3.0f);
-        SoundManager.Instance.FadeBGMVolume(0.2f, 3.0f);
+        SoundManager.Instance.FadeBGMVolume(0.2f, 2.0f);
 
         // 起き上がりの開始と同時に「isBurst」を解除
         if (playerController.anim != null)

@@ -5,6 +5,9 @@ using UnityEngine.UI;
 
 public class TitleManager : MonoBehaviour
 {
+    [Header("遷移先シーン名")]
+    [SerializeField] private string targetSceneName = "SampleScene";
+
     [Header("画面全体を覆うフェード用画像（黒）")]
     [SerializeField] private Image fadeImage;
     [Header("フェードさせるボタングループ")]
@@ -17,8 +20,8 @@ public class TitleManager : MonoBehaviour
     [Tooltip("『Press Enter』の後に、メニューボタンがフワッと出現するまでにかける時間")]
     [SerializeField] private float buttonFadeInDuration = 0.8f;
 
-    [Tooltip("ゲーム開始ボタンを押した後、画面が真っ黒に暗転するまでにかける時間")]
-    [SerializeField] private float sceneFadeOutDuration = 1.2f;
+    //[Tooltip("ゲーム開始ボタンを押した後、画面が真っ黒に暗転するまでにかける時間")]
+    //[SerializeField] private float sceneFadeOutDuration = 1.2f;
 
     [Header("ボタンの登録（上から順番に）")]
     [SerializeField] private Button startButton;
@@ -208,42 +211,12 @@ public class TitleManager : MonoBehaviour
     {
         if (currentState != TitleState.ActiveMenu) return;
 
-        SoundManager.Instance.FadeBGMVolume(0.0f, sceneFadeOutDuration);
+        SoundManager.Instance.FadeBGMVolume(0.0f, 0.5f);
         SoundManager.Instance.PlaySE(SeType.UiEnter);
 
-        StartCoroutine(StartGameRoutine());
-    }
-
-    private IEnumerator StartGameRoutine()
-    {
         currentState = TitleState.SceneFadingOut;
 
-        if (buttonGroup != null)
-        {
-            buttonGroup.interactable = false;
-            buttonGroup.blocksRaycasts = false;
-        }
-
-        if (fadeImage != null)
-        {
-            fadeImage.gameObject.SetActive(true);
-            Color c = fadeImage.color;
-            float elapsed = 0f;
-
-            while (elapsed < sceneFadeOutDuration)
-            {
-                elapsed += Time.deltaTime;
-                float t = Mathf.Clamp01(elapsed / sceneFadeOutDuration);
-
-                c.a = Mathf.SmoothStep(0f, 1f, t);
-                fadeImage.color = c;
-                yield return null;
-            }
-            c.a = 1.0f;
-            fadeImage.color = c;
-        }
-
-        SceneManager.LoadScene("StageSelect");
+        TransitionManager.Instance.ChangeScene(targetSceneName, TransitionType.Fade);
     }
 
     public void OnSetting()

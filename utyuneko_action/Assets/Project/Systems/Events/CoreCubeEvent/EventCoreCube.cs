@@ -20,6 +20,8 @@ public class EventCoreCube : MonoBehaviour
                 CoreCubeEventManager.Instance.OnCoreCollected();
             }
 
+            GameManager.Instance.AdvanceStoryPhase(); // ストーリー進行を進める
+
             // 3. コアキューブ本体を画面から消去（Destroy）
             Destroy(gameObject);
         }
