@@ -47,7 +47,7 @@ public class EnemyCollision : MonoBehaviour
 
     private Rigidbody2D myRB;
 
-    private float hitStopTime = 0.05f;
+    private float hitStopTime = 0.1f;
 
     void Awake()
     {
