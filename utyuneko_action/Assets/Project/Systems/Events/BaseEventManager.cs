@@ -1,24 +1,16 @@
 ﻿using System.Collections;
-using System.Collections.Generic; // 💡 HashSetを使うために必要
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class BaseEventManager : MonoBehaviour
 {
-    // ===================================================================
-    // ゲーム中のすべてのイベントを全自動で一括監視するグローバルインフラ
-    // ===================================================================
     private static HashSet<BaseEventManager> activeManagers = new HashSet<BaseEventManager>();
 
-    /// <summary>
-    /// 現在、シーン内のいずれかのイベントマネージャーが演出・イベントを実行中かどうか
-    /// 💡 GameplayCanvasController などの外部スクリプトからは、この1行をチェックするだけでよくなります！
-    /// </summary>
     public static bool IsAnyEventPlaying => activeManagers.Count > 0;
 
-
     [Header("スキップ・フェード設定")]
-    [Tooltip("このイベントで長押しスキップを許可するかどうか（オープニング等はチェックを外す）")]
+    [Tooltip("このイベントで長押しスキップを許可するかどうか")]
     [SerializeField] private bool allowSkip = true;
 
     [SerializeField] protected float defaultDisplayTime = 1.5f;
@@ -38,6 +30,9 @@ public class BaseEventManager : MonoBehaviour
     protected PlayerController playerController;
 
     protected Coroutine activeTimelineCoroutine;
+
+    // 🔒【新設】エリア演出のコルーチンを安全に管理するための共通変数
+    protected Coroutine baseAreaNoticeCoroutine;
 
     private float skipHoldTimer = 0f;
     private bool isEventActive = false;
@@ -93,10 +88,36 @@ public class BaseEventManager : MonoBehaviour
         BlockPlayerInput();
     }
 
+
+    // ===================================================================
+    // 🚩【新設】汎用エリア侵入時トリガーシステム
+    // どのイベントでも、トリガー壁を踏むとまずここが呼び出されます。
+    // ===================================================================
+    /// <summary>
+    /// EventTriggerArea2D（トリガー壁）を踏んだ瞬間に全自動で呼び出されるパブリック関数
+    /// </summary>
+    public virtual void OnAreaEntered()
+    {
+        if (baseAreaNoticeCoroutine == null)
+        {
+            baseAreaNoticeCoroutine = StartCoroutine(BaseAreaNoticeRoutine());
+        }
+    }
+
+    /// <summary>
+    /// エリアに入った直後の演出を担当する仮想コルーチン。
+    /// 各イベント固有の演出を行いたい場合は、派生クラス側で自由に override（上書き）してください。
+    /// </summary>
+    protected virtual IEnumerator BaseAreaNoticeRoutine()
+    {
+        Debug.Log($"[{gameObject.name}] エリア通知演出が開始されました（デフォルト処理）。");
+        yield return null;
+        baseAreaNoticeCoroutine = null;
+    }
+
     protected virtual void Update()
     {
         if (!isEventActive || isEventSkipped) return;
-
         if (!allowSkip) return;
 
         bool isHolding = (Input.GetKey(KeyCode.Space) || Input.GetMouseButton(0)) && !isFadingIn;
@@ -153,14 +174,12 @@ public class BaseEventManager : MonoBehaviour
     protected IEnumerator FadeOutAndEndRoutine()
     {
         isEventActive = false;
-
         yield return new WaitForSecondsRealtime(0.15f);
         while (skipFadeCanvasGroup != null && skipFadeCanvasGroup.alpha > 0f)
         {
             skipFadeCanvasGroup.alpha -= fadeOutSpeed * Time.unscaledDeltaTime;
             yield return null;
         }
-
         EndEvent();
     }
 
@@ -184,13 +203,9 @@ public class BaseEventManager : MonoBehaviour
     protected virtual void OnSkipWarp() { }
     protected virtual void OnEventFullyCompleted() { }
 
-    // ===================================================================
-    // プレイヤーの操作を奪う・返す瞬間に、自動でリストに登録・解除する
-    // ===================================================================
     protected void BlockPlayerInput()
     {
-        activeManagers.Add(this); // 登録（UI隠して！の合図）
-
+        activeManagers.Add(this);
         if (playerController != null && playerController.inputActions != null)
         {
             playerController.inputActions.Player.Disable();
@@ -200,17 +215,16 @@ public class BaseEventManager : MonoBehaviour
 
     protected void BenjaminReleasePlayerInput()
     {
-        activeManagers.Remove(this); // 解除
+        activeManagers.Remove(this);
         if (playerController != null && playerController.inputActions != null) playerController.inputActions.Player.Enable();
     }
 
     protected void ReleasePlayerInput()
     {
-        activeManagers.Remove(this); // 解除（UI戻して！の合図）
+        activeManagers.Remove(this);
         if (playerController != null && playerController.inputActions != null) playerController.inputActions.Player.Enable();
     }
 
-    // 【安全対策】シーン切り替えやオブジェクト破棄時にゴミが残らないように自動お掃除
     protected virtual void OnDestroy()
     {
         activeManagers.Remove(this);

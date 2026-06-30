@@ -15,7 +15,9 @@ public enum BgmType
     Stage1,
     Stage2,
     Stage3,
-    BossBattle
+    BossBattle,
+    Title,
+    Result,
 }
 
 // ===================================================================
@@ -148,7 +150,6 @@ public class SoundManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject);
         }
         else
         {

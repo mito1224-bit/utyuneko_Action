@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 public class CameraFollowWithZoom : MonoBehaviour
@@ -12,12 +13,9 @@ public class CameraFollowWithZoom : MonoBehaviour
     public float positionSmoothSpeed = 10f;
 
     [Header("★プレイヤーの向きへの先行表示（Look Ahead）")]
-    [Tooltip("プレイヤーの向いている方向にどれくらいカメラを先行させるか（距離）")]
     public float lookAheadDistance = 4f;
-    [Tooltip("先行表示が切り替わる（戻る）ときのなめらかさ")]
     public float lookAheadSmoothSpeed = 4f;
 
-    [Tooltip("チェックを入れると、カメラの先行方向（右・左）が完全に逆になります。")]
     public bool invertLookAhead = false;
 
     [Header("Z軸ズームの調整（高さに応じた引き量）")]
@@ -48,28 +46,32 @@ public class CameraFollowWithZoom : MonoBehaviour
     private Rigidbody2D targetRb2D;
 
     private Vector2 currentLookAhead;
-    private float lastFacingSign = 1f; // 直前の向きを記憶する変数
+    private float lastFacingSign = 1f;
+
+    private PlayerController playerController;
+    private bool isEventWorking = false;
+
+    private float defaultPositionSmoothSpeed;
+    private float defaultZoomSmoothSpeed;
+    private Coroutine eventCameraCoroutine;
 
     void Start()
     {
         currentDynamicZ = offset.z;
 
+        defaultPositionSmoothSpeed = positionSmoothSpeed;
+        defaultZoomSmoothSpeed = zoomSmoothSpeed;
+
         if (target == null)
         {
             GameObject playerObj = GameObject.FindWithTag("Player");
-            if (playerObj != null)
-            {
-                target = playerObj.transform;
-            }
-            else
-            {
-                Debug.LogError("[CameraFollowWithZoom] 'Player' タグのついたオブジェクトが見つかりません。");
-            }
+            if (playerObj != null) target = playerObj.transform;
         }
 
         if (target != null)
         {
             target.TryGetComponent<Rigidbody2D>(out targetRb2D);
+            target.TryGetComponent<PlayerController>(out playerController);
 
             if (autoEnablePlayerInterpolate && targetRb2D != null)
             {
@@ -84,25 +86,18 @@ public class CameraFollowWithZoom : MonoBehaviour
 
     void LateUpdate()
     {
-        if (!updateInFixedUpdate)
-        {
-            MoveCamera(Time.deltaTime);
-        }
+        if (!updateInFixedUpdate) MoveCamera(Time.deltaTime);
     }
 
     void FixedUpdate()
     {
-        if (updateInFixedUpdate)
-        {
-            MoveCamera(Time.fixedDeltaTime);
-        }
+        if (updateInFixedUpdate) MoveCamera(Time.fixedDeltaTime);
     }
 
     void MoveCamera(float deltaTime)
     {
         if (target == null) return;
 
-        // 1. 自動Zズーム計算
         float targetZOffset = offset.z;
         if (!isLocked)
         {
@@ -110,10 +105,7 @@ public class CameraFollowWithZoom : MonoBehaviour
             Vector2 rayStart = new Vector2(target.position.x, target.position.y);
             RaycastHit2D hit = Physics2D.Raycast(rayStart, Vector2.down, 100f, groundLayer2D);
 
-            if (hit.collider != null)
-            {
-                currentFloatingHeight = target.position.y - hit.point.y;
-            }
+            if (hit.collider != null) currentFloatingHeight = target.position.y - hit.point.y;
 
             filteredFloatingHeight = Mathf.Lerp(filteredFloatingHeight, currentFloatingHeight, heightFilterSpeed * deltaTime);
 
@@ -131,38 +123,22 @@ public class CameraFollowWithZoom : MonoBehaviour
 
         currentDynamicZ = Mathf.Lerp(currentDynamicZ, targetZOffset, zoomSmoothSpeed * deltaTime);
 
-        // 2. 向きの計算（Rigidbodyの速度による判定に一本化）
         Vector2 targetLookAhead = Vector2.zero;
-
         if (!isLocked)
         {
             float facingSign = lastFacingSign;
-
-            if (targetRb2D != null)
+            if (targetRb2D != null && Mathf.Abs(targetRb2D.linearVelocity.x) > 0.1f)
             {
-                // 一定以上の速度（0.1f）で移動している時だけ、その物理的な移動方向に向きを更新
-                if (Mathf.Abs(targetRb2D.velocity.x) > 0.1f)
-                {
-                    facingSign = targetRb2D.velocity.x > 0f ? 1f : -1f;
-                }
+                facingSign = targetRb2D.linearVelocity.x > 0f ? 1f : -1f;
             }
-
-            // 次回（静止時や空中での回転時など）のために現在の確定した向きを記憶
             lastFacingSign = facingSign;
-
-            // 反転フラグの適用
-            if (invertLookAhead)
-            {
-                facingSign *= -1f;
-            }
-
-            // 向いている方向に固定の距離をセット
+            if (invertLookAhead) facingSign *= -1f;
             targetLookAhead.x = facingSign * lookAheadDistance;
         }
 
         currentLookAhead = Vector2.Lerp(currentLookAhead, targetLookAhead, lookAheadSmoothSpeed * deltaTime);
 
-        // 3. 最終的なカメラ位置の計算と移動
+        // 最終的なカメラ位置の計算と移動
         Vector3 targetPosition;
         if (isLocked)
         {
@@ -188,222 +164,137 @@ public class CameraFollowWithZoom : MonoBehaviour
     {
         isLocked = false;
     }
+
+    // ===================================================================
+    // 🎥 一括版（既存の互換性用）
+    // ===================================================================
+    public void PlayEventCameraWork(Transform eventTarget, float timeToTarget, float freezeDuration, float timeToReturn, float eventPositionSpeed = 3f, float eventZoomSpeed = 2f)
+    {
+        if (eventTarget == null) return;
+        if (isEventWorking) return;
+
+        eventCameraCoroutine = StartCoroutine(EventCameraWorkRoutine(eventTarget, timeToTarget, freezeDuration, timeToReturn, eventPositionSpeed, eventZoomSpeed));
+    }
+
+    private IEnumerator EventCameraWorkRoutine(Transform eventTarget, float timeToTarget, float freezeDuration, float timeToReturn, float eventPosSpeed, float eventZoomSpeed)
+    {
+        isEventWorking = true;
+        SetPlayerActiveState(false);
+
+        positionSmoothSpeed = eventPosSpeed;
+        zoomSmoothSpeed = eventZoomSpeed;
+
+        LockCamera(eventTarget.position, eventTarget.position.z);
+        yield return new WaitForSeconds(timeToTarget);
+        yield return new WaitForSeconds(freezeDuration);
+
+        UnlockCamera();
+        yield return new WaitForSeconds(timeToReturn);
+
+        positionSmoothSpeed = defaultPositionSmoothSpeed;
+        zoomSmoothSpeed = defaultZoomSmoothSpeed;
+
+        SetPlayerActiveState(true);
+        isEventWorking = false;
+        eventCameraCoroutine = null;
+    }
+
+    // ===================================================================
+    // 🛠️【新設】分離版①：指定したターゲットをロックして見続ける（戻らない）
+    // ===================================================================
+    public void StartTrackTarget(Transform eventTarget, float eventPositionSpeed = 3f, float eventZoomSpeed = 2f)
+    {
+        if (eventTarget == null) return;
+        if (isEventWorking) return; // 二重発動防止
+
+        isEventWorking = true;
+        SetPlayerActiveState(false); // プレイヤーの操作を自動ロック
+
+        positionSmoothSpeed = eventPositionSpeed;
+        zoomSmoothSpeed = eventZoomSpeed;
+
+        LockCamera(eventTarget.position, eventTarget.position.z);
+    }
+
+    // ===================================================================
+    // 🛠️【新設】分離版②：カメラのロックを解除してプレイヤーになめらかに戻る
+    // ===================================================================
+    public void ReturnToPlayerFromEvent(float timeToReturn = 1.0f)
+    {
+        if (!isEventWorking) return;
+
+        // 実行中のコルーチンがあれば安全に上書き停止
+        if (eventCameraCoroutine != null) StopCoroutine(eventCameraCoroutine);
+
+        eventCameraCoroutine = StartCoroutine(ReturnToPlayerRoutine(timeToReturn));
+    }
+
+    private IEnumerator ReturnToPlayerRoutine(float timeToReturn)
+    {
+        UnlockCamera(); // カメラ追従ロック解除
+
+        yield return new WaitForSeconds(timeToReturn); // 戻る時間を待つ
+
+        positionSmoothSpeed = defaultPositionSmoothSpeed;
+        zoomSmoothSpeed = defaultZoomSmoothSpeed;
+
+        SetPlayerActiveState(true); // プレイヤーの操作を完全解放
+        isEventWorking = false;
+        eventCameraCoroutine = null;
+    }
+
+    // 強制停止安全弁（スキップ対策も分離版に対応！）
+    public void ForceStopEventCameraWork()
+    {
+        if (eventCameraCoroutine != null)
+        {
+            StopCoroutine(eventCameraCoroutine);
+            eventCameraCoroutine = null;
+        }
+
+        if (!isEventWorking) return;
+
+        UnlockCamera();
+        positionSmoothSpeed = defaultPositionSmoothSpeed;
+        zoomSmoothSpeed = defaultZoomSmoothSpeed;
+
+        if (target != null)
+        {
+            Vector3 skipTargetPos = target.position + offset;
+            skipTargetPos.z = currentDynamicZ;
+            transform.position = skipTargetPos;
+        }
+
+        SetPlayerActiveState(true);
+        isEventWorking = false;
+    }
+
+    private void SetPlayerActiveState(bool enable)
+    {
+        if (target == null) return;
+
+        if (playerController != null)
+        {
+            if (!enable)
+            {
+                playerController.TransitionToState(playerController.StateNormal);
+                if (playerController.inputActions != null) playerController.inputActions.Player.Disable();
+                playerController.enabled = false;
+            }
+            else
+            {
+                playerController.enabled = true;
+                if (playerController.inputActions != null) playerController.inputActions.Player.Enable();
+            }
+        }
+
+        MonoBehaviour playerMovement = target.GetComponent("PlayerMovement") as MonoBehaviour;
+        if (playerMovement != null) playerMovement.enabled = enable;
+
+        if (!enable && targetRb2D != null)
+        {
+            targetRb2D.linearVelocity = Vector2.zero;
+            targetRb2D.angularVelocity = 0f;
+        }
+    }
 }
-
-//public class CameraFollowWithZoom : MonoBehaviour
-//{
-//    [Header("追従対象（空欄なら起動時にPlayerタグから自動取得します）")]
-//    public Transform target;
-
-//    [Header("基本の位置オフセット")]
-//    public Vector3 offset = new Vector3(0, 5, -10);
-
-//    [Header("位置追従のなめらかさ")]
-//    public float positionSmoothSpeed = 10f;
-
-//    // --- 追加：進行方向へのカメラ先行表示設定 ---
-//    [Header("★進行方向への先行表示（Look Ahead）")]
-//    [Tooltip("プレイヤーの速度にどれくらいカメラを先行させるか")]
-//    public float lookAheadFactor = 0.5f;
-//    [Tooltip("先行表示の最大距離")]
-//    public Vector2 maxLookAhead = new Vector2(3f, 2f);
-//    [Tooltip("先行表示が切り替わる（戻る）ときのなめらかさ")]
-//    public float lookAheadSmoothSpeed = 5f;
-//    // ----------------------------------------
-
-//    [Header("Z軸ズームの調整（高さに応じた引き量）")]
-//    public float heightThreshold = 3f;
-//    public float minZOffset = -10f;
-//    public float maxZOffset = -20f;
-//    public float zoomSensitivity = 2f;
-//    public float zoomSmoothSpeed = 5f;
-
-//    [Header("バウンド軽減用")]
-//    public float heightFilterSpeed = 2f;
-
-//    [Header("2D地面の判定設定")]
-//    public LayerMask groundLayer2D = ~0;
-
-//    [Header("カメラの完全固定モード")]
-//    public bool isLocked = false;
-//    public Vector3 lockedPosition;
-//    private float lockedZOffset;
-
-//    [Header("★カメラ側からのブレ・ガタつき対策")]
-//    [Tooltip("ONにすると、起動時にプレイヤーのRigidbody2Dの補間(Interpolate)をカメラ側から強制的に有効化してブレを止めます。")]
-//    public bool autoEnablePlayerInterpolate = true;
-
-//    [Tooltip("ONにすると、カメラの更新をFixedUpdate(物理同期)で行います。バースト時のブレが酷い場合はチェックを入れてください。")]
-//    public bool updateInFixedUpdate = false;
-
-//    [Header("?? デバッグ設定（見えなくさせるトリガー）")]
-//    [Tooltip("ONにすると、ゲーム画面の左上に現在のカメラのZ座標（ズーム状態）をリアルタイム表示します。")]
-//    public bool showZDebugText = true;
-
-//    private float filteredFloatingHeight;
-//    private float currentDynamicZ;
-//    private Rigidbody2D targetRb2D;
-
-//    // 追加：現在の先行量を管理する変数
-//    private Vector2 currentLookAhead;
-
-//    void Start()
-//    {
-//        currentDynamicZ = offset.z;
-
-//        if (target == null)
-//        {
-//            GameObject playerObj = GameObject.FindWithTag("Player");
-//            if (playerObj != null)
-//            {
-//                target = playerObj.transform;
-//            }
-//            else
-//            {
-//                Debug.LogError("[CameraFollowWithZoom] 'Player' タグのついたオブジェクトが見つかりません。プレイヤーのタグを確認してください。");
-//            }
-//        }
-
-//        if (target != null)
-//        {
-//            // 進行方向を取得するため、常にRigidbody2Dの取得を試みるように変更
-//            target.TryGetComponent<Rigidbody2D>(out targetRb2D);
-
-//            if (autoEnablePlayerInterpolate && targetRb2D != null)
-//            {
-//                targetRb2D.interpolation = RigidbodyInterpolation2D.Interpolate;
-//            }
-
-//            Vector3 startPos = target.position + offset;
-//            startPos.z = currentDynamicZ;
-//            transform.position = startPos;
-//        }
-//    }
-
-//    void LateUpdate()
-//    {
-//        if (!updateInFixedUpdate)
-//        {
-//            MoveCamera(Time.deltaTime);
-//        }
-//    }
-
-//    void FixedUpdate()
-//    {
-//        if (updateInFixedUpdate)
-//        {
-//            MoveCamera(Time.fixedDeltaTime);
-//        }
-//    }
-
-//    void MoveCamera(float deltaTime)
-//    {
-//        if (target == null) return;
-
-//        // --------------------------------------------------
-//        // 1. 通常時のみ動く：地面からの高さに応じた自動Zズーム計算
-//        // --------------------------------------------------
-//        float targetZOffset = offset.z;
-
-//        if (!isLocked)
-//        {
-//            float currentFloatingHeight = 0f;
-//            Vector2 rayStart = new Vector2(target.position.x, target.position.y);
-//            RaycastHit2D hit = Physics2D.Raycast(rayStart, Vector2.down, 100f, groundLayer2D);
-
-//            if (hit.collider != null)
-//            {
-//                currentFloatingHeight = target.position.y - hit.point.y;
-//            }
-
-//            filteredFloatingHeight = Mathf.Lerp(filteredFloatingHeight, currentFloatingHeight, heightFilterSpeed * deltaTime);
-
-//            if (filteredFloatingHeight > heightThreshold)
-//            {
-//                float excessHeight = filteredFloatingHeight - heightThreshold;
-//                targetZOffset = offset.z - (excessHeight * zoomSensitivity);
-//                targetZOffset = Mathf.Clamp(targetZOffset, maxZOffset, minZOffset);
-//            }
-//        }
-//        else
-//        {
-//            targetZOffset = lockedZOffset;
-//        }
-
-//        currentDynamicZ = Mathf.Lerp(currentDynamicZ, targetZOffset, zoomSmoothSpeed * deltaTime);
-
-//        // --------------------------------------------------
-//        // 【追加】進行方向への先行表示（Look Ahead）の計算
-//        // --------------------------------------------------
-//        Vector2 targetLookAhead = Vector2.zero;
-
-//        // ロック中ではなく、プレイヤーにRigidbody2Dがついている場合のみ計算
-//        if (!isLocked && targetRb2D != null)
-//        {
-//            // 速度に応じてずらす量を決定（Unityのバージョンによっては .linearVelocity の場合があります）
-//            targetLookAhead = targetRb2D.linearVelocity * lookAheadFactor;
-
-//            // ずらす量が設定した最大値を超えないように制限
-//            targetLookAhead.x = Mathf.Clamp(targetLookAhead.x, -maxLookAhead.x, maxLookAhead.x);
-//            targetLookAhead.y = Mathf.Clamp(targetLookAhead.y, -maxLookAhead.y, maxLookAhead.y);
-//        }
-
-//        // 先行量をなめらかに変化させる
-//        currentLookAhead = Vector2.Lerp(currentLookAhead, targetLookAhead, lookAheadSmoothSpeed * deltaTime);
-
-//        // --------------------------------------------------
-//        // 2. 最終的なカメラ位置の計算と移動
-//        // --------------------------------------------------
-//        Vector3 targetPosition;
-
-//        if (isLocked)
-//        {
-//            targetPosition = new Vector3(lockedPosition.x, lockedPosition.y, currentDynamicZ);
-//        }
-//        else
-//        {
-//            // 基本位置に、計算した先行量（Look Ahead）を足し算する
-//            targetPosition = target.position + offset + new Vector3(currentLookAhead.x, currentLookAhead.y, 0f);
-//            targetPosition.z = currentDynamicZ;
-//        }
-
-//        transform.position = Vector3.Lerp(transform.position, targetPosition, positionSmoothSpeed * deltaTime);
-//    }
-
-//    void OnGUI()
-//    {
-//        if (!showZDebugText) return;
-
-//        GUIStyle style = new GUIStyle();
-//        style.fontSize = 18;
-//        style.fontStyle = FontStyle.Bold;
-//        style.normal.textColor = Color.cyan;
-
-//        Texture2D bgTex = new Texture2D(1, 1);
-//        bgTex.SetPixel(0, 0, new Color(0f, 0f, 0f, 0.6f));
-//        bgTex.Apply();
-
-//        style.normal.background = bgTex;
-//        style.padding = new RectOffset(10, 10, 5, 5);
-
-//        string status = isLocked ? "<color=red>LOCKED</color>" : "NORMAL";
-//        string debugMessage = $"[Camera Z] Current: {currentDynamicZ:F2}  (Limit: {maxZOffset} ～ {minZOffset})  [{status}]";
-
-//        GUILayout.BeginArea(new Rect(10, 10, 600, 40));
-//        GUILayout.Label(debugMessage, style);
-//        GUILayout.EndArea();
-//    }
-
-//    public void LockCamera(Vector3 positionToLock, float targetZValue)
-//    {
-//        lockedPosition = positionToLock;
-//        lockedZOffset = targetZValue;
-//        isLocked = true;
-//    }
-
-//    public void UnlockCamera()
-//    {
-//        isLocked = false;
-//    }
-//}
-

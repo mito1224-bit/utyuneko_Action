@@ -7,12 +7,12 @@ public class RescueEventManager : BaseEventManager
 
     public enum RescueState
     {
-        BeforeArea,     // 1. まだエリアに入っていない（初期状態）
-        AreaSignShowed, // 2. エリアに入って、補佐のピンチ演出が終わった（敵撃破待ち）
-        InEvent,        // 3. 敵を倒して、お礼を言っている最中
-        Absorbing,      // 4. 補佐が敵に近づいて吸引している最中
-        Talking,        // 5. 地面に降りてスタンプ会話劇をしている最中
-        Finished        // 6. すべて終了
+        BeforeArea,
+        AreaSignShowed,
+        InEvent,
+        Absorbing,
+        Talking,
+        Finished
     }
 
     [Header("現在のイベント状態（確認用）")]
@@ -29,6 +29,9 @@ public class RescueEventManager : BaseEventManager
     [Header("補佐の移動スピード")]
     [SerializeField] private float hosaMoveSpeed = 5f;
 
+    [Header("イベント終了後破壊されるオブジェクト")]
+    [SerializeField] GameObject breakObject;
+
     private float maxLookAngle = 30f;
     private float lookSmoothing = 12.0f;
 
@@ -38,9 +41,6 @@ public class RescueEventManager : BaseEventManager
 
     private EventEnemy targetEnemy;
     private Vector3 hosaFloorPosition;
-
-    // 💡【新設】エリア演出のコルーチンをピンポイントで止めるための専用の型
-    private Coroutine areaNoticeCoroutine;
 
     protected override void Awake()
     {
@@ -62,7 +62,7 @@ public class RescueEventManager : BaseEventManager
 
     void LateUpdate()
     {
-        if (currentState != RescueState.BeforeArea &&currentState != RescueState.AreaSignShowed && currentState != RescueState.Finished)
+        if (currentState != RescueState.BeforeArea && currentState != RescueState.AreaSignShowed && currentState != RescueState.Finished)
         {
             KeepLookingAtEachOther();
         }
@@ -120,21 +120,10 @@ public class RescueEventManager : BaseEventManager
     }
 
     // ===================================================================
-    // 🏃‍♂️ ① 当たり判定に入った時に呼ばれる演出（操作禁止はカメラ側へ！）
+    // 🛠️【上書き】親玉の仮想関数を override して、Rescue特有の演出を流す！
     // ===================================================================
-    public void OnAreaEntered()
+    protected override IEnumerator BaseAreaNoticeRoutine()
     {
-        if (currentState == RescueState.BeforeArea)
-        {
-            // 💡 後から安全に止められるように、変数に代入してキック！
-            areaNoticeCoroutine = StartCoroutine(AreaNoticeRoutine());
-        }
-    }
-
-    private IEnumerator AreaNoticeRoutine()
-    {
-        // 🛑【修正】BlockPlayerInput() を削除（カメラ側のプレハブで制御するため）
-
         // 🎥 カメラが向くわずかなタメ
         yield return new WaitForSecondsRealtime(0.2f);
 
@@ -146,38 +135,29 @@ public class RescueEventManager : BaseEventManager
 
         SoundManager.Instance.PlayLoopSE(hosa.gameObject, SeType.HosaConfusion);
 
-        // 🛑【修正】ReleasePlayerInput() を削除（カメラ側のプレハブで制御するため）
-
-        // 💡【安全弁】もしこの1.5秒の間にすでに敵が倒されて本番（InEvent）になっていたら、
-        // 上書きしてしまわないようにステート変更をスルーする
         if (currentState == RescueState.BeforeArea)
         {
             currentState = RescueState.AreaSignShowed;
         }
 
-        areaNoticeCoroutine = null;
+        // 親玉の管理用変数を綺麗にリセット
+        baseAreaNoticeCoroutine = null;
     }
 
-    // ===================================================================
-    // ⚔️ ②【包容力アップ】周りの敵を全滅させた時に呼ばれる関数
-    // ===================================================================
     public void OnEnemyDefeated(EventEnemy enemy)
     {
-        // 💡【超重要バグ対策】エリア演出前（BeforeArea）だろうが、演出の途中だろうが、
-        // 敵さえ死ねば「何が何でも確実に」本番イベント（InEvent）へ引きずり込む！
         if (currentState == RescueState.BeforeArea || currentState == RescueState.AreaSignShowed)
         {
-            // 🧼 エリア演出のコルーチンがまだ動いている途中なら、安全に緊急停止する！
-            if (areaNoticeCoroutine != null)
+            // 🧼 エリア演出のコルーチン（親玉側）がまだ動いている途中なら、安全に緊急停止！
+            if (baseAreaNoticeCoroutine != null)
             {
-                StopCoroutine(areaNoticeCoroutine);
-                areaNoticeCoroutine = null;
+                StopCoroutine(baseAreaNoticeCoroutine);
+                baseAreaNoticeCoroutine = null;
             }
 
             targetEnemy = enemy;
             currentState = RescueState.InEvent;
 
-            // 本格的な会話イベントが始まったので、親玉のシステム（操作ロック・UI隠し・長押し監視）をON！
             StartEvent();
 
             if (hosaBubble != null) hosaBubble.StartFadeOut();
@@ -186,22 +166,16 @@ public class RescueEventManager : BaseEventManager
         }
     }
 
-    // ===================================================================
-    // 🎬 ③ 本番の一本道会話劇タイムライン
-    // ===================================================================
     private IEnumerator RescueEventTimelineRoutine()
     {
         SoundManager.Instance.StopLoopSE(hosa.gameObject);
-
         SoundManager.Instance.FadeBGMVolume(0.3f, 1.0f);
 
         yield return StartCoroutine(Wait(2.0f));
 
-        // 1. お礼を言う
         yield return StartCoroutine(Speak(hosaBubble, ImageBubble.StampType.Joy));
         yield return StartCoroutine(Wait(0.5f));
 
-        // 2. 補佐が敵に近づく
         currentState = RescueState.Absorbing;
         Coroutine playerQuestion = StartCoroutine(Speak(playerBubble, ImageBubble.StampType.Question));
 
@@ -217,7 +191,6 @@ public class RescueEventManager : BaseEventManager
         }
         yield return playerQuestion;
 
-        // 3. 敵の吸引
         if (targetEnemy != null && hosa != null)
         {
             targetEnemy.StartAbsorb(hosa.transform, 1.0f);
@@ -226,7 +199,6 @@ public class RescueEventManager : BaseEventManager
         yield return StartCoroutine(Speak(playerBubble, ImageBubble.StampType.Surprise));
         yield return new WaitForSeconds(0.5f);
 
-        // 4. 補佐が地面に降りてくる
         if (hosa != null)
         {
             Vector3 targetDropPosition = new Vector3(hosa.transform.position.x, hosaFloorPosition.y, hosa.transform.position.z);
@@ -240,8 +212,7 @@ public class RescueEventManager : BaseEventManager
 
         currentState = RescueState.Talking;
         yield return StartCoroutine(Speak(hosaBubble, ImageBubble.StampType.Doya));
-
-        // 5. スタンプ会話劇
+        yield return StartCoroutine(Wait(0.5f));
         yield return StartCoroutine(Speak(hosaBubble, ImageBubble.StampType.Right));
         yield return StartCoroutine(Wait(0.5f));
         yield return StartCoroutine(Speak(hosaBubble, ImageBubble.StampType.Enemy));
@@ -268,8 +239,6 @@ public class RescueEventManager : BaseEventManager
 
     protected override void OnSkipWarp()
     {
-        Debug.Log("暗転の裏側でイベント終了状態へ強制ワープ処理を実行中...");
-
         SoundManager.Instance.FadeBGMVolume(1.0f, 1.0f);
 
         if (hosaBubble != null) hosaBubble.StartFadeOut();
@@ -290,6 +259,11 @@ public class RescueEventManager : BaseEventManager
         }
 
         currentState = RescueState.Finished;
+
+        if (breakObject)
+        {
+            Destroy(breakObject);
+        }
     }
 
     protected override void OnEventFullyCompleted()
@@ -310,6 +284,11 @@ public class RescueEventManager : BaseEventManager
             hosa.TransitionToState(hosa.StateFollow);
         }
         currentState = RescueState.Finished;
+
+        if (breakObject)
+        {
+            Destroy(breakObject);
+        }
 
         EndEvent();
     }

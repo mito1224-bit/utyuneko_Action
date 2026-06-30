@@ -110,7 +110,7 @@ public class OpeningEventManager : BaseEventManager
         yield return StartCoroutine(Wait(0.3f));
 
         // 寝ぼけスタンプ
-        yield return StartCoroutine(Speak(playerBubble, ImageBubble.StampType.Confusion, 1.5f));
+        playerBubble.ShowStamp(ImageBubble.StampType.Confusion);
         SoundManager.Instance.PlayLoopSE(playerController.gameObject, SeType.HosaConfusion);
 
         // 3. 画面が完全に明るくなった「後」、ボタン連打で体を揺らす
@@ -129,13 +129,13 @@ public class OpeningEventManager : BaseEventManager
         }
         isWaitingForTaps = false;
 
+        SoundManager.Instance.StopLoopSE(playerController.gameObject);
+
         // 4. 連打完了！「ハッ！」として起き上がる
         yield return StartCoroutine(Speak(playerBubble, ImageBubble.StampType.Surprise, 0.8f));
 
-        SoundManager.Instance.StopLoopSE(playerController.gameObject);
-
         SoundManager.Instance.PlayBGM(BgmType.StageSelect, 3.0f);
-        SoundManager.Instance.FadeBGMVolume(0.2f, 3.0f);
+        SoundManager.Instance.FadeBGMVolume(0.2f, 2.0f);
 
         // 起き上がりの開始と同時に「isBurst」を解除
         if (playerController.anim != null)

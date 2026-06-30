@@ -6,6 +6,15 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/Scenes/MainScene/Title/LogoScene.unity
+    guid: 430b31f107aed094391b81188e81f01e
+  - enabled: 1
+    path: Assets/Scenes/MainScene/Title/TitleScene.unity
+    guid: 6c82c5ba31545d74ea3ab92dc8cdf2dd
+  - enabled: 1
+    path: Assets/Scenes/MainScene/Stage/IntroStage.unity
+    guid: dd8af0f6ba24fc54c992276ba93de635
+  - enabled: 1
     path: Assets/Scenes/TestScene/Yokozuka/Stage_kari.unity
     guid: 30339856c90608b42a9974c03c2d9f01
   - enabled: 1
@@ -20,12 +29,6 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/MainScene/Stage/StageSelect.unity
     guid: 61b99c3d674194e46af1154bcb42c47b
-  - enabled: 1
-    path: Assets/Scenes/MainScene/Title/LogoScene.unity
-    guid: 430b31f107aed094391b81188e81f01e
-  - enabled: 1
-    path: Assets/Scenes/MainScene/Title/TitleScene.unity
-    guid: 6c82c5ba31545d74ea3ab92dc8cdf2dd
   - enabled: 1
     path: Assets/Scenes/MainScene/Stage/Stage1.unity
     guid: c5a960285409d5542b541eed08eba9b1

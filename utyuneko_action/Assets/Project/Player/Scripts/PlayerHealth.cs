@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class PlayerHealth : MonoBehaviour
 {
@@ -81,6 +82,8 @@ public class PlayerHealth : MonoBehaviour
         SoundManager.Instance.FadeBGMVolume(0.2f, 0.0f);
         SoundManager.Instance.FadeBGMVolume(1.0f, 2.0f);
 
+        TimeManager.Instance.TriggerGlobalSlowMotion(0.3f,0.2f);
+
         currentHealth -= damageAmount;
         currentHealth = Mathf.Max(-1, currentHealth); // HPが-1以下にならないようにロック
         Debug.Log($"被弾！ ダメージ: {damageAmount} / 残りHP: {currentHealth}");
@@ -111,7 +114,12 @@ public class PlayerHealth : MonoBehaviour
         // 6. 死亡判定
         if (currentHealth <= 0)
         {
+            p.damageEffect.PlayDamageEffect(DamageType.Player);
             Die();
+        }
+        else
+        {
+            p.damageEffect.PlayDamageEffect(DamageType.Drone);
         }
     }
 
@@ -144,6 +152,9 @@ public class PlayerHealth : MonoBehaviour
 
         Debug.Log("プレイヤー死亡。ゲームオーバー処理を実行します");
         gameObject.SetActive(false);
+
+        string currentSceneName = SceneManager.GetActiveScene().name;
+        SceneManager.LoadScene(currentSceneName);
     }
 
     // ─── 2D用の衝突判定（Physics 2D） ───
