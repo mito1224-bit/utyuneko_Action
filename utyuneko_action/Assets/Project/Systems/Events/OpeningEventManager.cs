@@ -110,7 +110,7 @@ public class OpeningEventManager : BaseEventManager
         yield return StartCoroutine(Wait(0.3f));
 
         // 寝ぼけスタンプ
-        yield return StartCoroutine(Speak(playerBubble, ImageBubble.StampType.Confusion, 1.5f));
+        playerBubble.ShowStamp(ImageBubble.StampType.Confusion);
         SoundManager.Instance.PlayLoopSE(playerController.gameObject, SeType.HosaConfusion);
 
         // 3. 画面が完全に明るくなった「後」、ボタン連打で体を揺らす

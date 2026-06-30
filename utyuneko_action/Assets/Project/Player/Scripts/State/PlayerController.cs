@@ -146,9 +146,6 @@ public class PlayerController : MonoBehaviour, IEventActor
     void OnEnable() {
         if (SceneManager.GetActiveScene().name != "TitleScene")
         {
-            if (damageEffect)
-                damageEffect.PlayDamageEffect(DamageType.Player);
-
             inputActions.Player.Enable();
         }
     }
