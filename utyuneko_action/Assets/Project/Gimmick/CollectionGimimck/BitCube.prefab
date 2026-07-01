@@ -92,6 +92,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BitCubeController
   scoreValue: 1
+  animationDuration: 1
+  moveUpDistance: 1.5
+  rotationSpeed: {x: 0, y: 0, z: 360}
 --- !u!1 &8906507530743630355
 GameObject:
   m_ObjectHideFlags: 0
@@ -121,8 +124,8 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 27, y: 1.62, z: 1}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 0.49999997, y: 0.49999997, z: 0.49999997}
+  m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 8542090479333380498}
   m_Father: {fileID: 0}

@@ -1,17 +1,33 @@
 
-using UnityEngine;
 using System.Collections; // コルーチンを使うために必要
+using UnityEngine;
 
 public class DataCubeController : MonoBehaviour
 {
+
+    public enum AnimationType
+    {
+        Default, // 1. シンプルな浮き上がり（等速）
+        Bound,   // 2. 勢いよく飛び跳ねてバウンド（AnimationCurve使用）
+        Magnet   // 3. プレイヤーに吸い込まれる
+    }
+
     [Header("データキューブの設定")]
     [Tooltip("このデータキューブの識別番号（例: 1枚目は 1、2枚目は 2）")]
     [SerializeField] private int dataCubeID = 1;
 
-    [Header("演出の設定")]
+    [Header("演出の切り替え")]
+    [SerializeField] private AnimationType animationType = AnimationType.Default;
+
+    [Header("共通の設定")]
     [SerializeField] private float animationDuration = 1.0f; // 演出時間
-    [SerializeField] private float moveUpDistance = 1.5f;     // 浮き上がる距離
     [SerializeField] private Vector3 rotationSpeed = new Vector3(0, 0, 360); // 1秒あたりの回転角
+
+    [Header("浮き上がり / バウンド用の設定")]
+    [SerializeField] private float moveUpDistance = 1.5f;     // 浮き上がる距離
+    [Tooltip("Bound設定の時だけ使用。縦軸1.2くらいまで突き抜ける山を作るとバウンドします")]
+    [SerializeField] private AnimationCurve boundCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
+    public int DataCubeIndex => dataCubeID - 1;
 
     // 将来リザルトやマネージャーに「何番目のデータキューブを取ったか」を伝えるイベント
     public static System.Action<int> OnDataCubeCollected;
@@ -35,16 +51,14 @@ public class DataCubeController : MonoBehaviour
             FXManager.Instance.Play(FXType.MainItem, transform.position);
 
             // 演出を開始し、終了後に消滅させる
-            StartCoroutine(CollectAnimationRoutine());
+            StartCoroutine(CollectAnimationRoutine(collision.transform));
         }
     }
 
-    private IEnumerator CollectAnimationRoutine()
+    private IEnumerator CollectAnimationRoutine(Transform playerTransform)
     {
-        // 1. プレイヤーと再び当たらないように、自分のコライダーを即座に無効化
         if (TryGetComponent<Collider2D>(out var col)) col.enabled = false;
 
-        // 演出対象を決定（親がいれば親、いなければ自分自身をターゲットにする）
         Transform targetTransform = transform.parent != null ? transform.parent : transform;
 
         float elapsed = 0f;
@@ -52,26 +66,45 @@ public class DataCubeController : MonoBehaviour
         Vector3 endPosition = startPosition + Vector3.up * moveUpDistance;
         Vector3 startScale = targetTransform.localScale;
 
+        // 回転の補間用（BoundやMagnetで滑らかに回転させるため）
+        Quaternion startRotation = targetTransform.rotation;
+        Quaternion endRotation = startRotation * Quaternion.Euler(rotationSpeed * animationDuration);
+
         while (elapsed < animationDuration)
         {
             elapsed += Time.deltaTime;
             float t = elapsed / animationDuration; // 0から1へ変化
 
-            // --- すべて targetTransform（親）に対して処理を行う ---
+            // ★ インスペクターで選ばれた演出タイプに応じて処理を切り替える
+            switch (animationType)
+            {
+                case AnimationType.Default:
+                    // 1. 元々のシンプルな演出
+                    targetTransform.position = Vector3.Lerp(startPosition, endPosition, t);
+                    targetTransform.Rotate(rotationSpeed * Time.deltaTime);
+                    targetTransform.localScale = Vector3.Lerp(startScale, Vector3.zero, t);
+                    break;
 
-            // A. 親ごと上に移動
-            targetTransform.position = Vector3.Lerp(startPosition, endPosition, t);
+                case AnimationType.Bound:
+                    // 2. AnimationCurve と LerpUnclamped を使ったバウンド演出
+                    float curveT = boundCurve.Evaluate(t);
+                    targetTransform.position = Vector3.LerpUnclamped(startPosition, endPosition, curveT);
+                    targetTransform.rotation = Quaternion.LerpUnclamped(startRotation, endRotation, curveT);
+                    targetTransform.localScale = Vector3.LerpUnclamped(startScale, Vector3.zero, curveT);
+                    break;
 
-            // B. 親ごと回転（2DゲームならZ軸、3DゲームならY軸などインスペクターで調整可能）
-            targetTransform.Rotate(rotationSpeed * Time.deltaTime);
+                case AnimationType.Magnet:
+                    // 3. プレイヤーの動きをリアルタイムに追いかけて吸い込まれる演出
+                    Vector3 currentPlayerPos = playerTransform.position;
+                    targetTransform.position = Vector3.Lerp(startPosition, currentPlayerPos, t);
+                    targetTransform.rotation = Quaternion.Lerp(startRotation, endRotation, t);
+                    targetTransform.localScale = Vector3.Lerp(startScale, Vector3.zero, t);
+                    break;
+            }
 
-            // C. 親ごと次第に小さくする
-            targetTransform.localScale = Vector3.Lerp(startScale, Vector3.zero, t);
-
-            yield return null; // 1フレーム待機
+            yield return null;
         }
 
-        // 2. 演出が終わったら、ターゲット（親オブジェクト）ごと削除
         Destroy(targetTransform.gameObject);
     }
 }

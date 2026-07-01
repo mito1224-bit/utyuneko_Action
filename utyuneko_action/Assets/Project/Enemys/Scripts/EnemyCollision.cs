@@ -45,8 +45,14 @@ public class EnemyCollision : MonoBehaviour
     private Collider2D myCol;
     private EnemyHealth enemyHealth;
 
+    private Rigidbody2D myRB;
+
+    private float hitStopTime = 0.1f;
+
     void Awake()
     {
+        myRB = GetComponent<Rigidbody2D>();
+
         enemyHealth = GetComponent<EnemyHealth>();
 
         // 回転だけ固定する（Z回転フリーズ）。位置は固定しない。
@@ -54,8 +60,7 @@ public class EnemyCollision : MonoBehaviour
         // 止まる前提（CLAUDE.md 2026/06/25 のすり抜け修正）。ここで FreezeAll にして位置を固定すると
         // MovePosition の移動・壁衝突と干渉してしまうため、位置の拘束はかけない。
         // ※プレイヤーに押されてズレる懸念は Rigidbody2D の Mass / 衝突解決側で調整する。
-        Rigidbody2D rb = GetComponent<Rigidbody2D>();
-        if (rb != null) rb.constraints = RigidbodyConstraints2D.FreezeRotation;
+        if (myRB != null) myRB.constraints = RigidbodyConstraints2D.FreezeRotation;
 
         if (collisionType == CollisionType.Pierce)
         {
@@ -118,6 +123,8 @@ public class EnemyCollision : MonoBehaviour
     // =========================================================
     void OnCollisionEnter2D(Collision2D collision)
     {
+        if (enemyHealth.IsDeadFlg) return;
+
         if (!collision.gameObject.CompareTag(playerTag)) return;
 
         float impactSpeed = collision.relativeVelocity.magnitude;
@@ -126,6 +133,9 @@ public class EnemyCollision : MonoBehaviour
         bool isBursting = (collision.gameObject.layer == LayerMask.NameToLayer("PlayerBurst"));
 
         Vector3 hitFromPos = collision.transform.position;
+
+        PlayerController p = collision.gameObject.GetComponent<PlayerController>();
+        if (p) p.OnEnemyKilledInBurst();
 
         switch (collisionType)
         {
@@ -138,6 +148,7 @@ public class EnemyCollision : MonoBehaviour
                     ApplyKnockback(collision.rigidbody, collision.transform.position);
                 }
                 enemyHealth?.HandleHit(impactSpeed, hitFromPos);
+
                 break;
 
             case CollisionType.PierceZone:
@@ -146,8 +157,11 @@ public class EnemyCollision : MonoBehaviour
                 // 衝突は「貫通面以外から当たった」とみなして弾く。
                 ApplyKnockback(collision.rigidbody, collision.transform.position);
                 enemyHealth?.HandleHit(impactSpeed, hitFromPos);
+
                 break;
         }
+
+        TimeManager.Instance.TriggerGlobalHitStop(hitStopTime);
     }
 
     // =========================================================
@@ -155,12 +169,19 @@ public class EnemyCollision : MonoBehaviour
     // =========================================================
     void OnTriggerEnter2D(Collider2D other)
     {
+        if (enemyHealth.IsDeadFlg) return;
+
         if (collisionType != CollisionType.Pierce) return;
         if (!other.CompareTag(playerTag)) return;
+
+        PlayerController p = other.gameObject.GetComponent<PlayerController>();
+        if (p) p.OnEnemyKilledInBurst();
 
         Rigidbody2D rb = other.GetComponent<Rigidbody2D>();
         if (rb != null)
             enemyHealth?.HandleHit(rb.linearVelocity.magnitude, other.transform.position);
+
+        TimeManager.Instance.TriggerGlobalHitStop(hitStopTime);
     }
 
     // =========================================================

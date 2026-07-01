@@ -41,7 +41,8 @@ public class DoorController : MonoBehaviour
     {
         if (!string.IsNullOrEmpty(nextSceneName))
         {
-            SceneManager.LoadScene(nextSceneName);
+            //SceneManager.LoadScene(nextSceneName);
+            TransitionManager.Instance.ChangeScene(nextSceneName, TransitionType.Wipe);
         }
         else
         {

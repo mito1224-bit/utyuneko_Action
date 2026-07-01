@@ -7,10 +7,9 @@ public class PlayerChargeGauge : MonoBehaviour
     [SerializeField] private PlayerController playerController;
     [SerializeField] private Image gaugeImage;
 
-    [Header("リロード演出速度")]
-    [SerializeField] private float reloadSpeed = 8f; // 地面に着いた時にゲージが溜まる速度
-
     private float targetFillAmount = 1f;
+    private bool isFullSEPlayed = true;
+    private bool isGaugeZero = false;
 
     void Start()
     {
@@ -23,16 +22,22 @@ public class PlayerChargeGauge : MonoBehaviour
     {
         if (playerController == null || gaugeImage == null) return;
 
+        float max = playerController.maxBurstCount;
+        float current = playerController.currentBurstCount;
+
         // プレイヤーの着地状態・残弾数からゲージの目標値を計算
         if (playerController.IsGrounded())
         {
             targetFillAmount = 1f;
+
+            if (isGaugeZero)
+            {
+                targetFillAmount = 0.1f;
+                isGaugeZero = false;
+            }
         }
         else
         {
-            float max = playerController.maxBurstCount;
-            float current = playerController.currentBurstCount;
-
             if (max <= 0) max = 1;
 
             targetFillAmount = 1f - (current / max);
@@ -41,13 +46,15 @@ public class PlayerChargeGauge : MonoBehaviour
         // ゲージの増減と赤点滅の制御
         if (targetFillAmount <= 0f)
         {
-            // 💡【重要】残り0回の時は、fillAmountをあえて1f(満タン)にして画像を描画させます
+            // 残り0回の時は、fillAmountをあえて1f(満タン)にして画像を描画させます
             gaugeImage.fillAmount = 1f;
 
-            // 💡完全に透明(Color.clear)にするとチカチカした時に一瞬消えて安っぽくなるので、
+            // 完全に透明(Color.clear)にするとチカチカした時に一瞬消えて安っぽくなるので、
             // 「鮮やかな赤」と「暗い赤(ノイズ風)」の間を高速往復させてサイバーな警告灯っぽくします
             Color darkRed = new Color(0.25f, 0f, 0f, 1f);
             gaugeImage.color = Color.Lerp(Color.red, darkRed, Mathf.PingPong(Time.time * 18f, 1f));
+
+            isGaugeZero = true;
         }
         else
         {
@@ -58,7 +65,24 @@ public class PlayerChargeGauge : MonoBehaviour
             }
             else
             {
-                gaugeImage.fillAmount = Mathf.MoveTowards(gaugeImage.fillAmount, targetFillAmount, reloadSpeed * Time.deltaTime);
+                gaugeImage.fillAmount = Mathf.MoveTowards(gaugeImage.fillAmount, targetFillAmount, playerController.reloadSpeed * Time.deltaTime);
+                playerController.currentBurstCount = (int)max - Mathf.FloorToInt(gaugeImage.fillAmount * max);
+            }
+
+            if (max == gaugeImage.fillAmount * max)
+            {
+                if (!isFullSEPlayed)
+                {
+                    if (!BaseEventManager.IsAnyEventPlaying)
+                    {
+                        SoundManager.Instance.PlaySE(SeType.ChargOK, 1.5f, 0f);
+                    }
+                    isFullSEPlayed = true; // 連打ブロック
+                }
+            }
+            else
+            {
+                isFullSEPlayed = false;
             }
 
             // 通常時はサイバーネオンブルー

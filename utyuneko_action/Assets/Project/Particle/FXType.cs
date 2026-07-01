@@ -4,6 +4,6 @@ public enum FXType
     MainItem,
     Spark,
     Lightning,
-    Flash
+    Flash,
     // 将来増えるエフェクトをここに足していく
 }

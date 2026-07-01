@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 
 [RequireComponent(typeof(Rigidbody2D), typeof(CircleCollider2D))]
 public class PlayerController : MonoBehaviour, IEventActor
@@ -50,6 +51,9 @@ public class PlayerController : MonoBehaviour, IEventActor
     public bool useTrail = true;       // トレイル演出のオンオフ
     public bool useAfterImage = true;  // 残像演出のオンオフ
 
+    [Header("リロード速度")]
+    public float reloadSpeed = 8f; // 地面に着いた時にゲージが溜まる速度
+
     [Header("Visual Manager Reference")]
     [Tooltip("演出管理コンポーネントの参照")]
     public PlayerVisualManager visualManager;
@@ -80,6 +84,9 @@ public class PlayerController : MonoBehaviour, IEventActor
 
     private ImageBubble imageBubble;
 
+    public PlayerDamageEffect damageEffect;
+
+    public PlayerState_None StateNone { get; private set; }
     public PlayerState_Normal StateNormal { get; private set; }
     public PlayerState_Charge StateCharge { get; private set; }
     public PlayerState_Burst StateBurst { get; private set; }
@@ -87,8 +94,9 @@ public class PlayerController : MonoBehaviour, IEventActor
 
     void Awake()
     {
-        inputActions = new GameInputActions();
+        inputActions = InputManager.Instance;
 
+        StateNone = new PlayerState_None();
         StateNormal = new PlayerState_Normal();
         StateCharge = new PlayerState_Charge();
         StateBurst = new PlayerState_Burst();
@@ -100,6 +108,8 @@ public class PlayerController : MonoBehaviour, IEventActor
         rb2D = GetComponent<Rigidbody2D>();
         circleCollider2D = GetComponent<CircleCollider2D>();
         anim = GetComponent<Animator>();
+
+        damageEffect = GetComponent<PlayerDamageEffect>();
 
         rb2D.constraints = RigidbodyConstraints2D.FreezeRotation;
 
@@ -133,11 +143,18 @@ public class PlayerController : MonoBehaviour, IEventActor
         TransitionToState(StateNormal);
     }
 
-    void OnEnable() { inputActions.Player.Enable(); }
+    void OnEnable() {
+        if (SceneManager.GetActiveScene().name != "TitleScene")
+        {
+            inputActions.Player.Enable();
+        }
+    }
     void OnDisable() { inputActions.Player.Disable(); }
 
     void Update()
     {
+        if (Time.timeScale == 0f) return;
+
         moveInput = inputActions.Player.Move.ReadValue<Vector2>();
 
         if (inputActions.Player.MousePosition != null)
@@ -150,6 +167,8 @@ public class PlayerController : MonoBehaviour, IEventActor
 
     void FixedUpdate()
     {
+        if (Time.timeScale == 0f) return;
+
         currentState?.FixedUpdateState();
     }
 
@@ -184,7 +203,7 @@ public class PlayerController : MonoBehaviour, IEventActor
     public void OnEnemyKilledInBurst()
     {
             currentBurstCount = Mathf.Max(0, currentBurstCount - 1);
-            // currentBurstCount = 0;
+            // currentBurstCount = 0f;
     }
 
     private void OnCollisionEnter2D(Collision2D collision)

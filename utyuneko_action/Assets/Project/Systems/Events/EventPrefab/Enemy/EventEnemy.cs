@@ -10,26 +10,61 @@ public class EventEnemy : MonoBehaviour
     [SerializeField] private float knockbackForceX = 8f;
     [SerializeField] private float knockbackForceY = 4f;
 
+    [Header("見つめるターゲットの設定")]
+    [Tooltip("プレイヤーや補佐など、こいつに見つめさせたいオブジェクトを登録する")]
+    [SerializeField] private Transform targetToLookAt;
+
+    [Header("回転パラメータ")]
+    [Tooltip("ターゲットを振り向く時の滑らかさ")]
+    [SerializeField] private float lookSmoothing = 12f;
+
     private Rigidbody2D rb;
-    private bool isDefeated = false; // 二重撃破防止フラグ
+    private Animator anim; // アニメーションを止めるためのコンポーネント用
+    public bool isDefeated = false; // 二重撃破防止フラグ
 
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
+        anim = GetComponent<Animator>(); // アニメーターを自動取得！
 
         if (rb != null)
         {
-            // 🔒【新設：当たる前の完全フリーズ】
-            // インスペクターの設定がどうなっていても、ゲーム開始時にコードから強制的に
-            // 「X軸固定」「Y軸固定」「Z軸回転固定」のフルロックを掛けます！
-            // これにより、通常状態のdB君がどれだけ歩いて体当たりしてもビクともしなくなります。
+            // 当たる前の完全フリーズ
             rb.constraints = RigidbodyConstraints2D.FreezePositionX |
                              RigidbodyConstraints2D.FreezePositionY |
                              RigidbodyConstraints2D.FreezeRotation;
         }
     }
 
-    // Is TriggerがOFFなので「Collision2D」で受け取る
+    void Update()
+    {
+        // 撃破されておらず、かつターゲットがセットされている場合のみ見つめる！
+        if (!isDefeated && targetToLookAt != null)
+        {
+            KeepLookingAtTarget();
+        }
+    }
+
+    // ===================================================================
+    // ターゲットを3D空間で完全にロックオンする処理
+    // ===================================================================
+    private void KeepLookingAtTarget()
+    {
+        // 1. 自分から見たターゲットへの「3Dの方向ベクトル」を計算する
+        Vector3 direction = targetToLookAt.position - transform.position;
+
+        // 完全に同じ位置にいる場合の計算エラー（ログ警告）を防ぐ安全ガード
+        if (direction.sqrMagnitude > 0.001f)
+        {
+            // 2. その方向を完全に正面(Z軸)として捉える3次元の回転クォータニオンを生み出す
+            Quaternion targetRotation = Quaternion.LookRotation(-direction);
+
+            // 3. 現在の向きから、ターゲットの向きへ滑らかに回転させる
+            transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, Time.deltaTime * lookSmoothing);
+        }
+    }
+
+
     private void OnCollisionEnter2D(Collision2D collision)
     {
         if (isDefeated) return;
@@ -40,6 +75,8 @@ public class EventEnemy : MonoBehaviour
 
             if (p != null && p.CurrentState is PlayerState_Burst)
             {
+                SoundManager.Instance.PlaySE(SeType.EnemyDie);
+
                 // プレイヤーの位置を渡して撃破処理へ
                 Defeated(collision.transform.position);
 
@@ -50,13 +87,17 @@ public class EventEnemy : MonoBehaviour
 
     private void Defeated(Vector3 playerPosition)
     {
-        isDefeated = true;
+        isDefeated = true; // この瞬間、3DロックオンUpdateが100%完全に停止します！
+
+        // アニメーションをその場のポーズで完全フリーズ！
+        if (anim != null)
+        {
+            anim.speed = 0f;
+        }
 
         if (rb != null)
         {
-            // 🔓【新設：当たった瞬間のフリーズ解除】
-            // バースト攻撃が当たったまさにこの瞬間、XとYの移動ロックを完全解除します！
-            // （吹っ飛んだ時にゴロゴロ回転して埋まるのを防ぐため、Z軸の回転固定だけは残します）
+            // 当たった瞬間のフリーズ解除
             rb.constraints = RigidbodyConstraints2D.FreezeRotation;
         }
 
@@ -64,11 +105,11 @@ public class EventEnemy : MonoBehaviour
         float pushDirection = (transform.position.x - playerPosition.x) > 0 ? 1f : -1f;
         Vector2 knockbackVector = new Vector2(pushDirection * knockbackForceX, knockbackForceY);
 
-        // ロックが解けた直後なので、この物理速度（ノックバック）が100%完璧に適用されます！
         rb.linearVelocity = knockbackVector;
         rb.gravityScale = 1f; // 重力を有効にして自然に落ちるように
 
         // 地面に横たわる演出（Z軸を90度傾ける）
+        // 見つめるUpdateが完全に止まっているので、この横倒し回転がバグらず100%綺麗に上書き適用されます！
         transform.rotation = Quaternion.Euler(0f, 0f, pushDirection * -90f);
 
         StartCoroutine(LayDownRoutine());
@@ -82,16 +123,14 @@ public class EventEnemy : MonoBehaviour
 
     private IEnumerator LayDownRoutine()
     {
-        // 0.6秒ほど物理挙動で吹っ飛んで地面に落ちるのを待つ
         yield return new WaitForSeconds(0.6f);
 
-        // 完全に動きを止めてその場に固定（ゾンビバグ・無限滑り防止）
+        // 完全に動きを止めてその場に固定
         rb.linearVelocity = Vector2.zero;
         rb.angularVelocity = 0f;
         rb.bodyType = RigidbodyType2D.Kinematic;
     }
 
-    // 補佐が頭上に来たあと、マネージャーから呼ばれる縮小消滅デモ
     public void StartAbsorb(Transform targetTransform, float duration)
     {
         StartCoroutine(AbsorbRoutine(targetTransform, duration));
@@ -110,10 +149,7 @@ public class EventEnemy : MonoBehaviour
             elapsedTime += Time.deltaTime;
             float t = elapsedTime / duration;
 
-            // 1. 【位置】現在の位置から補佐の中心に向かってじわじわ移動
             transform.position = Vector3.Lerp(startPosition, target.position, t);
-
-            // 2. 【サイズ】元のサイズから 0（消滅）に向かってじわじわ縮小
             transform.localScale = Vector3.Lerp(startScale, Vector3.zero, t);
 
             yield return null;

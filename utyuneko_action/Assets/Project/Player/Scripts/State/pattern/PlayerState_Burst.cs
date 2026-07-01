@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Unity.VisualScripting;
+using UnityEngine;
 
 public class PlayerState_Burst : IPlayerState
 {
@@ -16,6 +17,8 @@ public class PlayerState_Burst : IPlayerState
     {
         p = player;
         isCharge = false;
+
+        SoundManager.Instance.PlaySE(SeType.PlayerBurstBegin);
 
         reflectCount = 0;
 
@@ -72,7 +75,10 @@ public class PlayerState_Burst : IPlayerState
             if (p.canCancelBurstWithJump)
             {
                 p.rb2D.linearVelocity = new Vector2(p.rb2D.linearVelocity.x, p.jumpForce);
-                
+
+                SoundManager.Instance.PlaySE(SeType.PlayerJump);
+                SoundManager.Instance.PlaySE(SeType.PlayerJump2);
+
                 if (p.visualManager != null)
                 {
                     p.visualManager.TriggerJumpStretch();
@@ -103,6 +109,8 @@ public class PlayerState_Burst : IPlayerState
     {
         if (((1 << collision.gameObject.layer) & p.GetGroundLayerMask()) != 0)
         {
+            SoundManager.Instance.PlaySE(SeType.PlayerWallHit);
+
             Vector2 incomingVector = lastVelocity;
             if (incomingVector.magnitude < 1f) return;
 
