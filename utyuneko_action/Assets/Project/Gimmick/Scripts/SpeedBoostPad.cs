@@ -1,42 +1,64 @@
+using System.Collections;
 using UnityEngine;
 
+[RequireComponent(typeof(Collider2D))]
 public class SpeedBoostPad : MonoBehaviour
 {
-    [SerializeField] private float boostMultiplier = 1.5f;
-    [SerializeField] private float minimumBoostSpeed = 30f;
-    [SerializeField] private float maxBoostSpeed = 100f;
+    [Header("射出設定")]
+    [SerializeField] private float boostMultiplier = 1.5f;   // スピード倍率
+    [SerializeField] private float minimumBoostSpeed = 30f;  // 最低保証速度
+    [SerializeField] private float maxBoostSpeed = 100f;     // 最高速度の制限
 
-    private void OnTriggerEnter(Collider other)
+    // 1. 2D用に OnTriggerEnter2D に変更
+    private void OnTriggerEnter2D(Collider2D other)
     {
         if (other.CompareTag("Player"))
         {
-            Rigidbody rb = other.GetComponent<Rigidbody>();
-            if (rb != null)
+            // 2. 2Dのコンポーネントを取得
+            Rigidbody2D rb = other.GetComponent<Rigidbody2D>();
+            PlayerController player = other.GetComponent<PlayerController>();
+
+            if (rb != null && player != null)
             {
-                // ヒットストップ（必要に応じてコメントアウトを解除してください）
+                // ヒットストップ（必要に応じてコメントアウトを解除）
                 // HitStopManager.Instance.Stop(0.035f);
 
-                // 1. 現在の速度と、進んでいる「向き」を取得
-                Vector3 currentVelocity = rb.linearVelocity;
+                // 3. 現在の速度と、進んでいる「向き」を取得 (Vector2)
+                Vector2 currentVelocity = rb.linearVelocity;
                 float currentSpeed = currentVelocity.magnitude;
 
-                // 2. もし完全に止まっていたら、パッドの「前方向（transform.forward）」を進む向きにする（安全対策）
-                Vector3 moveDirection = currentSpeed > 0.01f ? currentVelocity.normalized : transform.forward;
+                // 4. もし完全に止まっていたら、パッドの「上方向（transform.up）」を進む向きにする（2Dの安全対策）
+                // ※2Dでは正面が「Z方向（forward）」ではなく「Y方向（up）」または「X方向（right）」になることが多いため、upにしています。
+                Vector2 moveDirection = currentSpeed > 0.01f ? currentVelocity.normalized : (Vector2)transform.up;
 
-                // 3. 元の速度を 1.5倍 にする
+                // 5. 速度の計算とクランプ
                 float boostedSpeed = currentSpeed * boostMultiplier;
-
-                // 4. 最低速度と最高速度の間にクランプ（制限）する
                 float finalSpeed = Mathf.Clamp(boostedSpeed, minimumBoostSpeed, maxBoostSpeed);
 
-                // 5. 割り出した「向き」と「最終的な速度」を掛け合わせてリジッドボディに適用
-                rb.linearVelocity = moveDirection * finalSpeed;
+                // 6. プレイヤーの状態を「バースト中」に切り替える
+                // (これでトレイルや残像がONになり、通常移動入力が遮断されます)
+                //player.TransitionToState(player.StateBurst);
 
-                // 残像エフェクト（必要に応じてコメントアウトを解除してください）
-                // AfterImageManager.Instance.StartEmitting();
-
-                Debug.Log($"ブーストパッド通過: 元の速度 {currentSpeed} -> 加速後の速度 {rb.linearVelocity.magnitude}");
+                // 7. コルーチンを動かして、1フレーム後に進行方向へ加速を叩き込む
+                StartCoroutine(ForceBoostNextFrame(player, rb, moveDirection, finalSpeed));
             }
+        }
+    }
+
+    private IEnumerator ForceBoostNextFrame(PlayerController player, Rigidbody2D rb, Vector2 direction, float speed)
+    {
+        // StateBurstのEnter処理（エイム発射など）が通り過ぎるのを1フレーム待つ
+        yield return new WaitForFixedUpdate();
+
+        if (rb != null)
+        {
+            // 割り出した「進行方向」と「加速後の速度」で物理を上書き！
+            rb.linearVelocity = direction * speed;
+
+            // (オプション) パネルと同様、この加速でバースト回数を消費させたくない場合はコメントアウトを解除してください
+            // player.currentBurstCount = Mathf.Max(0, player.currentBurstCount - 1);
+
+            Debug.Log($"[2Dブーストパッド] 元の速度: {rb.linearVelocity.magnitude / boostMultiplier} -> 加速後: {speed}");
         }
     }
 }

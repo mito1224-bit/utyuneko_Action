@@ -1,53 +1,55 @@
 using System.Collections;
 using UnityEngine;
 
+// 2Dのコライダーが必須であることを保証
+[RequireComponent(typeof(Collider2D))]
 public class DirectionalLaunchPanel : MonoBehaviour
 {
     [Header("射出設定")]
-    [SerializeField] private float boostMultiplier = 1.5f; // スピード倍率
-    [SerializeField] private float minimumBoostSpeed = 30f; // 最低保証速度
-    [SerializeField] private float maxBoostSpeed = 100f; // 最高速度の制限
+    [SerializeField] private float boostMultiplier = 1.5f;   // スピード倍率
+    [SerializeField] private float minimumBoostSpeed = 30f;  // 最低保証速度
+    [SerializeField] private float maxBoostSpeed = 100f;     // 最高速度の制限
 
-    private void OnTriggerEnter(Collider other)
+    // 1. 2D用に OnTriggerEnter2D に変更
+    private void OnTriggerEnter2D(Collider2D other)
     {
         if (other.CompareTag("Player"))
         {
-            Rigidbody rb = other.GetComponent<Rigidbody>();
+            // 2. 2Dのコンポーネントを取得
+            Rigidbody2D rb = other.GetComponent<Rigidbody2D>();
             PlayerController player = other.GetComponent<PlayerController>();
 
             if (rb != null && player != null)
             {
+                // 3. パネルの「下方向」を射出方向に決定 (Vector2にキャスト)
+                Vector2 launchDirection = -(Vector2)transform.up;
 
-                // 1. パネルの「下方向」を射出方向に決定
-                Vector3 launchDirection = -transform.up;
-
-                // 2. 射出速度の計算（あなたの元のロジック通り）
+                // 4. 射出速度の計算 (Unity2021以降の linearVelocity に対応)
                 float currentSpeed = rb.linearVelocity.magnitude;
-                float boostedSpeed = currentSpeed * boostMultiplier; // 必要に応じて multiplier に変更してください
+                float boostedSpeed = currentSpeed * boostMultiplier;
                 float clampedSpeed = Mathf.Clamp(boostedSpeed, minimumBoostSpeed, maxBoostSpeed);
 
-                // 3. プレイヤーの状態を「バースト中」に切り替える
-                // (この瞬間、プレイヤー側でエイム方向への上書きが走ります)
-                player.TransitionToState(player.StateBurst);
+                // 5. プレイヤーの状態を「バースト中」に切り替える
+               // player.TransitionToState(player.StateBurst);
 
-                // 4. ★【ここが魔法】プレイヤーの上書き処理が終わった「直後」に、パネルの速度で再上書きする
+                // 6. 1フレーム待って物理速度をパネルの方向・速度に強制上書き
                 StartCoroutine(ForceLaunchNextFrame(rb, launchDirection.normalized, clampedSpeed));
             }
         }
     }
 
-    // 次の物理フレームで速度を強制上書きするコルーチン
-    private IEnumerator ForceLaunchNextFrame(Rigidbody rb, Vector3 direction, float speed)
+    // 2D用のリジッドボディを受け取るコルーチン
+    private IEnumerator ForceLaunchNextFrame(Rigidbody2D rb, Vector2 direction, float speed)
     {
-        // FixedUpdate（物理演算）の1フレーム分、あるいはEnterの処理が終わるまでほんの一瞬だけ待つ
+        // StateBurstのEnter内の処理（エイム方向への発射）が完全に終わるのを待つ
         yield return new WaitForFixedUpdate();
 
         if (rb != null)
         {
-            // プレイヤーのStateBurstが設定した速度を、上から力技で「パネルの速度」に書き換える！
+            // パネルの速度で上書き！
             rb.linearVelocity = direction * speed;
 
-            Debug.Log($"パネル単体で完結！ 速度を後出し上書きしました: {speed}");
+            Debug.Log($"[2Dパネル] 速度を後出し上書きしました: {speed} (方向: {direction})");
         }
     }
 }

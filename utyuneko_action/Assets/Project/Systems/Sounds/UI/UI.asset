@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f11c32e114682e444930a364ba3db592, type: 3}
+  m_Name: UI
+  m_EditorClassIdentifier: Assembly-CSharp::AudioBank
+  seList:
+  - seType: 400
+    clip: {fileID: 8300000, guid: 114c085583605f14a95a2d5b791b910a, type: 3}
+    volume: 1
+  - seType: 401
+    clip: {fileID: 8300000, guid: ec608407f4b323545b57405611edca6c, type: 3}
+    volume: 1
+  - seType: 402
+    clip: {fileID: 8300000, guid: 2257ca6151c434849aca0cd4e170dd83, type: 3}
+    volume: 1
+  - seType: 403
+    clip: {fileID: 8300000, guid: a1158fd159c840141b4c88050acf9ee3, type: 3}
+    volume: 1
+  - seType: 404
+    clip: {fileID: 8300000, guid: bbaf494751b0da24bb7a1fb93c305944, type: 3}
+    volume: 1
+  - seType: 405
+    clip: {fileID: 8300000, guid: 8c790928407cfa14bbfb89d2b41a3d93, type: 3}
+    volume: 1

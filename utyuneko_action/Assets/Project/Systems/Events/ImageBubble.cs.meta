@@ -1,0 +1,31 @@
+fileFormatVersion: 2
+guid: 93a5b1c627855234486ca04df44f1e4e
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - imgOK: {fileID: -2023548143, guid: 0791263bb7bd45a4bba03d13d617a424, type: 3}
+  - imgQuestion: {fileID: -2024518168, guid: d4f8dddf187e88d44ac4e5bfa2ac3fd4, type: 3}
+  - imgSurprise: {fileID: -1259598198, guid: 0791263bb7bd45a4bba03d13d617a424, type: 3}
+  - imgDoya: {fileID: 347554350, guid: d4f8dddf187e88d44ac4e5bfa2ac3fd4, type: 3}
+  - imgSweat: {fileID: 1366236493, guid: 0791263bb7bd45a4bba03d13d617a424, type: 3}
+  - imgHatena: {fileID: 2000081217, guid: d4f8dddf187e88d44ac4e5bfa2ac3fd4, type: 3}
+  - imgJoy: {fileID: 1628391786, guid: 0791263bb7bd45a4bba03d13d617a424, type: 3}
+  - imgGift: {fileID: 1162724430, guid: d4f8dddf187e88d44ac4e5bfa2ac3fd4, type: 3}
+  - imgStar: {fileID: -2082027710, guid: d4f8dddf187e88d44ac4e5bfa2ac3fd4, type: 3}
+  - imgGo: {fileID: 1920459602, guid: d4f8dddf187e88d44ac4e5bfa2ac3fd4, type: 3}
+  - imgEnemy: {fileID: -1123801233, guid: d4f8dddf187e88d44ac4e5bfa2ac3fd4, type: 3}
+  - imgMaru: {fileID: 269235345, guid: d4f8dddf187e88d44ac4e5bfa2ac3fd4, type: 3}
+  - imgBatu: {fileID: -1513336517, guid: d4f8dddf187e88d44ac4e5bfa2ac3fd4, type: 3}
+  - imgRight: {fileID: 238922887, guid: d4f8dddf187e88d44ac4e5bfa2ac3fd4, type: 3}
+  - imgLeft: {fileID: -609865758, guid: d4f8dddf187e88d44ac4e5bfa2ac3fd4, type: 3}
+  - imgBottom: {fileID: 966025082, guid: d4f8dddf187e88d44ac4e5bfa2ac3fd4, type: 3}
+  - imgConfusion: {fileID: -14985355, guid: d4f8dddf187e88d44ac4e5bfa2ac3fd4, type: 3}
+  - imgDenger: {fileID: -635088807, guid: d4f8dddf187e88d44ac4e5bfa2ac3fd4, type: 3}
+  - imgFellow: {fileID: 266145314, guid: d4f8dddf187e88d44ac4e5bfa2ac3fd4, type: 3}
+  - imgDokuro: {fileID: -1542753200, guid: d4f8dddf187e88d44ac4e5bfa2ac3fd4, type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

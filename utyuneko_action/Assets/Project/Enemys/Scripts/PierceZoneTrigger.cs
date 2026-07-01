@@ -41,7 +41,7 @@ public class PierceZoneTrigger : MonoBehaviour
 
     private EnemyHealth parentHealth;
     private EnemyCollision parentCollision;
-    private Collider parentCollider;
+    private Collider2D parentCollider;
 
     void Awake()
     {
@@ -49,19 +49,19 @@ public class PierceZoneTrigger : MonoBehaviour
         parentCollision = GetComponentInParent<EnemyCollision>();
 
         if (parentCollision != null)
-            parentCollider = parentCollision.GetComponent<Collider>();
+            parentCollider = parentCollision.GetComponent<Collider2D>();
 
         if (parentCollision == null)
             Debug.LogWarning($"{gameObject.name}: 親に EnemyCollision が見つかりません。");
         if (parentHealth == null)
             Debug.LogWarning($"{gameObject.name}: 親に EnemyHealth が見つかりません。");
 
-        Collider col = GetComponent<Collider>();
+        Collider2D col = GetComponent<Collider2D>();
         if (col != null && !col.isTrigger)
-            Debug.LogWarning($"{gameObject.name}: Collider の isTrigger が false です。");
+            Debug.LogWarning($"{gameObject.name}: Collider2D の isTrigger が false です。");
     }
 
-    void OnTriggerEnter(Collider other)
+    void OnTriggerEnter2D(Collider2D other)
     {
         if (!other.CompareTag(playerTag)) return;
 
@@ -72,12 +72,12 @@ public class PierceZoneTrigger : MonoBehaviour
             return;
         }
 
-        Collider playerCol = other.GetComponent<Collider>();
+        Collider2D playerCol = other.GetComponent<Collider2D>();
 
-        // ★ Physics.IgnoreCollision でプレイヤーと本体の衝突を無視
+        // ★ Physics2D.IgnoreCollision でプレイヤーと本体の衝突を無視
         if (parentCollider != null && playerCol != null)
         {
-            Physics.IgnoreCollision(parentCollider, playerCol, true);
+            Physics2D.IgnoreCollision(parentCollider, playerCol, true);
 
             // 一定時間後に復元（OnTriggerExitではなくタイマーで管理）
             StartCoroutine(RestoreAfterDelay(playerCol, ignoreCollisionDuration));
@@ -86,15 +86,15 @@ public class PierceZoneTrigger : MonoBehaviour
         // ★ 角度補正
         if (angleCorrection > 0f)
         {
-            Rigidbody rb = other.GetComponent<Rigidbody>();
+            Rigidbody2D rb = other.GetComponent<Rigidbody2D>();
             if (rb != null) CorrectAngle(rb);
         }
 
         // ダメージ処理
         if (dealDamageOnPierce && parentHealth != null)
         {
-            Rigidbody rb = other.GetComponent<Rigidbody>();
-            if (rb != null) parentHealth.HandleHit(rb.linearVelocity.magnitude);
+            Rigidbody2D rb = other.GetComponent<Rigidbody2D>();
+            if (rb != null) parentHealth.HandleHit(rb.linearVelocity.magnitude, other.transform.position);
         }
 
         Debug.Log($"PierceZone: 貫通を許可（{ignoreCollisionDuration}秒間コリジョン無視）");
@@ -103,7 +103,7 @@ public class PierceZoneTrigger : MonoBehaviour
     // =========================================================
     //  タイマー式のコリジョン復元
     // =========================================================
-    private IEnumerator RestoreAfterDelay(Collider playerCol, float delay)
+    private IEnumerator RestoreAfterDelay(Collider2D playerCol, float delay)
     {
         yield return new WaitForSeconds(delay);
 
@@ -128,7 +128,7 @@ public class PierceZoneTrigger : MonoBehaviour
 
         if (parentCollider != null && playerCol != null)
         {
-            Physics.IgnoreCollision(parentCollider, playerCol, false);
+            Physics2D.IgnoreCollision(parentCollider, playerCol, false);
             Debug.Log("PierceZone: コリジョン復元");
         }
     }
@@ -136,36 +136,36 @@ public class PierceZoneTrigger : MonoBehaviour
     // =========================================================
     //  角度補正
     // =========================================================
-    private void CorrectAngle(Rigidbody playerRb)
+    private void CorrectAngle(Rigidbody2D playerRb)
     {
-        Vector3 pierceDir = GetPierceDirection();
-        pierceDir.y = 0f;
+        Vector2 pierceDir = GetPierceDirection();
+        if (pierceDir.sqrMagnitude < 0.001f) return;
         pierceDir.Normalize();
 
-        if (pierceDir.sqrMagnitude < 0.001f) return;
-
-        Vector3 currentVel = playerRb.linearVelocity;
+        Vector2 currentVel = playerRb.linearVelocity;
         float speed = currentVel.magnitude;
         if (speed < 0.1f) return;
 
-        Vector3 currentDir = currentVel.normalized;
+        Vector2 currentDir = currentVel.normalized;
 
         // 逆方向から入ってきた場合は反転
-        if (Vector3.Dot(currentDir, pierceDir) < 0f)
+        if (Vector2.Dot(currentDir, pierceDir) < 0f)
             pierceDir = -pierceDir;
 
-        Vector3 correctedDir = Vector3.Lerp(currentDir, pierceDir, angleCorrection).normalized;
+        Vector2 correctedDir = Vector2.Lerp(currentDir, pierceDir, angleCorrection).normalized;
         playerRb.linearVelocity = correctedDir * speed;
     }
 
-    private Vector3 GetPierceDirection()
+    // 2D（XY平面）での貫通方向。Forward(=Z)は奥行き軸なので2Dでは無効になり、補正はスキップされる。
+    // XY平面では Right か Up を指定すること。
+    private Vector2 GetPierceDirection()
     {
         switch (pierceDirection)
         {
             case PierceAxis.Right: return transform.right;
             case PierceAxis.Up: return transform.up;
             case PierceAxis.Forward:
-            default: return transform.forward;
+            default: return transform.forward; // (Vector2)transform.forward = (0,0) → 補正スキップ
         }
     }
 
