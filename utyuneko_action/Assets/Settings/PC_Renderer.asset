@@ -127,13 +127,14 @@ MonoBehaviour:
   - {fileID: 5750520002810549009}
   - {fileID: -45265568514228692}
   - {fileID: -5854779935158309999}
-  - {fileID: -3806594099353561030}
   - {fileID: -9006331480524317515}
   - {fileID: -7801428063682317528}
   - {fileID: 5575868310112008628}
   - {fileID: 4231068665217506181}
   - {fileID: 4980700764587160425}
-  m_RendererFeatureMap: ad6b866f10d7b46c11134d9979f3cd4f2c3e278c342f5fff91ebcd3eaba4bfae3ad8eeb7d5422ccbb51cee6d3c15038328b3738382c2bb93b4799592af76614d855b93aa88c6b73a69f3bbddf4001f45
+  - {fileID: 3756343733014701189}
+  - {fileID: -3806594099353561030}
+  m_RendererFeatureMap: ad6b866f10d7b46c11134d9979f3cd4f2c3e278c342f5fff91ebcd3eaba4bfaeb51cee6d3c15038328b3738382c2bb93b4799592af76614d855b93aa88c6b73a69f3bbddf4001f4585249b24b93621343ad8eeb7d5422ccb
   m_UseNativeRenderPass: 1
   xrSystemData: {fileID: 0}
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
@@ -162,6 +163,26 @@ MonoBehaviour:
   m_DepthTextureFormat: 0
   m_AccurateGbufferNormals: 0
   m_IntermediateTextureMode: 0
+--- !u!114 &3756343733014701189
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b00045f12942b46c698459096c89274e, type: 3}
+  m_Name: SquareStepTransition
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.FullScreenPassRendererFeature
+  m_Active: 1
+  injectionPoint: 600
+  fetchColorBuffer: 1
+  requirements: 0
+  passMaterial: {fileID: 2100000, guid: eb332dcdefc50e54eac6edfbc814a011, type: 2}
+  passIndex: 0
+  bindDepthStencilAttachment: 0
+  m_Version: 1
 --- !u!114 &4231068665217506181
 MonoBehaviour:
   m_ObjectHideFlags: 0
