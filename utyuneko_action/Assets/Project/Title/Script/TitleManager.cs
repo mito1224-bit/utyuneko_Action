@@ -57,7 +57,7 @@ public class TitleManager : MonoBehaviour
         SoundManager.Instance.PlayBGM(BgmType.Title, sceneFadeInDuration * 2.0f);
 
         inputActions = InputManager.Instance;
-        inputActions.Title.Enable();
+        inputActions.UI.Enable();
         inputActions.Player.Disable();
     }
 
@@ -65,7 +65,7 @@ public class TitleManager : MonoBehaviour
     {
         if (inputActions != null)
         {
-            inputActions.Title.Disable();
+            inputActions.UI.Disable();
             inputActions.Player.Enable();
         }
     }
@@ -114,7 +114,7 @@ public class TitleManager : MonoBehaviour
         currentState = TitleState.WaitingForEnter;
         inputTimer = 0f;
 
-        while (!inputActions.Title.Submit.triggered && inputTimer < 1.0f)
+        while (!inputActions.UI.Submit.triggered && inputTimer < 1.0f)
         {
             inputTimer += Time.deltaTime;
             yield return null;
@@ -151,7 +151,7 @@ public class TitleManager : MonoBehaviour
 
     void HandleMenuInput()
     {
-        Vector2 moveInput = inputActions.Title.Move.ReadValue<Vector2>();
+        Vector2 moveInput = inputActions.UI.Move.ReadValue<Vector2>();
 
         int verticalInput = 0;
         int horizontalInput = 0;
@@ -174,7 +174,7 @@ public class TitleManager : MonoBehaviour
             isDirectionPressed = false;
         }
 
-        bool isCancelTriggered = inputActions.Title.Cancel.triggered;
+        bool isCancelTriggered = inputActions.UI.Cancel.triggered;
 
         if (isInConfirmMenu)
         {
