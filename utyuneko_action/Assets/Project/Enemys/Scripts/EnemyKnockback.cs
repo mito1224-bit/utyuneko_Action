@@ -11,6 +11,8 @@ using UnityEngine;
 ///   - disableOnDeath にセットされた MonoBehaviour（EnemyMovement, EnemyAttack 等）を無効化
 ///   - Renderer を点滅させる
 ///   - 床・壁（groundLayers）にぶつかったら、bounceOnDeath が有効なら数回バウンドしてから消滅
+///   - keepInCameraOnDeath が有効なら、画面外へ飛ばさずカメラ範囲でクランプ＆反射して画面内で吹っ飛ぶ
+///   - decelerateOnDeath が OFF（既定）なら死亡吹き飛び中は減速しない（一定速度で飛び続ける）
 ///   - 床に当たらず飛び続けた場合の保険として deathDestroyDelay 秒後にも消滅
 /// </summary>
 public class EnemyKnockback : MonoBehaviour
@@ -33,8 +35,21 @@ public class EnemyKnockback : MonoBehaviour
     [Tooltip("毎秒あたりの速度減衰係数（1.0で減衰なし、0.5で1秒で半減）")]
     [Range(0.05f, 1f)] public float decayPerSecond = 0.4f;
 
+    [Tooltip("死亡吹き飛び中も速度を減衰させる。OFF＝一定速度で飛び続ける（カメラ内で跳ね回らせたいとき用）")]
+    public bool decelerateOnDeath = false;
+
     [Tooltip("死亡時に適用される下向き重力")]
     public float deathGravity = 25f;
+
+    [Header("死亡時にカメラ内へ留める")]
+    [Tooltip("死亡吹き飛び中、画面外へ飛んでいかないようカメラ表示範囲でクランプ＆反射する")]
+    public bool keepInCameraOnDeath = true;
+
+    [Tooltip("カメラ端からの余白（ビューポート比率。0＝端ぴったり / 0.05＝少し内側で跳ねる）")]
+    [Range(0f, 0.4f)] public float cameraMargin = 0.03f;
+
+    [Tooltip("カメラ端で跳ね返るときの速度保持率（1＝減速なしで跳ね返る）")]
+    [Range(0f, 1f)] public float cameraBounceFactor = 1f;
 
     [Header("死亡時の挙動")]
     [Tooltip("通常ダメージ時に対する死亡時の力の倍率")]
@@ -96,6 +111,8 @@ public class EnemyKnockback : MonoBehaviour
     private float blinkTimer = 0f;
     private bool blinkVisible = true;
 
+    private Camera cam; // カメラ内クランプ用（死亡時のみ使用）
+
     public bool IsDying => isDying;
 
     /// <summary>
@@ -103,6 +120,13 @@ public class EnemyKnockback : MonoBehaviour
     /// EnemyMovement が巡回を一時停止し、収まったら元位置へ戻る判断に使う。
     /// </summary>
     public bool IsActive => active;
+
+    /// <summary>
+    /// 死亡吹き飛び中に床・壁へぶつかった瞬間に発火する（引数＝接触面の法線）。
+    /// 購読側でバウンド/消滅とは独立に処理を差し込める（例: EnemyBomber の「壁ヒットで即爆発」）。
+    /// このイベントは isDying 中の HandleGroundHit からのみ呼ばれる。
+    /// </summary>
+    public event System.Action<Vector2> OnDeathGroundHit;
 
     void Awake()
     {
@@ -176,13 +200,54 @@ public class EnemyKnockback : MonoBehaviour
         delta.z = 0f;
         transform.position += delta;
 
-        currentVelocity *= Mathf.Pow(decayPerSecond, Time.deltaTime);
+        // 死亡時は画面外へ飛ばさないようカメラ範囲でクランプ＆反射する
+        if (isDying && keepInCameraOnDeath) ClampToCamera();
+
+        // 減衰。死亡時は decelerateOnDeath が OFF なら減速させない（一定速度で飛び続ける）
+        if (!isDying || decelerateOnDeath)
+        {
+            currentVelocity *= Mathf.Pow(decayPerSecond, Time.deltaTime);
+        }
 
         if (!isDying && currentVelocity.sqrMagnitude < 0.04f)
         {
             currentVelocity = Vector3.zero;
             active = false;
         }
+    }
+
+    /// <summary>
+    /// 死亡吹き飛び中、カメラの表示範囲外へ出ないよう位置をクランプし、端で速度を反射させる。
+    /// これにより敵は画面内で吹っ飛んで（跳ね回って）から消滅する。
+    /// </summary>
+    private void ClampToCamera()
+    {
+        if (cam == null) cam = Camera.main;
+        if (cam == null) return;
+
+        Vector3 vp = cam.WorldToViewportPoint(transform.position);
+        // カメラ後方（vp.z<0）はクランプ計算が破綻するので何もしない
+        if (vp.z <= 0f) return;
+
+        float min = cameraMargin;
+        float max = 1f - cameraMargin;
+        bool hitX = false, hitY = false;
+
+        if (vp.x < min) { vp.x = min; hitX = true; }
+        else if (vp.x > max) { vp.x = max; hitX = true; }
+
+        if (vp.y < min) { vp.y = min; hitY = true; }
+        else if (vp.y > max) { vp.y = max; hitY = true; }
+
+        if (!hitX && !hitY) return;
+
+        Vector3 clamped = cam.ViewportToWorldPoint(vp);
+        clamped.z = transform.position.z; // Z平面は維持
+        transform.position = clamped;
+
+        // ぶつかった軸だけ速度を反転（端で跳ね返る）。cameraBounceFactor=1 なら減速なし
+        if (hitX) currentVelocity.x = -currentVelocity.x * cameraBounceFactor;
+        if (hitY) currentVelocity.y = -currentVelocity.y * cameraBounceFactor;
     }
 
     /// <summary>
@@ -259,6 +324,9 @@ public class EnemyKnockback : MonoBehaviour
         // 同フレーム内に衝突(Body)とトリガー(ダメージ判定)の両方から呼ばれても1回だけ処理する
         if (Time.frameCount == lastGroundHitFrame) return;
         lastGroundHitFrame = Time.frameCount;
+
+        // 死亡吹き飛び中の壁・床ヒットを購読側へ通知（EnemyBomber の壁ヒット即爆発など。バウンド/消滅とは独立）
+        OnDeathGroundHit?.Invoke(normal);
 
         // バウンド条件：有効＆残り回数あり＆十分な速度で当たっている
         if (bounceOnDeath && bounceCount < maxBounceCount && currentVelocity.magnitude >= minBounceSpeed)

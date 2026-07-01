@@ -16,6 +16,11 @@ public class EnemyHealth : MonoBehaviour
     [SerializeField] private bool isDeadFlg = false;
     public bool IsDeadFlg => isDeadFlg; // 外部からは読み取りのみ
 
+    [Header("バースト限定ダメージ")]
+    [Tooltip("プレイヤーがバースト中のときだけダメージを受ける（ジャンプで軽く当たっただけでは倒せない）。" +
+             "OFF＝速度が閾値を超えれば非バーストでもダメージ")]
+    public bool requireBurstToDamage = true;
+
     [Header("ダメージ判定設定")]
     [Tooltip("ダメージを与えるための最低スピード")]
     public float damageSpeedThreshold = 5.0f;
@@ -43,9 +48,14 @@ public class EnemyHealth : MonoBehaviour
     /// <summary>
     /// EnemyCollision から衝突速度と被弾元の位置を受け取ってダメージを計算する。
     /// hitFromPosition は吹き飛び方向を決めるために使用する（=プレイヤーの位置）。
+    /// isBursting はプレイヤーがバースト攻撃中かどうか。requireBurstToDamage が ON なら
+    /// バースト中でない当たり（ジャンプ接触など）はダメージ無効にする。
     /// </summary>
-    public void HandleHit(float impactSpeed, Vector3 hitFromPosition)
+    public void HandleHit(float impactSpeed, Vector3 hitFromPosition, bool isBursting)
     {
+        // バースト限定ダメージ：バースト中でない当たりはダメージを与えない（弾き・ノックバックは EnemyCollision が担当）
+        if (requireBurstToDamage && !isBursting) return;
+
         if (impactSpeed < damageSpeedThreshold) return;
 
         // 盾を持つ敵は、前方（盾側）から当てられてもダメージを受けない。
