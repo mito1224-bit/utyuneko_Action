@@ -5796,7 +5796,7 @@ Transform:
   m_GameObject: {fileID: 126321676}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 26.95, y: 13.45, z: 0}
+  m_LocalPosition: {x: 26.95, y: 4, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -30323,7 +30323,7 @@ Transform:
   m_GameObject: {fileID: 701527593}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 63.49, y: 13.79, z: 0}
+  m_LocalPosition: {x: 67.7, y: 4.2, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -60359,20 +60359,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BossSniper
   phases:
   - totalUnits: 4
-    aimTime: 1.5
-    lockTime: 0.35
+    aimTime: 2
+    lockTime: 1
     fireDuration: 0.25
-    stunDuration: 4
+    stunDuration: 5
   - totalUnits: 5
-    aimTime: 1.35
-    lockTime: 0.35
+    aimTime: 2
+    lockTime: 1
     fireDuration: 0.25
     stunDuration: 4
   - totalUnits: 6
-    aimTime: 1.2
-    lockTime: 0.35
-    fireDuration: 0.25
-    stunDuration: 4
+    aimTime: 1
+    lockTime: 0.5
+    fireDuration: 0.5
+    stunDuration: 3
   playerTag: Player
   patrolPoints:
   - {fileID: 126321677}
@@ -60380,10 +60380,10 @@ MonoBehaviour:
   - {fileID: 529924512}
   - {fileID: 956818905}
   patrolHalfWidth: 5
-  teleportInterval: 1.8
-  timeBetweenAttacks: 3.5
-  teleportShrinkTime: 0.15
-  teleportExpandTime: 0.15
+  teleportInterval: 3
+  timeBetweenAttacks: 10
+  teleportShrinkTime: 0.1
+  teleportExpandTime: 0.1
   clonePrefab: {fileID: 3508370510583888243, guid: 9a3890c412f463941a7ff7cd1f3d3a65, type: 3}
   formationRadius: 20
   formationMinY: 0
