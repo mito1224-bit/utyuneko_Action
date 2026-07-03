@@ -169,7 +169,13 @@ public class PlayerController : MonoBehaviour, IEventActor
     {
         if (Time.timeScale == 0f) return;
 
-        currentState?.FixedUpdateState();
+        //デバック機能
+        if (Input.GetKeyDown(KeyCode.U))
+        {
+            OnEnemyKilledInBurst();
+        }
+
+            currentState?.FixedUpdateState();
     }
 
     public void TransitionToState(IPlayerState newState)
