@@ -51810,6 +51810,83 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b9d5aeaaf442a9d459fe161e29b10186, type: 3}
+--- !u!1001 &1161725588
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 1500773141346197932, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
+      propertyPath: m_Name
+      value: CameraBoundsTrigger 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5780997924959028606, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
+      propertyPath: targetZOffset
+      value: -30
+      objectReference: {fileID: 0}
+    - target: {fileID: 6673551563764602749, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 6673551563764602749, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 6673551563764602749, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6673551563764602749, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 59.9
+      objectReference: {fileID: 0}
+    - target: {fileID: 6673551563764602749, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 2.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 6673551563764602749, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6673551563764602749, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6673551563764602749, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6673551563764602749, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6673551563764602749, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6673551563764602749, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6673551563764602749, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6673551563764602749, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6673551563764602749, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
+      propertyPath: m_ConstrainProportionsScale
+      value: 1
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
 --- !u!1001 &1162491823
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -60763,26 +60840,26 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BossSniper
   normalSettings:
     totalUnits: 4
-    aimTime: 1.5
-    lockTime: 0.5
+    aimTime: 7
+    lockTime: 1
     fireDuration: 0.5
     stunDuration: 4
     stunDamageMultiplier: 4
     patrolShotChance: 1
-    patrolShotLockTime: 0.7
+    patrolShotLockTime: 1.5
     patrolShotCount: 4
     radialShotCount: 8
     radialLockTime: 0.1
   enragedSettings:
     totalUnits: 6
-    aimTime: 1
-    lockTime: 0.2
+    aimTime: 5
+    lockTime: 0.5
     fireDuration: 0.5
     stunDuration: 3
     stunDamageMultiplier: 3
     patrolShotChance: 1
-    patrolShotLockTime: 0.4
-    patrolShotCount: 6
+    patrolShotLockTime: 1
+    patrolShotCount: 4
     radialShotCount: 16
     radialLockTime: 0.05
   playerTag: Player
@@ -60805,11 +60882,11 @@ MonoBehaviour:
   enragedRadialChance: 0.5
   companionEnabled: 1
   companionSettings:
-    teleportInterval: 3
-    lockTime: 0.8
-    fireDuration: 0.12
+    teleportInterval: 1.5
+    lockTime: 0.5
+    fireDuration: 0.25
     beamDamage: 1
-    leadChance: 0.4
+    leadChance: 0
     leadTime: 0.5
   refundPlayerBurstOnCloneDestroyed: 1
   clonePrefab: {fileID: 3508370510583888243, guid: 9a3890c412f463941a7ff7cd1f3d3a65, type: 3}
@@ -504973,3 +505050,4 @@ SceneRoots:
   - {fileID: 529924512}
   - {fileID: 956818905}
   - {fileID: 2129037807}
+  - {fileID: 1161725588}
