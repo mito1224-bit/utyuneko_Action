@@ -54,6 +54,9 @@ public class StageSecondBossController : MonoBehaviour
     [Header("バランス調整用パラメータ")]
     public int straightBombCount = 5;
     public int instantLineBombCount = 4;
+    public float mineBomMinInterval = 10f;
+    public bool mineBomAttack { get; set; } = false;
+    private float mineTimeTimer = 0f;
 
     [Header("⚙️ 地雷攻撃（技③）の個別設定")]
     public int maxActiveMines = 5;
@@ -206,6 +209,12 @@ public class StageSecondBossController : MonoBehaviour
             if (lastUltHP - currentHP >= ultHpInterval) shouldForceUltimate = true;
         }
 
+        mineTimeTimer += Time.deltaTime;
+        if(mineTimeTimer > mineBomMinInterval)
+        {
+            mineBomAttack = true;
+        }
+
         if (!isPhase2Started && currentHP <= maxHP * phase2HpThresholdRatio && currentState != StateDead && currentState != StateAppear)
         {
             isPhase2Started = true;
@@ -279,6 +288,12 @@ public class StageSecondBossController : MonoBehaviour
         lastUltHP = currentHP;
         shouldForceUltimate = false;
         currentUltCooldownTimer = ultCooldownDuration;
+    }
+
+    public void ResetMineTriggers()
+    {
+        mineTimeTimer = 0f;
+        mineBomAttack = false;
     }
 
     public void OnMineCounterHit()

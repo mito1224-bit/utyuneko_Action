@@ -13,7 +13,7 @@ public class StageSecondBossTrigger : MonoBehaviour
         if (isTriggered || !other.CompareTag("Player")) return;
         isTriggered = true;
 
-        SoundManager.Instance.StopBGM(0.5f);
+        SoundManager.Instance.StopBGM(1.0f);
 
         // ① まず親Canvas（BossUI）をアクティブにする
         if (hpBarObject != null)

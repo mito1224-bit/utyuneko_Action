@@ -252,6 +252,8 @@ public class StageSecondBossTimedBomb : MonoBehaviour
             {
                 ApplyRedFlash(false);
 
+                player.OnEnemyKilledInBurst();
+
                 IsBlownAway = true;
                 BlownAwayTimer = 0f;
                 if (indicatorRoot != null) Destroy(indicatorRoot);

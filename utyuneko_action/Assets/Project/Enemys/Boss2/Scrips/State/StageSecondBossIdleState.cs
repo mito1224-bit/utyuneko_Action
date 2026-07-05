@@ -23,14 +23,16 @@ public class StageSecondBossIdleState : StageSecondBossBaseState
 
         if (idleTimer >= idleDuration)
         {
-            // ===================================================================
-            // 🛠️【レベルデザインの要】優先ウルトフラグが立っていた場合の割り込み処理！
-            // 時間が経ちすぎたか、HPが一定量減っている時は、通常技を完全に拒否してウルトを撃ちます。
-            // ===================================================================
+            if (boss.mineBomAttack)
+            {
+                boss.TransitionToState(boss.StateBombMine);
+                return;
+            }
+
             if (boss.shouldForceUltimate)
             {
                 boss.TransitionToState(boss.StateUltimate);
-                return; // 💡 移行したので、下の通常のランダム抽選は実行せずに終了！
+                return;
             }
 
             // -------------------------------------------------------------------

@@ -19,6 +19,7 @@ public class BossAbsorbEventManager : BaseEventManager
     [SerializeField] private HosaController hosa;
     [SerializeField] private GameObject targetBoss;
     [SerializeField] private GameObject coreCubePrefab;
+    [SerializeField] private Transform coreCubeTransfome;
 
     [Header("頭上のスタンプ吹き出し（ImageBubble）の参照")]
     [SerializeField] private ImageBubble hosaBubble;
@@ -86,7 +87,7 @@ public class BossAbsorbEventManager : BaseEventManager
 
         // 【ステップ1】補佐が上から降りてくる
         Vector3 bossAirTopPos = targetBoss != null ? targetBoss.transform.position + Vector3.up * hosaHeightOffsetFromBoss : Vector3.up * 4.5f;
-        Vector3 hosaSpawnAirPos = bossAirTopPos + Vector3.up * 8f;
+        Vector3 hosaSpawnAirPos = bossAirTopPos + Vector3.up * 10f;
         Vector3 originalBossPos = targetBoss != null ? targetBoss.transform.position : Vector3.zero;
 
         if (hosa != null)
@@ -177,6 +178,8 @@ public class BossAbsorbEventManager : BaseEventManager
             float stageCenterX = (bossController != null) ? (bossController.stageMinX + bossController.stageMaxX) / 2f : hosa.transform.position.x;
             float targetGroundY = playerTransform != null ? playerTransform.position.y : hosa.transform.position.y - 0.5f;
             Vector3 cubeTargetWorkspace = new Vector3(stageCenterX, targetGroundY, 0f);
+
+            if(coreCubeTransfome) cubeTargetWorkspace = coreCubeTransfome.position;
 
             // 補佐の現在地からプレハブを生成
             GameObject spawnedCube = Instantiate(coreCubePrefab, hosa.transform.position, Quaternion.identity);
@@ -297,6 +300,8 @@ public class BossAbsorbEventManager : BaseEventManager
         // 1. まず見つめ合いのリアルタイムロックを解除！
         isLookingActive = false;
         ResetPlayerVisualRotation();
+
+        SoundManager.Instance.FadeBGMVolume(1.0f, 1.0f);
 
         // 2. ⏳【要望①】0.4秒かけて、補佐の顔を滑らかに「正面（Quaternion.identity）」へ戻す！
         if (hosa != null)

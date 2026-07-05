@@ -88,6 +88,8 @@ public class PlayerController : MonoBehaviour, IEventActor
 
     public PlayerDamageEffect damageEffect;
 
+    public PlayerChargeGauge chargeGauge;
+
     public PlayerState_None StateNone { get; private set; }
     public PlayerState_Normal StateNormal { get; private set; }
     public PlayerState_Charge StateCharge { get; private set; }
@@ -138,6 +140,7 @@ public class PlayerController : MonoBehaviour, IEventActor
         }
 
         imageBubble = GetComponentInChildren<ImageBubble>();
+        chargeGauge = GetComponentInChildren<PlayerChargeGauge>();
 
         if (visualManager == null) visualManager = GetComponent<PlayerVisualManager>();
         if (visualManager != null) visualManager.Initialize(this);
@@ -164,18 +167,14 @@ public class PlayerController : MonoBehaviour, IEventActor
             mousePositionInput = inputActions.Player.MousePosition.ReadValue<Vector2>();
         }
 
+        if (Input.GetKeyDown(KeyCode.F1)) SoundManager.Instance.PlayBGM(BgmType.Stage2);
+
         currentState?.UpdateState();
     }
 
     void FixedUpdate()
     {
         if (Time.timeScale == 0f) return;
-
-        //デバック機能
-        if (Input.GetKeyDown(KeyCode.U))
-        {
-            OnEnemyKilledInBurst();
-        }
 
             currentState?.FixedUpdateState();
     }
@@ -213,10 +212,9 @@ public class PlayerController : MonoBehaviour, IEventActor
     /// <summary>
     /// バースト中に敵を撃破した際、バースト回数を回復する関数
     /// </summary>
-    public void OnEnemyKilledInBurst()
+    public void OnEnemyKilledInBurst(int value = 1)
     {
-            currentBurstCount = Mathf.Max(0, currentBurstCount - 1);
-            // currentBurstCount = 0f;
+        if (chargeGauge) chargeGauge.RecoveryGauge(value);
     }
 
     private void OnCollisionEnter2D(Collision2D collision)

@@ -270,6 +270,8 @@ public class StageSecondBossMineBomb : MonoBehaviour
             {
                 ApplyRedFlash(false);
 
+                player.OnEnemyKilledInBurst();
+
                 isTriggered = false;
                 IsBlownAway = true;
                 BlownAwayTimer = 0f;

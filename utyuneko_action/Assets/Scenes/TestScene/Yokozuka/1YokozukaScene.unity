@@ -1415,6 +1415,37 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4961322469112901509, guid: b9d5aeaaf442a9d459fe161e29b10186, type: 3}
   m_PrefabInstance: {fileID: 1135560219}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &41279813
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 41279814}
+  m_Layer: 0
+  m_Name: CoreCubeSpawnTransform
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &41279814
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 41279813}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: -7, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1101349206}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &41909685 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4961322469112901509, guid: b9d5aeaaf442a9d459fe161e29b10186, type: 3}
@@ -28539,6 +28570,7 @@ MonoBehaviour:
   hosa: {fileID: 1695353072}
   targetBoss: {fileID: 1598103618}
   coreCubePrefab: {fileID: 3750657969670665415, guid: 340e4c09bbd01ba448e6528dd2fdbb2a, type: 3}
+  coreCubeTransfome: {fileID: 41279814}
   hosaBubble: {fileID: 176725072}
   playerBubble: {fileID: 1745145873}
   hosaMoveSpeed: 6
@@ -28555,7 +28587,9 @@ Transform:
   m_LocalPosition: {x: 26.45211, y: -23.88081, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 41279814}
+  - {fileID: 1695353075}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &1101663137 stripped
@@ -41238,6 +41272,7 @@ MonoBehaviour:
   bottomRightBoundary: {fileID: 114995944}
   straightBombCount: 6
   instantLineBombCount: 5
+  mineBomMinInterval: 10
   maxActiveMines: 5
   minMineSpawnCount: 1
   maxMineSpawnCount: 2
@@ -43437,13 +43472,13 @@ Transform:
   m_GameObject: {fileID: 1695353071}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 55.63, y: -12.43, z: 1}
+  m_LocalPosition: {x: 29.17789, y: 11.4508095, z: 1}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 799074105}
   - {fileID: 176725071}
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 1101349206}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1698397274
 PrefabInstance:
@@ -48632,6 +48667,7 @@ MonoBehaviour:
   anim: {fileID: 0}
   trajectoryLine: {fileID: 1770221363}
   damageEffect: {fileID: 1906103873}
+  chargeGauge: {fileID: 0}
 --- !u!58 &1906103879
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -99211,4 +99247,3 @@ SceneRoots:
   - {fileID: 1744879924}
   - {fileID: 1397163105}
   - {fileID: 1101349206}
-  - {fileID: 1695353075}
