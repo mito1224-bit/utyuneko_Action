@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 The Unity project root is `utyuneko_action/`. All game scripts live under `utyuneko_action/Assets/Project/`.
 
-**Physics is mid-migration from 3D to 2D.** The player is now fully 2D (`Rigidbody2D` / `CircleCollider2D` / `Collision2D`), while the enemy and boss systems are still 3D `Rigidbody`. When touching collision/physics code, check which dimension the specific component uses — do not assume. Some enemy scripts (e.g. `EnemyCollision.cs`) already mix 2D callbacks (`OnCollisionEnter2D`) with 3D types (`Collision`, `Rigidbody`); treat such hybrids as in-progress, not as a pattern to copy.
+**Physics is mid-migration from 3D to 2D.** The player and the regular enemies are now fully 2D (`Rigidbody2D` / `Collider2D` / `Collision2D`); the **boss** system is still 3D `Rigidbody`. When touching collision/physics code, check which dimension the specific component uses — do not assume. The remaining 3D holdouts are the Boss system and `EnemyTargetAttack.cs` (`Physics.Raycast`).
 
 ## Development Commands
 
@@ -59,12 +59,11 @@ Each enemy composes multiple scripts rather than one monolithic class:
 |---|---|
 | `EnemyMovement.cs` | Simple left/right patrol with configurable turn interval |
 | `EnemyHealth.cs` | HP pool, speed-scaled damage from player burst |
-| `EnemyCollision.cs` | Determines **Reflect**, **Pierce**, or **PierceZone** reaction |
+| `EnemyCollision.cs` | Determines **Reflect** or **Pierce** reaction; gates damage to Burst via `PlayerController.CurrentState` |
 | `EnemyDirectionalReaction.cs` | Direction-dependent reflect/pierce reaction logic |
 | `EnemyKnockback.cs` | Knockback-on-defeat: blink, ground-hit despawn, linger/fallback timers (see 作業メモ) |
 | `EnemyAttack.cs` | Fixed-pattern `StraightBullet` firing |
 | `EnemyTargetAttack.cs` | Line-of-sight homing bullets (`Physics.Raycast` — still 3D) |
-| `PierceZoneTrigger.cs` | Child trigger collider that allows pierce-through from a specific face |
 
 **Optional behavior/attack modules** — each is a self-contained `MonoBehaviour` (no `RequireComponent`) you drop onto a base enemy to give it an attack pattern. They share two conventions: contact damage/reflection is left to `EnemyCollision` (typically `Reflect`) and player i-frames to `PlayerHealth` (decoupled — they don't check invincibility themselves), and they **suspend themselves while `EnemyKnockback.IsActive || IsDying`** (so hitting the enemy interrupts its attack). Several render a runtime-generated translucent disc mesh (`Shader.Find("Sprites/Default")`, freed in `OnDestroy`) to show their range in the Game view. All are 2D (`Physics2D`). See 作業メモ for per-field tuning notes.
 
@@ -73,14 +72,15 @@ Each enemy composes multiple scripts rather than one monolithic class:
 | `EnemyShield.cs` | Blocks (nullifies) damage from its facing arc (`shieldHalfAngle`); only killable from behind. Front auto-follows `EnemyMovement.moveDirection` |
 | `EnemyAreaAttack.cs` | Periodic self-centered AoE: cooldown → telegraph → active window (`OverlapCircleAll`) |
 | `EnemySniper.cs` | Aim (sight line tracks) → lock → fire laser (`CircleCast`); `LineRenderer` beam, muzzle `aimPivot` follows |
-| `EnemyCharger.cs` | Idle → windup (locks/tracks aim dir) → charge (raycast wall stop) → self-stun on wall hit |
+| `EnemyCharger.cs` | Ray-tripwire detect (player crosses forward ray) → windup → charge along ray → self-stun on wall hit; model faces ray dir. `useRayDetection=OFF` falls back to circular detect |
 | `EnemyBomber.cs` | Proximity countdown (accelerating blink) → explosion (`OverlapCircleAll`), self-destruct or reset |
 | `EnemyBlackHole.cs` | Pulls player `Rigidbody2D` toward center via `FixedUpdate` `AddForce`; damage is from the body's `EnemyCollision(Reflect)` |
 
 **Collision types** (`EnemyCollision.CollisionType`):
-- `Reflect` – knocks player back unless player is in Burst (then it reflects like a wall); always deals speed-scaled damage
-- `Pierce` – always passthrough (`isTrigger` enabled at runtime); damage applied in `OnTriggerEnter2D`
-- `PierceZone` – body always reflects; pierce-through is granted only when a burst player enters a child `PierceZoneTrigger`, which calls `Physics.IgnoreCollision` before the body's reflection resolves
+- `Reflect` – knocks player back unless player is in Burst (then it reflects like a wall). Deals speed-scaled damage **only when the player is Bursting** (gated by `EnemyHealth.requireBurstToDamage`); a non-burst bump is knocked back but deals 0 damage
+- `Pierce` – **2-collider setup**: a solid Body collider (blocks floor/wall; `IgnoreCollision` vs the player so the player passes through) + a Trigger collider that detects the player and deals damage in `OnTriggerEnter2D` (also Burst-gated). Both must be assigned (`pierceBodyCollider` / `pierceDamageTrigger`) — with only one collider the enemy takes no damage and **never dies** (`Awake` logs a warning)
+
+Burst detection reads the state machine directly (`PlayerController.CurrentState == StateBurst`), **not** a layer/tag — see 作業メモ 2026/07/01. (`PierceZone` and the `PlayerBurst` layer were removed.)
 
 ### Boss System
 
@@ -98,15 +98,13 @@ Boss/
 
 `BossHealth` flips `BossController.currentPhase` to 2 once HP drops below `phase2HpRatio`; states read `currentPhase` (e.g. `phase2IdleMultiplier` shortens idle time in phase 2). While `BossBarrier` is active, `HandleHit` deals 0 damage.
 
-### Layer-Based Burst Piercing
+### Burst detection & piercing
 
-The physics collision matrix is the critical mechanism for Burst piercing:
-- Normal player is on layer **Player**
-- During Burst the player switches to layer **PlayerBurst** (`PlayerLayerSwitcher.cs`)
-- **PlayerBurst** is excluded from colliding with **EnemyPierceable** in the Physics settings
-- This means the same enemy prefab behaves differently depending on player layer — no per-object ignore lists
+**Burst state is read from the state machine directly** — `PlayerController.CurrentState == StateBurst`. This is the single source of truth. Tags identify object identity; layers are for the physics matrix; neither is used to detect Burst in gameplay scripts (`EnemyCollision.IsBursting`, `PlayerLayerSwitcher`).
 
-Changing which enemies a burst player passes through = edit `Physics2DSettings.asset` collision matrix, not individual scripts.
+The **PlayerBurst** layer (a layer-matrix approach for burst piercing) and its driver `PlayerLayerSwitcher.cs` were **removed from the project** — the layer was only ever a signal derived from the state, and the `PlayerBurst × EnemyPierceable` matrix exclusion was never configured (matrix all-on). See 作業メモ 2026/07/01.
+
+Pierce-type enemies pass the player through via `Physics2D.IgnoreCollision` (the 2-collider setup in `EnemyCollision`), independent of any layer.
 
 ### Gimmicks
 
@@ -142,12 +140,8 @@ Scene flow / UI: `Systems/Scripts/SceneChanger.cs` (player-trigger scene load) &
 ##作業メモ
 -2026/06/03 エネミーのボスの仮実装（後で少しいじる）
 -2026/06/04 エネミーの吹き飛ばし処理（`EnemyKnockback.cs`）テスト済み・動作OK
-  - 撃破時に Renderer を点滅させる（`blinkOnDeath` / `blinkInterval`、全 Renderer の enabled を切替。マテリアル複製なしでリークなし）
-  - 撃破後、床・壁にぶつかったら消滅（`destroyOnGroundHit` / `groundLayers` で対象レイヤー指定、プレイヤータグは除外）
-  - 着地から消滅までの猶予 `lingerAfterLanding`（既定0.5秒、この間も点滅継続）
-  - 床に当たらず飛び続けた場合の保険として `deathDestroyDelay`（既定1.5秒）も残してある
-  - 注意: 死亡時は速く飛ぶため、Rigidbody が Discrete だと薄い床をすり抜けて床ヒットが発火しないことがある（その場合は保険時間で消滅）
 -2026/06/10 エネミーの当たり判定を2D化（★未テスト＝Unityでの動作確認まだ）
+-2026/07/02 ボムエネミーの追尾機能のオンオフの追加・突進エネミーを例を飛ばした方向にプレイヤーがいるとはつどうするようになる・プレイヤーのステートによってダメージが入るか決める
   - 背景: プレイヤーが2D（`Rigidbody2D`/`CircleCollider2D`）になったのにエネミーが3Dのままで、2D物理と3D物理は干渉しないためプレイヤーが敵に当たらなくなっていた
   - スクリプトを3D API→2D APIへ：`EnemyCollision.cs`（`OnCollisionEnter2D(Collision2D)`。※従来は引数が3D `Collision` 型で一度も呼ばれていなかった）、`EnemyKnockback.cs`、`PierceZoneTrigger.cs`（`Physics2D.IgnoreCollision` など）
   - プレハブの物理を2Dへ差し替え（YAML直接編集）：`ReflectEnemy` は `BoxCollider`→`BoxCollider2D` / `Rigidbody`→`Rigidbody2D`、`PierceEnemy` は `Rigidbody`→`Rigidbody2D` ＋ コライダーが無かったので追加
@@ -219,8 +213,69 @@ Scene flow / UI: `Systems/Scripts/SceneChanger.cs` (player-trigger scene load) &
   - 可視化：EnemyBomber と同じ実行時生成の塗りつぶし円メッシュ。ただし**頂点カラーで中心濃→外周透明**のグラデ＋`swirlSpeed` で渦回転（`showRuntimeRange`/`edgeColor`/`coreColor`、Sprites/Default、`OnDestroy` で破棄）
   - セットアップ想定：`EnemyCollision.collisionType=Reflect` ＋本体コライダー ＋ `EnemyBlackHole`。`pullRadius`/`pullForce` は Inspector で要調整。プレハブ化は各シーンで要対応
   - 注意: 吸引は物理（`FixedUpdate`/`AddForce`）なのでチャージ中のスロー（`Time.timeScale`）の影響を受ける＝他エネミーと同じ。バースト中も吸引自体は効く（無敵なので当たってもダメージは無し）
+-2026/07/01 エネミーをプレイヤー型の入れ子構成へ寄せる下準備＋不具合修正（★プレハブ組み替えはEditor作業として残）
+  - 目的: プレイヤー（`Player_main`）に倣い「物理ルート＋回転は子」に統一。回転を Rigidbody2D/Collider2D 同居のルートへ当てると2Dの当たり判定がつぶれて壁すり抜けの一因になる（2026/06/25 すり抜け原因②）ため、回転を子（Rotation層）へ逃がす
+  - 目標階層: `Root`(物理: RB2D+Collider+Enemyスクリプト。回さない/伸縮しない) → `Scale`(伸縮※squash無ければ省略可) → `Rotation`(向き回転＝`visualTransform`) → `Model`(見た目)。`shieldPivot`/`aimPivot` はルート直下のまま
+  - `EnemyMovement.cs`: `public Transform visualTransform;` を追加。`ApplyRotation()` を**ルートではなく `visualTransform`** へ当てるよう変更（未割り当て時はルートにフォールバック＝後方互換）。Editorで `visualTransform` に Rotation層を割り当てる
+  - `EnemyCollision.cs`: 実行時の Rigidbody2D 拘束を `FreezeAll`→**`FreezeRotation`** に緩和（位置は固定しない）。理由: 2026/06/25 で移動を `rb.MovePosition` 化したため、位置固定だとスイープ移動・壁衝突と干渉する。副作用: プレイヤーに押されて敵が少し動きうる→ Mass 等で調整
+  - `EnemyHealth.cs`: **`isDeadFlg`** を追加（`[SerializeField] private`／外部は `IsDeadFlg` で読み取り専用）。HPが0の `Die()` 先頭で true（ノックバックより先に立て、同フレーム参照でも拾える）。`EnemyCollision` の衝突/トリガーは `IsDeadFlg` で早期リターン（死亡後の多重処理防止）
+  - `EnemySniper.cs`: **モデルを弾を打つ方向の左右へ向ける**処理を追加（EnemyMovement を付けない前提）。`visualTransform`/`visualRotationAxis`(既定Y)/`leftAngle`(50)/`rightAngle`(-50)/`visualRotationSpeed`。`UpdateModelFacing()` が `lockedDir.x` の左右でY角を補間。銃口 `aimPivot` は従来どおり弾方向へZ回転（変更なし）。※真上/真下ではモデルは寝ない（左右のみ）
+  - バグ修正: **Pierceにすると敵が死なない** → 原因は現行プレハブがコライダー1個。Pierceにすると Body がプレイヤーと IgnoreCollision ですり抜け（`OnCollisionEnter2D` 出ない）＋ダメージ用トリガーが無い（`OnTriggerEnter2D` 出ない）＝ `HandleHit` が呼ばれずダメージ0で死なない。対策は**2コライダー方式**（Body=ソリッド＋別途トリガーを追加し `pierceBodyCollider`/`pierceDamageTrigger` を割当）。`EnemyCollision.Awake` にトリガー未割り当て時の**警告ログ**を追加（無言の死なないバグを可視化）
+  - ★Editor残作業: (1) 各エネミープレハブを上記の入れ子階層へ組み替え＋`visualTransform` 割当（YAML手編集は壊れやすいのでUnity上で）。(2) Pierce運用する敵にトリガーColliderを追加し2参照を割当、`EnemyHealth.damageSpeedThreshold` はバースト最低速(15)以下に
+  - 補足: 追加したい仕様のうち「EnemyMovement の進行方向回転（左50/右310）」は `leftAngle`/`rightAngle`/`turnViaAngle` で実装済み。「スナイパーの向きを弾方向へ」も上記で対応済み
+-2026/07/01 自爆敵に追尾機能を追加（★未テスト＝Unityでの動作確認まだ）
+  - `EnemyBomber.cs`：`chasePlayer`（オン/オフ）を追加。ON なら射程に入ってからカウントダウン（`fuseTime`）のあいだプレイヤーを追尾してから爆発する（＝追う秒数は fuseTime に一致）。OFF＝従来どおりその場で爆発
+  - 追尾は `FixedUpdate` + `rb.MovePosition`（`EnemyMovement` と同じ流儀＝壁すり抜け防止）。`chaseSpeed`/`chaseHorizontalOnly`（地上敵は水平のみ）/`chaseStopDistance`（めり込み防止）で調整
+  - 追尾中は巡回（`EnemyMovement`）を `enabled=false` で一時停止（両者が `rb.MovePosition` を書くと実行順で競合するため）。カウントダウン中断・爆発後リセットで巡回を復帰（`SuspendPatrol`/`ResumePatrol`）
+  - 協調は従来どおり：吹き飛び中／死亡中（`EnemyKnockback`）はカウントダウン中断＋追尾停止。`resetIfPlayerLeaves` ON なら追尾中に射程外へ出るとリセット
+  - 注意: `chaseSpeed` を上げすぎるとプレイヤーが避けにくくなる。浮遊敵は `chaseHorizontalOnly` OFF、地上敵は ON 推奨。プレハブ化・値合わせは Editor で要対応
+  - 倒された時の壁ヒット即爆発：`explodeOnDeathWallHit`（オン/オフ）を追加。ON なら**プレイヤーに倒されて吹き飛んだあと、壁・床にぶつかった瞬間に即爆発**（カウントダウン中でなくても爆発する）
+    - 仕組み：`EnemyKnockback` に `public event Action<Vector2> OnDeathGroundHit` を追加（`isDying` 中の `HandleGroundHit` で発火＝バウンド/消滅とは独立）。`EnemyBomber` が購読して `DoExplosionDamage()`（範囲ダメージ＋演出）を1回だけ実行（`hasExplodedOnDeath` でガード）
+    - 購読は `OnEnable` ではなく **`Awake`**（`OnDestroy` で解除）。死亡時 `disableOnDeath` で本スクリプトが `enabled=false` にされても購読を維持するため
+    - 消滅そのものは従来どおり `EnemyKnockback`（バウンド→着地→消滅 or 保険 `deathDestroyDelay`）が担当。**即消えさせたいなら `EnemyKnockback.bounceOnDeath` を OFF**（着地即消滅）。ダメージ自体は最初の壁接触で即発生する
+-2026/07/01 敵をバースト時のみ倒せるように変更（★未テスト＝Unityでの動作確認まだ）
+  - 目的: 今までは接触速度が `damageSpeedThreshold` を超えれば非バースト（ジャンプ接触等）でも敵にダメージが入り倒せてしまっていた。バースト攻撃でのみ倒せるようにする
+  - `EnemyHealth.HandleHit` の**シグネチャに `bool isBursting` を追加**し、`requireBurstToDamage`（既定ON）を追加。`requireBurstToDamage && !isBursting` のときはダメージ無効（弾き・ノックバックは従来どおり `EnemyCollision` が担当＝疎結合。非バーストは弾かれるがダメージ0）
+  - `EnemyCollision`：Reflect・Pierce の両経路で `isBursting` を算出して `HandleHit` へ渡す。**バースト判定は状態機械を直接参照**（`IsBursting(p)` = `p.CurrentState == p.StateBurst`）。※後述の通りレイヤー判定は廃止
+  - `OnEnemyKilledInBurst()`（バースト回数回復）も**バースト時のみ**呼ぶよう修正（従来は全接触で呼ばれ、ジャンプ接触でも回数が変動していた）
+  - Boss 系（`BossHealth.HandleHit`）は別クラス・別シグネチャなので対象外（未変更）
+  - 補足: 速度閾値 `damageSpeedThreshold` は従来どおり併用（バースト中でも遅すぎる当たりは弾く）。特定の敵だけ非バーストでも倒したいときは `requireBurstToDamage` を OFF
+-2026/07/01 PierceZone 廃止＋バースト判定を状態ベースへ統一（★未テスト＝Unityでの動作確認まだ）
+  - **PierceZone は不要になったので削除**。`PierceZoneTrigger.cs`（＋meta）を削除、`EnemyCollision.CollisionType` から `PierceZone` を除去（`Reflect`/`Pierce` の2種のみ。enum末尾の削除なので `Reflect=0`/`Pierce=1` の保存値は不変）。参照プレハブ・シーンが無いことを GUID と`collisionType: 2`で確認済み
+  - **PlayerBurst レイヤーは（プロジェクトから削除された）**。これに伴い `EnemyCollision` のバースト判定 `LayerMask.NameToLayer("PlayerBurst")` は `-1` を返し常に false ＝敵が絶対ダメージを受けない状態になっていたため、**状態機械を直接見る方式（`CurrentState == StateBurst`）に変更**して修正
+  - 方針: バーストは「状態」なので `PlayerController` の状態を直接見るのが最も正確。タグ＝オブジェクト識別、レイヤー＝物理マトリクス用であって状態判定には使わない（レイヤーは元々 `PlayerLayerSwitcher` が状態から派生させた二次情報）
+  - 注意: Pierce タイプのすり抜けは IgnoreCollision 方式なのでレイヤー削除の影響なし
+-2026/07/01 `PlayerLayerSwitcher.cs` を削除（＋meta）。PlayerBurst レイヤー廃止で不要になったため。参照プレハブ・シーンが無いことを GUID 確認済み。バースト貫通のレイヤー方式は完全に撤去（Pierce は IgnoreCollision 方式で継続）
+-2026/07/01 敵の死亡吹き飛びをカメラ内に留める＋減速オフを追加（★未テスト＝Unityでの動作確認まだ）
+  - `EnemyKnockback.cs`：`keepInCameraOnDeath`（既定ON）を追加。死亡吹き飛び中、`Camera.main` のビューポート範囲でクランプし、端で速度を反射（`cameraMargin`＝端の余白、`cameraBounceFactor`＝端反射の速度保持率）。画面外へ飛んでいかず画面内で吹っ飛んでから消滅する
+  - `decelerateOnDeath`（既定OFF）を追加。OFFなら死亡吹き飛び中は減速しない（`decayPerSecond` を死亡時はスキップ＝一定速度で飛び続ける）。通常被弾（非死亡）の吹き飛びは従来どおり減速する
+  - クランプは Update の移動後に `ClampToCamera()` で実施（`WorldToViewportPoint`→クランプ→`ViewportToWorldPoint`、Z平面維持、カメラ後方 vp.z<=0 はスキップ）。`Camera.main` はキャッシュ
+  - 注意: `decelerateOnDeath` OFF＋`deathGravity` ありだと重力で加速→カメラ端で反射を繰り返して画面内で跳ね回る。`deathDestroyDelay`（既定1.5s）or 床ヒットで消滅。跳ね回りが激しすぎるときは `cameraBounceFactor` を下げるか `decelerateOnDeath` を ON に
+-2026/07/01 突進敵をレイ索敵化＋モデルをレイ方向へ向ける（★未テスト＝Unityでの動作確認まだ）
+  - `EnemyCharger.cs`：`useRayDetection`（既定ON）を追加。正面へ飛ばしたレイ（`sightRange`×`sightThickness`）にプレイヤーが入ったら突進する罠タイプに。突進方向＝レイ（正面）の方向で固定。OFFで従来の円形索敵（`detectionRange`＋視線）にフォールバック
+  - レイの向き＝`SightDirection()`：`followMoveDirection` かつ `EnemyMovement` があれば `moveDirection` 追従、無ければ `facingOverride`。待機中も毎フレーム `chargeDir` を更新してモデル・レイ・突進方向を一致させる
+  - レイ判定 `PlayerInSightRay()`：`Physics2D.CircleCast`（半径=`sightThickness/2`）を `wallLayers | (1<<プレイヤーのlayer)` で撃ち、最初に当たったのがプレイヤータグなら検知（壁が手前なら遮断）。原点はコライダー半径＋`wallSkin` だけ外へ出して自己ヒット回避
+  - モデルの向き：`EnemySniper` と同方式で `visualTransform`（Rotation層の子）を左右角（`leftAngle`=50/`rightAngle`=-50）へ Y軸回転（`visualRotationAxis`/`visualRotationSpeed`）。`chargeDir.x` の左右で補間。`UpdateModelFacing()` を毎フレーム呼ぶ
+  - Gizmo：レイ方式のとき索敵レイ（黄・太さ表示）、円形のとき従来の球。突進方向はマゼンタ線
+  - 注意: `EnemyMovement` の進行方向回転も `visualTransform` を回すので、**同じ `visualTransform` を EnemyMovement と EnemyCharger の両方に割り当てると競合**する。どちらか一方に任せること（Sniper と同じく Charger 単体運用が素直）。`wallLayers` に壁を設定（未設定だとレイが壁で遮られず＝常に貫通検知）
+-2026/07/02 突進敵のレイ索敵をテスト→不具合修正→**円形索敵へ戻した**（レイ方式はオプションとして残置）
+  - 不具合①: レイ索敵が一切検知しない → 原因は**自己ヒット**。敵とプレイヤーが同じ Default レイヤーのため、マスクに自分も含まれ、開始時に重なる自分のコライダーが距離0で最初にヒット→常に false だった。`PlayerInSightRay` を `CircleCastAll` 化し**自分の Rigidbody2D 配下のコライダーをスキップ**して修正（プレイヤー判定は子トリガーも拾えるよう `attachedRigidbody` のタグでも確認）
+  - 不具合②: 突進が1フレームで即スタン → 原因は**足元の床の誤検知**。壁先読みの CircleCast（本体と同径）が接地中の床（壁と同じ Ground レイヤー）に距離0でヒットしていた。`FindWallAhead` を新設し「自分／距離0（開始時重なり）／**法線が進行方向に正対しない面**（dot > -0.5）」を壁とみなさないよう修正。`OnCollisionEnter2D` 側も接触法線で同フィルタ
+  - デバッグ機能を追加: `debugDraw`（既定ON。実行中に索敵レイを常時 Debug.DrawRay、緑=検知/赤=不検知。選択不要）／`debugLog`（既定OFF。索敵ヒット内容・フェーズ遷移・wallLayers外の接触を Console へ）。黄色Gizmoは選択中のみなので調査はこちらを使う
+  - テスト所感: 壁スタンには**壁が Ground レイヤー（wallLayers）に載っている必要**があり、テストシーンの壁が未設定でうまく機能しなかったため、`Bv(Charger)_main.prefab` の `useRayDetection` を **0（円形索敵）に戻した**。レイ方式のコードは残っているので、壁レイヤーを整えれば ON にするだけで再挑戦できる
+-2026/07/02 範囲系エネミーの可視化メッシュがモデルと一緒に傾く不具合を修正
+  - 原因: `EnemyAreaAttack`/`EnemyBomber`/`EnemyBlackHole` の範囲円メッシュはルートの子として生成されるが、`EnemyMovement.visualTransform` 未割り当てのプレハブでは進行方向回転がルートに当たり（フォールバック）、平らな円がY軸50°回転を継承して斜めに寝ていた
+  - 修正: 3種の `UpdateRangeVisual` で `rangeVisual.rotation = Quaternion.identity`（BlackHoleは渦角を累積して `Quaternion.Euler(0,0,swirlAngle)`）＝親の回転を継承せず常にカメラ正面（XY平面）を向く。当たり判定は物理クエリなので見た目とは無関係（メッシュにコライダー無し）
+-2026/07/02 エネミーの範囲/爆発/レーザー攻撃がプレイヤーに当たるか検証 → **Bomber/Sniper のプレハブ設定バグを発見**
+  - コードは3種とも `GetComponentInParent<PlayerHealth>()`→`TakeDamage()` で正しい。AreaAttack は `targetLayers=全` で当たる
+  - **Bomber/Sniper は `targetLayers=128（Playerレイヤー7）のみ`。しかしプレイヤー `Player_main` は実際レイヤー0(Default)に置かれている**（Playerレイヤーは定義だけで未使用）＝爆発・レーザーがプレイヤーを検出しない
+  - 直し方2案: (A)プレイヤーをPlayerレイヤー(7)へ移す＝1箇所で全部直る (B)敵の targetLayers を Default に。★ユーザー判断待ち（プレイヤーのレイヤー変更は保留中）
+-2026/07/02 敵本体への接触ダメージは**未実装**（`EnemyCollision` Reflect はノックバックのみ、`PlayerHealth.TakeDamage` を呼ばない）。付けるなら敵本体に `DamageSource` をアタッチ（PlayerHealth側が Enemyタグ＋バーストで無効化を処理）。接触ダメージが要るとき対応
+-2026/07/02 エネミーにアニメ付与（未完）。方式＝モデルのルート節(Rot直下)に Animator＋型別 .controller（`Assets/Models/Enemys/<型>/<型>.controller`）。FBXは Generic なのでネスト型は Animator 自動生成済み＝コントローラ割当のみ
+  - YAML済(展開2体): `Bv(Charger)_main`(Bv(Charger)Core節)／`Rf(Reflect)_main`(Rf節)。要 Reimport。★動作未確認（.controllerの中身も未確認）
+  - エディタ残(ネスト5体): Bt/Pp/Sh/Oc/Sl。Inspectorで Controller に .controller をドラッグするだけ
 -別種類のEnemy ※盾敵・範囲攻撃敵・スナイパー・突進敵・自爆敵・ブラックホール=実装済。「倒すと分裂して2体に増える敵」は**実装不要になった（中止）**。突進敵は2026/06/17にプレイヤー方向突進を手直し（上記参照）
 追加したい仕様内容
-・新しくエネミーにモデルが追加されたので、EnemyMovementに追加したい処理があります。
-Enemyの進行方向に合わせて角度を変えたいです。角度は左向き（－ｘ）側に移動時50度と右向き（+x）側に移動時310度にしたいです。角度が変わるときは急に変わるのではなく、50度から310度まで増加、310度から50度まで減らすようにして、自然に角度が変わるようにしたい。
-・ボスの弾を反射する際、弾をボスのバリアの方向に飛ばすのではなく、プレイヤーが当たった角度通りに飛ばすようにしたい。
+・~~突進する敵はレイを飛ばしたところにプレイヤーが入ったら攻撃するようにしてほしい~~←2026/07/02テスト済み。円形索敵に戻した（上記メモ参照）
+・DamageSource.csがあると思うので、プレイヤーを攻撃したときに、ダメージを与えるようにするのにDamagesource.csをアタッチするだけで大丈夫か教えてほしい
+・ボスの判定が以前３Dでやっていたので、2D版で改めて作成したいので、現在の敵のプレハブの構成を参考に、YAML編集をしてよいので、プレハブに作っておいてほしい
