@@ -352,8 +352,8 @@ MonoBehaviour:
   activeTriggerRadius: 4
   fuseDuration: 3
   blowSpeed: 75
-  explosionEffect: {fileID: 9172571921106444741, guid: 9e8b1e2dc26e5cd46b430721b2bece15, type: 3}
-  explosionEffectScaleMultiplier: 1
+  explosionEffect: {fileID: 8499438699532638891, guid: d06ef5b9b6b4f3b47a2d5b7393eed43b, type: 3}
+  explosionEffectScaleMultiplier: 0.25
   ultimateCounterDamage: 20
   normalCounterDamage: 10
   baseScaleMultiplier: 0.5
