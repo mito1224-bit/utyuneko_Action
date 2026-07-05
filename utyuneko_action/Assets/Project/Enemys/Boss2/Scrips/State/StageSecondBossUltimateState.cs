@@ -29,13 +29,12 @@ public class StageSecondBossUltimateState : StageSecondBossBaseState
 
     private bool isHoverMoving = true;
 
-    // ワープ中スタンバグ防止ガードフラグ
     public bool isCounterAcceptable { get; private set; } = false;
 
     private List<SpriteRenderer> affectedSprites = new List<SpriteRenderer>();
     private List<Material> savedSpriteMaterials = new List<Material>();
     private List<SkinnedMeshRenderer> affectedSkinneds = new List<SkinnedMeshRenderer>();
-    private List<Material> savedSkinnedMaterials = new List<Material>();
+    private List<Material> savedSkinMaterials = new List<Material>();
     private List<MeshRenderer> affectedMeshes = new List<MeshRenderer>();
     private List<Material> savedMeshMaterials = new List<Material>();
 
@@ -104,11 +103,20 @@ public class StageSecondBossUltimateState : StageSecondBossBaseState
         Transform visualRoot = boss.ultVisualOffsetObject != null ? boss.ultVisualOffsetObject : boss.transform;
 
         affectedSprites.Clear(); savedSpriteMaterials.Clear();
-        foreach (var sr in visualRoot.GetComponentsInChildren<SpriteRenderer>()) if (sr != null) { affectedSprites.Add(sr); savedSpriteMaterials.Add(sr.sharedMaterial); }
-        affectedSkinneds.Clear(); savedSkinnedMaterials.Clear();
-        foreach (var smr in visualRoot.GetComponentsInChildren<SkinnedMeshRenderer>()) if (smr != null) { affectedSkinneds.Add(smr); savedSkinnedMaterials.Add(smr.sharedMaterial); }
+        foreach (var sr in visualRoot.GetComponentsInChildren<SpriteRenderer>())
+        {
+            if (sr != null) { affectedSprites.Add(sr); savedSpriteMaterials.Add(sr.sharedMaterial); }
+        }
+        affectedSkinneds.Clear(); savedSkinMaterials.Clear();
+        foreach (var smr in visualRoot.GetComponentsInChildren<SkinnedMeshRenderer>())
+        {
+            if (smr != null) { affectedSkinneds.Add(smr); savedSkinMaterials.Add(smr.sharedMaterial); }
+        }
         affectedMeshes.Clear(); savedMeshMaterials.Clear();
-        foreach (var mr in visualRoot.GetComponentsInChildren<MeshRenderer>()) if (mr != null) { affectedMeshes.Add(mr); savedMeshMaterials.Add(mr.sharedMaterial); }
+        foreach (var mr in visualRoot.GetComponentsInChildren<MeshRenderer>())
+        {
+            if (mr != null) { affectedMeshes.Add(mr); savedMeshMaterials.Add(mr.sharedMaterial); }
+        }
 
         isSetupCompleted = true;
         CreateRangeVisual();
@@ -168,9 +176,16 @@ public class StageSecondBossUltimateState : StageSecondBossBaseState
         }
         else
         {
-            for (int i = 0; i < affectedSprites.Count; i++) if (affectedSprites[i] != null && i < savedSpriteMaterials.Count) { affectedSprites[i].sharedMaterial = savedSpriteMaterials[i]; affectedSprites[i].color = Color.white; }
-            for (int i = 0; i < affectedSkinneds.Count; i++) if (savedSkinnedMaterials != null && i < savedSkinnedMaterials.Count) { if (affectedSkinneds[i] != null) affectedSkinneds[i].sharedMaterial = savedSkinnedMaterials[i]; }
-            for (int i = 0; i < affectedMeshes.Count; i++) if (savedMeshMaterials != null && i < savedMeshMaterials.Count) { if (affectedMeshes[i] != null) affectedMeshes[i].sharedMaterial = savedMeshMaterials[i]; }
+            for (int i = 0; i < affectedSprites.Count; i++)
+            {
+                if (affectedSprites[i] != null && i < savedSpriteMaterials.Count)
+                {
+                    affectedSprites[i].sharedMaterial = savedSpriteMaterials[i];
+                    affectedSprites[i].color = Color.white;
+                }
+            }
+            for (int i = 0; i < affectedSkinneds.Count; i++) if (affectedSkinneds[i] != null && i < savedSkinMaterials.Count) affectedSkinneds[i].sharedMaterial = savedSkinMaterials[i];
+            for (int i = 0; i < affectedMeshes.Count; i++) if (affectedMeshes[i] != null && i < savedMeshMaterials.Count) affectedMeshes[i].sharedMaterial = savedMeshMaterials[i];
         }
     }
 
@@ -214,7 +229,7 @@ public class StageSecondBossUltimateState : StageSecondBossBaseState
             {
                 if (bomb.TryGetComponent<Rigidbody2D>(out var bombRb))
                 {
-                    if (bomb.BlownAwayTimer < 0.25f) { bomb.transform.Rotate(Vector3.forward, 450f * Time.fixedDeltaTime); continue; }
+                    if (bomb.BlownAwayTimer < 0.05f) { bomb.transform.Rotate(Vector3.forward, 450f * Time.fixedDeltaTime); continue; }
                     Vector2 toCenter = (Vector2)boss.transform.position - bombRb.position;
                     float dist = toCenter.magnitude;
                     if (dist < boss.ultPullRadius && dist > 0.0001f)
@@ -234,7 +249,7 @@ public class StageSecondBossUltimateState : StageSecondBossBaseState
             {
                 if (bomb.TryGetComponent<Rigidbody2D>(out var bombRb))
                 {
-                    if (bomb.BlownAwayTimer < 0.25f) { bomb.transform.Rotate(Vector3.forward, 450f * Time.fixedDeltaTime); continue; }
+                    if (bomb.BlownAwayTimer < 0.05f) { bomb.transform.Rotate(Vector3.forward, 450f * Time.fixedDeltaTime); continue; }
                     Vector2 toCenter = (Vector2)boss.transform.position - bombRb.position;
                     float dist = toCenter.magnitude;
                     if (dist < boss.ultPullRadius && dist > 0.0001f)
@@ -260,7 +275,16 @@ public class StageSecondBossUltimateState : StageSecondBossBaseState
 
         ApplyUltimateFlash(false);
 
-        if (boss.ultExplosionEffect != null) Object.Instantiate(boss.ultExplosionEffect, boss.transform.position, Quaternion.identity);
+        // ===================================================================
+        // 🛠️【必殺技エフェクトのサイズ連動化機能】
+        // 生成したウルト大爆発エフェクトのスケールを「ウルト半径の直径×微調整倍率」に自動変更！
+        // ===================================================================
+        if (boss.ultExplosionEffect != null)
+        {
+            GameObject fxObj = Object.Instantiate(boss.ultExplosionEffect, boss.transform.position, Quaternion.identity);
+            float diameter = boss.ultExplosionRadius * 2f * boss.ultExplosionEffectScaleMultiplier;
+            fxObj.transform.localScale = new Vector3(diameter, diameter, 1f);
+        }
 
         if (boss.ultDamageAreaObject != null)
         {
@@ -272,11 +296,6 @@ public class StageSecondBossUltimateState : StageSecondBossBaseState
             boss.ultDamageAreaObject.SetActive(false);
         }
 
-        // ===================================================================
-        // 🛠️【新機能：ウルトフィニッシュ時の全爆弾消滅】
-        // ウルトの巨大な爆風に巻き込まれる形で、ステージ上に残っているすべての
-        // 通常爆弾・地雷を一斉に完全デリートして、画面を美しくリセットします！
-        // ===================================================================
         StageSecondBossTimedBomb[] timedBombs = Object.FindObjectsByType<StageSecondBossTimedBomb>(FindObjectsSortMode.None);
         foreach (var bomb in timedBombs)
         {

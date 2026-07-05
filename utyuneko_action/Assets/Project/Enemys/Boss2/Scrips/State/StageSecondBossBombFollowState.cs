@@ -60,7 +60,7 @@ public class StageSecondBossBombFollowState : StageSecondBossBaseState
 
                 SpriteRenderer sr = currentWarningObj.AddComponent<SpriteRenderer>();
                 sr.sprite = boss.instantLineWarningSprite;
-                sr.color = new Color(1f, 0.2f, 0f, 0.6f);
+                sr.color = boss.instantLineWarningColor;
                 sr.sortingOrder = -1;
 
                 float spriteWidth = sr.sprite.bounds.size.x;

@@ -8,8 +8,11 @@ public class StageSecondBossTimedBomb : MonoBehaviour
     [Header("爆弾の基本設定")]
     public float fuseDuration = 3.0f;
     public float explosionRadius = 3.0f;
-    public float blowSpeed = 25f;
+    public float blowSpeed = 75f;
     public GameObject explosionEffect;
+
+    [Tooltip("💥 爆発エフェクトのサイズ微調整用倍率（1なら判定の直径と等倍、1.5ならさらに1.5倍大きく表示されます）")]
+    public float explosionEffectScaleMultiplier = 1.0f;
 
     [Header("💓 爆弾本体の鼓動演出設定")]
     public float baseScaleMultiplier = 1.4f;
@@ -259,10 +262,6 @@ public class StageSecondBossTimedBomb : MonoBehaviour
                 if (indicatorRoot != null) Destroy(indicatorRoot);
                 rb2d.bodyType = RigidbodyType2D.Dynamic;
 
-                // ===================================================================
-                // 🛠️【連動修正】吹っ飛ばされたので、爆弾本体のDamageSourceを即座にOFF！
-                // これにより、接触してもプレイヤーがダメージを受けなくなります。
-                // ===================================================================
                 var ds = GetComponent<DamageSource>();
                 if (ds == null) ds = GetComponentInChildren<DamageSource>();
                 if (ds != null) ds.enabled = false;
@@ -295,17 +294,23 @@ public class StageSecondBossTimedBomb : MonoBehaviour
         if (bombVisual != null) bombVisual.SetActive(false);
 
         SoundManager.Instance.PlaySE(SeType.EnemyExplosion);
-        if (explosionEffect != null) Instantiate(explosionEffect, transform.position, Quaternion.identity);
+
+        // ===================================================================
+        // 🛠️【エフェクトのサイズ連動機能】
+        // 生成した爆発エフェクトのサイズを「爆発の直径×微調整倍率」に自動変更！
+        // ===================================================================
+        if (explosionEffect != null)
+        {
+            GameObject fxObj = Instantiate(explosionEffect, transform.position, Quaternion.identity);
+            float diameter = explosionRadius * 2f * explosionEffectScaleMultiplier;
+            fxObj.transform.localScale = new Vector3(diameter, diameter, 1f);
+        }
 
         if (damageAreaObject != null)
         {
             damageAreaObject.transform.SetParent(null);
             SyncColliderSize(damageAreaObject, explosionRadius);
 
-            // ===================================================================
-            // 🛠️【連動修正】跳ね返された状態の爆発なら、爆発範囲のDamageSourceもOFF！
-            // これにより、爆発にプレイヤーが巻き込まれても無傷になります。
-            // ===================================================================
             if (IsBlownAway)
             {
                 var areaDs = damageAreaObject.GetComponent<DamageSource>();

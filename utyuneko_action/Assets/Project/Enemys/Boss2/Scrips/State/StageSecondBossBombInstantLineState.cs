@@ -72,7 +72,7 @@ public class StageSecondBossBombInstantLineState : StageSecondBossBaseState
 
                     SpriteRenderer sr = warningObj.AddComponent<SpriteRenderer>();
                     sr.sprite = boss.instantLineWarningSprite;
-                    sr.color = new Color(1f, 0f, 0f, 0.45f);
+                    sr.color = boss.instantLineWarningColor;
                     sr.sortingOrder = -1;
 
                     float spriteWidth = sr.sprite.bounds.size.x;
@@ -94,7 +94,12 @@ public class StageSecondBossBombInstantLineState : StageSecondBossBaseState
             }
         }
 
-        yield return new WaitForSeconds(boss.instantLineWarningDuration);
+        // ===================================================================
+        // 🛠️【修正：第2形態高速化システム】
+        // 怒りモード（フェーズ2）の時は、倍率（例: 1.4倍）で割り算することで、
+        // 予兆時間が自動的にギュギュッと短縮されて超高速で投げてくるようになります！
+        // ===================================================================
+        yield return new WaitForSeconds(boss.instantLineWarningDuration / boss.attackSpeedMultiplier);
 
         ClearAllWarnings(); // 通常ルートの消去
 
@@ -145,9 +150,6 @@ public class StageSecondBossBombInstantLineState : StageSecondBossBaseState
         activeWarningVisuals.Clear();
     }
 
-    // ===================================================================
-    // 🧹【新設：大掃除アンカー】中断時に全インジケーターを一斉爆破消去！
-    // ===================================================================
     public override void Exit()
     {
         ClearAllWarnings();

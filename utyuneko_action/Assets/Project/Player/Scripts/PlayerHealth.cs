@@ -85,6 +85,8 @@ public class PlayerHealth : MonoBehaviour
         TimeManager.Instance.StopSlowMotion();
         TimeManager.Instance.TriggerGlobalSlowMotion(0.3f,0.2f);
 
+        p.OnEnemyKilledInBurst();
+
         currentHealth -= damageAmount;
         currentHealth = Mathf.Max(-1, currentHealth); // HPが-1以下にならないようにロック
         Debug.Log($"被弾！ ダメージ: {damageAmount} / 残りHP: {currentHealth}");

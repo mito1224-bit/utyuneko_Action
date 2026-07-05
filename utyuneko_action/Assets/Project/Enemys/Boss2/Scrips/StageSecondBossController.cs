@@ -11,6 +11,12 @@ public class StageSecondBossController : MonoBehaviour
     public DamageSource cachedDamageSource { get; private set; }
     public Vector3 originalVisualLocalPosition { get; private set; }
     public Quaternion originalVisualLocalRotation { get; private set; }
+
+    // ===================================================================
+    // 🛠️【新設】巨大化バグを完全に根絶するため、ゲーム開始時の初期サイズを記憶する変数
+    // ===================================================================
+    public Vector3 originalVisualLocalScale { get; private set; }
+
     private List<RendererData> originalRendererData = new List<RendererData>();
 
     private struct RendererData
@@ -69,6 +75,7 @@ public class StageSecondBossController : MonoBehaviour
     [Header("⚙️ 一直線即爆発（グリッド爆撃）の個別設定")]
     public Sprite instantLineWarningSprite;
     public float instantLineWarningDuration = 0.6f;
+    public Color instantLineWarningColor = new Color(1f, 1f, 1f, 1f);
 
     [Header("⚙️ プレイヤー追従連撃（技④）の設定")]
     public int followAttackCount = 4;
@@ -82,7 +89,7 @@ public class StageSecondBossController : MonoBehaviour
     public float afterimageInterval = 0.02f;
     public Color afterimageColor = new Color(0.3f, 0.6f, 1f, 0.65f);
 
-    [Header("⚙️ スタン（気絶）演出の設定")]
+    [Header("⚙️ スターン（気絶）演出の設定")]
     public float stunDuration = 4.0f;
     public float stunRecoveryDuration = 0.6f;
     public float stunGravityAmount = 1.8f;
@@ -108,6 +115,7 @@ public class StageSecondBossController : MonoBehaviour
     public bool isDeathEventStarted { get; set; } = false;
     private bool isAlreadyDisappeared = false;
 
+    public bool isDeadGrounded { get; set; } = false;
 
     [Header("💀 死亡時にアクティブ化するイベントトリガー")]
     [Tooltip("EventTriggerArea2Dがアタッチされた、ボス戦後の吸い込みイベント用トリガーオブジェクトをセット")]
@@ -119,6 +127,7 @@ public class StageSecondBossController : MonoBehaviour
     public float ultExplosionRadius = 6.0f;
     public float ultDuration = 5.0f;
     public GameObject ultExplosionEffect;
+    public float ultExplosionEffectScaleMultiplier = 1.0f;
     public float ultMaxApproachSpeed = 10f;
     [Range(0f, 1f)] public float ultBurstPullMultiplier = 0.2f;
 
@@ -171,6 +180,11 @@ public class StageSecondBossController : MonoBehaviour
         originalVisualLocalPosition = visualTarget.localPosition;
         originalVisualLocalRotation = visualTarget.localRotation;
 
+        // ===================================================================
+        // 🛠️【修正】Awakeのタイミングで、インスペクターで設定された本来の初期大きさを記憶！
+        // ===================================================================
+        originalVisualLocalScale = visualTarget.localScale;
+
         originalRendererData.Clear();
         foreach (var sr in visualTarget.GetComponentsInChildren<SpriteRenderer>(true)) if (sr != null) originalRendererData.Add(new RendererData { spriteRenderer = sr, originalMaterial = sr.sharedMaterial });
         foreach (var smr in visualTarget.GetComponentsInChildren<SkinnedMeshRenderer>(true)) if (smr != null) originalRendererData.Add(new RendererData { skinnedRenderer = smr, originalMaterial = smr.sharedMaterial });
@@ -193,7 +207,7 @@ public class StageSecondBossController : MonoBehaviour
         if (ultIndicatorRoot != null) ultIndicatorRoot.SetActive(false);
 
         lastUltHP = maxHP;
-        TransitionToState(StateAppear); // 登場演出からスタート
+        TransitionToState(StateAppear);
     }
 
     void Update()
@@ -210,7 +224,7 @@ public class StageSecondBossController : MonoBehaviour
         }
 
         mineTimeTimer += Time.deltaTime;
-        if(mineTimeTimer > mineBomMinInterval)
+        if (mineTimeTimer > mineBomMinInterval)
         {
             mineBomAttack = true;
         }
@@ -233,6 +247,18 @@ public class StageSecondBossController : MonoBehaviour
 
         if (healthComponent != null) healthComponent.StopFlashAndReset();
         ForceResetAllMaterials();
+
+        // ===================================================================
+        // 🛠️【修正：巨大化リセット安全ガード】
+        // 技のタメ中にやられてステートが切り替わった際、
+        // 巨大化演出コルーチンが止まってもボスのサイズを確実に初期等倍スケールに戻します！
+        // ===================================================================
+        Transform visualTarget = ultVisualOffsetObject != null ? ultVisualOffsetObject : transform;
+        if (visualTarget != null)
+        {
+            visualTarget.localScale = originalVisualLocalScale;
+        }
+
         StopAllCoroutines();
 
         currentState = newState;
@@ -257,13 +283,10 @@ public class StageSecondBossController : MonoBehaviour
                 }
             }
 
-            // ===================================================================
-            // 🛠️【天才的アイデアの具現化】
-            // ボスが死亡落下し、地面のレイヤーに物理衝突したまさにその瞬間に、
-            // EventTriggerArea2Dがついた判定オブジェクトを自動で叩き起こす（有効化）！
-            // ===================================================================
             if (currentDebugStateName == "StageSecondBossDeadState")
             {
+                isDeadGrounded = true;
+
                 if (absorbEventTriggerObject != null && !absorbEventTriggerObject.activeSelf)
                 {
                     absorbEventTriggerObject.SetActive(true);
@@ -312,6 +335,21 @@ public class StageSecondBossController : MonoBehaviour
             if (data.spriteRenderer != null) { data.spriteRenderer.sharedMaterial = data.originalMaterial; data.spriteRenderer.color = Color.white; }
             if (data.skinnedRenderer != null) data.skinnedRenderer.sharedMaterial = data.originalMaterial;
             if (data.meshRenderer != null) data.meshRenderer.sharedMaterial = data.originalMaterial;
+        }
+    }
+
+    public void ApplyGlobalFlashMaterial(Material mat)
+    {
+        if (mat == null) return;
+        foreach (var data in originalRendererData)
+        {
+            if (data.spriteRenderer != null)
+            {
+                data.spriteRenderer.sharedMaterial = mat;
+                data.spriteRenderer.color = Color.white;
+            }
+            if (data.skinnedRenderer != null) data.skinnedRenderer.sharedMaterial = mat;
+            if (data.meshRenderer != null) data.meshRenderer.sharedMaterial = mat;
         }
     }
 
@@ -375,9 +413,6 @@ public class StageSecondBossController : MonoBehaviour
     public Rigidbody2D GetPlayerRigidbody() => playerRb2D;
 }
 
-// ===================================================================
-// 🛠️【エラー修正：重要】コピペ漏れが起きないよう、同じファイルの末尾に完全内蔵させました！
-// ===================================================================
 public class StageSecondBossAfterimageFade : MonoBehaviour
 {
     public void Initialize(float duration, Color targetColor)

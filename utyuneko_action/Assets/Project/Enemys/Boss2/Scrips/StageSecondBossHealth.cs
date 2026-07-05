@@ -15,6 +15,10 @@ public class StageSecondBossHealth : MonoBehaviour
     public bool hasBarrier = true;
     public bool immuneToPlayerWhenBarrierOn = true;
     public GameObject barrierVisualObject;
+    public GameObject barrierBreakEffect;
+
+    [Tooltip("🛡️ バリア破壊エフェクトのサイズ倍率設定（インセクターから直接大きさを固定調整できます）")]
+    public float barrierBreakEffectScale = 1.0f;
 
     [Header("⚙️ プレイヤーからの被弾ダメージ設定")]
     public float bombDirectDamage = 15f;
@@ -65,7 +69,6 @@ public class StageSecondBossHealth : MonoBehaviour
         foreach (var mr in visualRoot.GetComponentsInChildren<MeshRenderer>(true)) if (mr != null) defaultMaterials.Add(new RendererDefaultMat { mr = mr, origMat = mr.sharedMaterial });
 
         UpdateBarrierVisual();
-
     }
 
     void Update()
@@ -76,10 +79,6 @@ public class StageSecondBossHealth : MonoBehaviour
         }
     }
 
-    // ===================================================================
-    // 🛠️【超重要】1枚目の赤波線エラー（見つからないエラー）を消滅させるバリア関数
-    // クラスの内部に確実に定義されるように位置を固定したよ！
-    // ===================================================================
     public void UpdateBarrierVisual()
     {
         if (barrierVisualObject != null)
@@ -159,7 +158,6 @@ public class StageSecondBossHealth : MonoBehaviour
             if (controller.StateUltimate != null && controller.StateUltimate.isCounterAcceptable)
             {
                 Debug.Log("<color=red>🛡️ 必殺技チャージ中に爆弾直撃！ 確定遮断スタン！</color>");
-                hasBarrier = false;
                 UpdateBarrierVisual();
                 controller.OnMineCounterHit();
                 Destroy(bombObj);
@@ -167,11 +165,32 @@ public class StageSecondBossHealth : MonoBehaviour
                 TimeManager.Instance.TriggerGlobalSlowMotion(1.0f, 0.2f);
                 return;
             }
+
+            // ⏳ ウルトチャージ中の通常被弾によるバリア破壊
+            if (hasBarrier)
+            {
+                hasBarrier = false;
+                if (barrierBreakEffect != null)
+                {
+                    GameObject fx = Object.Instantiate(barrierBreakEffect, controller.transform.position, Quaternion.identity);
+                    fx.transform.localScale = Vector3.one * barrierBreakEffectScale; // 👈 サイズの適用！
+                }
+            }
+
+            DamageFlashRoutine();
         }
 
+        // ⏳ 通常状態での爆弾カウンター直撃によるバリア破壊
         if (hasBarrier)
         {
             hasBarrier = false;
+
+            if (barrierBreakEffect != null)
+            {
+                GameObject fx = Object.Instantiate(barrierBreakEffect, controller.transform.position, Quaternion.identity);
+                fx.transform.localScale = Vector3.one * barrierBreakEffectScale; // 👈 サイズの適用！
+            }
+
             UpdateBarrierVisual();
             Debug.Log("<color=green>⚡ 爆弾カウンター直撃！ バリアが剥がれました。</color>");
             if (flashCoroutine != null) StopCoroutine(flashCoroutine);

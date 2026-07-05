@@ -14,6 +14,11 @@ public class PlayerState_Normal : IPlayerState
         p = player;
         Debug.Log("ステート変更：通常状態（Normal）");
 
+        if (p.anim != null)
+        {
+            p.anim.SetBool("isBurst", false);
+        }
+
         if (p.visualManager != null && p.visualManager.playerVisual != null)
         {
             float currentVelocityX = p.rb2D.linearVelocity.x;

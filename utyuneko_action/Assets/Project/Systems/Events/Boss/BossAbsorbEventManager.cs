@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class BossAbsorbEventManager : BaseEventManager
@@ -29,6 +30,9 @@ public class BossAbsorbEventManager : BaseEventManager
     [SerializeField] private float hosaMoveSpeed = 6f;
     [Tooltip("補佐がボスのどれくらい【上】で静止するか")]
     [SerializeField] private float hosaHeightOffsetFromBoss = 4.2f;
+
+    private CameraFollowWithZoom cameraController;
+    private GameObject tempCameraTarget;
 
     private float maxLookAngle = 30f;
     private float lookSmoothing = 12.0f;
@@ -68,6 +72,22 @@ public class BossAbsorbEventManager : BaseEventManager
         if (targetBoss != null)
         {
             bossController = targetBoss.GetComponent<StageSecondBossController>();
+
+            if (bossController.BossStatgeCamera)
+            {
+                bossController.BossStatgeCamera.gameObject.SetActive(false);
+            }
+
+            cameraController = Object.FindFirstObjectByType<CameraFollowWithZoom>();
+            if (cameraController != null)
+            {
+                // 見えない空のゲームオブジェクトを作成して目的地に配置
+                tempCameraTarget = new GameObject("TempCameraEventTarget");
+                tempCameraTarget.transform.position = targetBoss.transform.position;
+
+                // カメラにはボスではなく、この目的地のオブジェクトを追跡させる
+                cameraController.StartTrackTarget(tempCameraTarget.transform, 3f, 2f);
+            }
         }
 
         if (playerController != null && playerController.visualManager != null && playerController.visualManager.playerVisual != null)
@@ -271,6 +291,15 @@ public class BossAbsorbEventManager : BaseEventManager
         isLookingActive = false;
         ResetPlayerVisualRotation();
 
+        if (cameraController != null)
+        {
+            cameraController.ReturnToPlayerFromEvent(0.1f);
+        }
+        if (bossController.BossStatgeCamera)
+        {
+            bossController.BossStatgeCamera.gameObject.SetActive(true);
+        }
+
         if (coreCubePrefab != null)
         {
             float stageCenterX = (bossController != null) ? (bossController.stageMinX + bossController.stageMaxX) / 2f : hosa.transform.position.x;
@@ -282,6 +311,10 @@ public class BossAbsorbEventManager : BaseEventManager
         {
             // スキップ時も一瞬ではなく、現在の回転を維持したまま通常モードへ解放
             hosa.transform.localRotation = Quaternion.identity;
+
+            Vector3 originalBossPos = targetBoss != null ? targetBoss.transform.position : Vector3.zero;
+            float groundY = playerTransform != null ? playerTransform.position.y : originalBossPos.y - 3f;
+            hosa.transform.position = new Vector3(hosa.transform.position.x, groundY + 0.5f, hosa.transform.position.z);
         }
         currentPhase = EventPhase.Finished;
     }
@@ -303,6 +336,16 @@ public class BossAbsorbEventManager : BaseEventManager
 
         SoundManager.Instance.FadeBGMVolume(1.0f, 1.0f);
 
+
+        if (cameraController != null)
+        {
+            cameraController.ReturnToPlayerFromEvent(1.0f);
+        }
+        if (tempCameraTarget != null)
+        {
+            Object.Destroy(tempCameraTarget);
+        }
+
         // 2. ⏳【要望①】0.4秒かけて、補佐の顔を滑らかに「正面（Quaternion.identity）」へ戻す！
         if (hosa != null)
         {
@@ -320,6 +363,11 @@ public class BossAbsorbEventManager : BaseEventManager
         // 3. 補佐はイベント終了後も「ついてこなくて大丈夫」なので、
         // StateFollow（追従ステート）への遷移コードは完全に消去された状態をキープ！
         currentPhase = EventPhase.Finished;
+
+        if (bossController.BossStatgeCamera)
+        {
+            bossController.BossStatgeCamera.gameObject.SetActive(true);
+        }
 
         // 入力ブロックを解除してガチでイベント終了！
         EndEvent();
