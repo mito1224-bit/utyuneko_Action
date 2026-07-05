@@ -8,6 +8,11 @@ using UnityEngine.Events;
 /// 状態遷移（各ステートは BossState_*.cs に分割。プレイヤーの IPlayerState と同じ流儀）:
 ///
 ///   Patrol（巡回：多角形エリア内をランダムに瞬間移動）
+///     ↔ PatrolShot（出現撃ち：瞬間移動が確率で攻撃に化ける。出現直後に狙いを固定して短いレーザー。
+///                   偏差撃ち／直撃狙いが混ざる牽制。撃ち終えたら Patrol へ戻る）
+///     → RadialAttack（全体攻撃：ステージ中央＝巡回ポイントの重心へテレポートし、
+///                     回転しながら四方八方へ1本ずつ連射。撃ち切ったら分身攻撃へ。
+///                     通常フェーズは毎サイクル必ず挟む。最終フェーズのみ挟むかどうかがランダム）
 ///     → Split（分身展開：本体が収縮して消え、全ユニットが配置ポイントに同時出現）
 ///     → Aim（照準：射線がプレイヤーを追う）→ Lock（固定・最終警告）→ Fire（レーザー発射）
 ///     → Return（瞬間移動で巡回エリアへ帰還）→ Patrol …
@@ -32,6 +37,7 @@ using UnityEngine.Events;
 /// </summary>
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(BossSniperBeamUnit))]
+[RequireComponent(typeof(BossSniperHealth))]
 public class BossSniper : MonoBehaviour
 {
     // ─── フェーズ（難易度）設定 ─────────────────────
@@ -41,6 +47,13 @@ public class BossSniper : MonoBehaviour
     {
         [Tooltip("ユニット総数（本物1を含む）。4なら 本物1＋偽物3")]
         public int totalUnits = 4;
+
+        [Header("フェーズHP・被弾")]
+        [Tooltip("このフェーズのHP。満タンから始まり、削り切ったら次フェーズへ。最終フェーズで削り切ると撃破")]
+        public float phaseMaxHP = 100f;
+
+        [Tooltip("スタン中に通る一撃の倍率。通常の速度依存ダメージにこれを掛ける（見破りスタンのボーナス）")]
+        public float stunDamageMultiplier = 3f;
 
         [Tooltip("照準（射線がプレイヤーを追う）時間")]
         public float aimTime = 1.5f;
@@ -53,15 +66,32 @@ public class BossSniper : MonoBehaviour
 
         [Tooltip("着地して猶予が明けてから、ダメージを受け付けている時間")]
         public float stunDuration = 4f;
+
+        [Header("巡回ショット（このフェーズでの難易度）")]
+        [Tooltip("巡回中の瞬間移動が「出現撃ち」になる確率（0〜1）")]
+        [Range(0f, 1f)] public float patrolShotChance = 0.5f;
+
+        [Tooltip("出現撃ちの、出現〜レーザー発射までのロック時間（短いほど難しい）")]
+        public float patrolShotLockTime = 0.5f;
+
+        [Tooltip("1回の出現撃ちで連続して撃つ回数。2発目以降は毎回狙いを付け直す（偏差／直撃も毎回抽選）")]
+        public int patrolShotCount = 1;
+
+        [Header("全体攻撃（このフェーズでの難易度）")]
+        [Tooltip("全体攻撃で撃つ総数。角度ステップ×回数ぶんだけ回転しながら連射する")]
+        public int radialShotCount = 10;
+
+        [Tooltip("全体攻撃の1発ごとのロック時間（短いほど回転が速く難しい）")]
+        public float radialLockTime = 0.3f;
     }
 
     [Header("フェーズ設定（配列の長さ＝撃破に必要なヒット数）")]
     [Tooltip("スタン中に攻撃を受けるたびに次の要素へ進む。既定は3フェーズ＝3回で撃破")]
     public PhaseSettings[] phases = new PhaseSettings[]
     {
-        new PhaseSettings { totalUnits = 4, aimTime = 1.5f },
-        new PhaseSettings { totalUnits = 5, aimTime = 1.35f },
-        new PhaseSettings { totalUnits = 6, aimTime = 1.2f },
+        new PhaseSettings { totalUnits = 4, phaseMaxHP = 120f, stunDamageMultiplier = 4f, aimTime = 1.5f,  patrolShotChance = 0.35f, patrolShotLockTime = 0.6f, patrolShotCount = 1, radialShotCount = 8,  radialLockTime = 0.35f },
+        new PhaseSettings { totalUnits = 5, phaseMaxHP = 150f, stunDamageMultiplier = 4f, aimTime = 1.35f, patrolShotChance = 0.55f, patrolShotLockTime = 0.5f, patrolShotCount = 2, radialShotCount = 12, radialLockTime = 0.3f },
+        new PhaseSettings { totalUnits = 6, phaseMaxHP = 180f, stunDamageMultiplier = 5f, aimTime = 1.2f,  patrolShotChance = 0.75f, patrolShotLockTime = 0.4f, patrolShotCount = 3, radialShotCount = 16, radialLockTime = 0.25f },
     };
 
     // ─── 巡回（多角形エリア内の瞬間移動） ─────────────
@@ -90,6 +120,33 @@ public class BossSniper : MonoBehaviour
 
     [Tooltip("XZスケールが元に戻るまでの時間")]
     public float teleportExpandTime = 0.15f;
+
+    // ─── 巡回ショット（テレポ出現撃ち） ─────────────────
+
+    [Header("巡回ショット（テレポ出現撃ち）")]
+    [Tooltip("出現撃ちのレーザーが出ている時間")]
+    public float patrolShotFireDuration = 0.15f;
+
+    [Tooltip("偏差撃ちのとき、プレイヤーの何秒先の位置を狙うか（現在速度×この秒数だけ先）。ロック時間と同じくらいにすると、走り続けるプレイヤーに刺さる")]
+    public float patrolShotLeadTime = 0.5f;
+
+    [Tooltip("出現撃ちが偏差撃ちになる確率（0〜1）。外れは現在位置への直撃狙い。両方混ぜることで「止まれば安全」も「走り続ければ安全」も成立しなくなる")]
+    [Range(0f, 1f)] public float patrolShotLeadChance = 0.6f;
+
+    // ─── 全体攻撃（ステージ中央での回転連射） ─────────────
+
+    [Header("全体攻撃（ステージ中央での回転連射）")]
+    [Tooltip("全体攻撃のレーザーが出ている時間（1発ぶん）")]
+    public float radialFireDuration = 0.12f;
+
+    [Tooltip("1発ごとに回転する角度（度）。回転方向と開始角度は毎回ランダム")]
+    public float radialAngleStep = 30f;
+
+    [Tooltip("中央に到着してから初弾までの溜め時間。この間に初弾のロック射線を出してプレイヤーに避ける準備をさせる（全フェーズ共通）")]
+    public float radialWindupTime = 1.2f;
+
+    [Tooltip("最終フェーズで、巡回のあとに全体攻撃を挟む確率（0〜1）。挟まない場合はそのまま分身攻撃へ。最終フェーズ以外は必ず挟む")]
+    [Range(0f, 1f)] public float finalPhaseRadialChance = 0.5f;
 
     // ─── 分身の展開 ────────────────────────────────
 
@@ -131,8 +188,8 @@ public class BossSniper : MonoBehaviour
     [Tooltip("スタン落下が長引いた場合（着地を検知できない場合）に諦めて復帰する保険時間")]
     public float stunFallTimeout = 3f;
 
-    [Tooltip("ダメージを与えたときに PlayerController.OnEnemyKilledInBurst を呼んでバースト回数を回復させるか")]
-    public bool refundPlayerBurstOnDamage = true;
+    [Tooltip("スタン中に倍率付きの一撃を受けたあと、復帰までに置く間（秒）")]
+    public float stunRecoverDelay = 0.6f;
 
     [Tooltip("撃破後に本体を Destroy するまでの秒数。0以下なら残す（演出を外部で行う場合など）")]
     public float destroyDelayOnDefeat = 0f;
@@ -149,6 +206,8 @@ public class BossSniper : MonoBehaviour
     // ─── ステート（プレイヤーと同じ流儀で公開プロパティにする） ───
 
     public BossSniperState_Patrol StatePatrol { get; private set; }
+    public BossSniperState_PatrolShot StatePatrolShot { get; private set; }
+    public BossSniperState_RadialAttack StateRadialAttack { get; private set; }
     public BossSniperState_Split StateSplit { get; private set; }
     public BossSniperState_Aim StateAim { get; private set; }
     public BossSniperState_Lock StateLock { get; private set; }
@@ -157,6 +216,7 @@ public class BossSniper : MonoBehaviour
     public BossSniperState_StunFall StateStunFall { get; private set; }
     public BossSniperState_StunGrace StateStunGrace { get; private set; }
     public BossSniperState_Stunned StateStunned { get; private set; }
+    public BossSniperState_StunRecover StateStunRecover { get; private set; }
     public BossSniperState_Defeated StateDefeated { get; private set; }
 
     public IBossSniperState CurrentState => currentState;
@@ -165,8 +225,25 @@ public class BossSniper : MonoBehaviour
     // ─── ステートから使う共有参照 ─────────────────────
 
     public Transform Player { get; private set; }
+
+    /// <summary>プレイヤーの Rigidbody2D（偏差撃ちの速度取得に使う。無ければ null）。</summary>
+    public Rigidbody2D PlayerRb { get; private set; }
+
     public Rigidbody2D Rb { get; private set; }
     public BossSniperBeamUnit SelfUnit { get; private set; }
+
+    /// <summary>HP・ダメージ・無敵時間を管理するコンポーネント（同じ GameObject 上）。</summary>
+    public BossSniperHealth Health { get; private set; }
+
+    /// <summary>現在が最終フェーズか。</summary>
+    public bool IsFinalPhase => CurrentPhaseIndex >= phases.Length - 1;
+
+    /// <summary>
+    /// 次の分身攻撃までの残り時間。ボス側が持つことで、
+    /// 出現撃ち（PatrolShot）を挟んでもリセットされず、分身攻撃の間隔が一定に保たれる。
+    /// Patrol / PatrolShot が減算し、Return（攻撃サイクルの区切り）で補充される。
+    /// </summary>
+    public float AttackTimer { get; set; }
 
     /// <summary>展開中のユニット一覧（本物を含む）。分身展開中以外は空。</summary>
     public List<BossSniperBeamUnit> Units { get; } = new List<BossSniperBeamUnit>();
@@ -182,12 +259,15 @@ public class BossSniper : MonoBehaviour
     {
         Rb = GetComponent<Rigidbody2D>();
         SelfUnit = GetComponent<BossSniperBeamUnit>();
+        Health = GetComponent<BossSniperHealth>();
 
         Rb.bodyType = RigidbodyType2D.Kinematic;
         Rb.freezeRotation = true;
         Rb.gravityScale = 0f;
 
         StatePatrol = new BossSniperState_Patrol();
+        StatePatrolShot = new BossSniperState_PatrolShot();
+        StateRadialAttack = new BossSniperState_RadialAttack();
         StateSplit = new BossSniperState_Split();
         StateAim = new BossSniperState_Aim();
         StateLock = new BossSniperState_Lock();
@@ -196,19 +276,27 @@ public class BossSniper : MonoBehaviour
         StateStunFall = new BossSniperState_StunFall();
         StateStunGrace = new BossSniperState_StunGrace();
         StateStunned = new BossSniperState_Stunned();
+        StateStunRecover = new BossSniperState_StunRecover();
         StateDefeated = new BossSniperState_Defeated();
     }
 
     void Start()
     {
         GameObject p = GameObject.FindGameObjectWithTag(playerTag);
-        if (p != null) Player = p.transform;
+        if (p != null)
+        {
+            Player = p.transform;
+            PlayerRb = p.GetComponent<Rigidbody2D>();
+        }
 
         SelfUnit.Init(Player);
         SelfUnit.IsReal = true;
         SelfUnit.OnBurstHit = RouteBurstHit;
 
         patrolOrigin = transform.position;
+        AttackTimer = timeBetweenAttacks;
+
+        if (Health != null) Health.InitPhase(Phase.phaseMaxHP); // 最初のフェーズHPを満タンに
 
         TransitionToState(StatePatrol);
     }
@@ -240,6 +328,17 @@ public class BossSniper : MonoBehaviour
     private void RouteBurstHit(BossSniperBeamUnit unit, PlayerController pc)
     {
         currentState?.OnBurstHit(unit, pc);
+    }
+
+    /// <summary>
+    /// 「常時ダメージ可能」なステート（巡回・出現撃ち・全体攻撃）から呼ぶ共通の被弾処理。
+    /// 本物なら通常ダメージ（無敵時間つき）、偽物なら何もしない。
+    /// 分身展開中の照準・ロックは別扱い（スタンも起こす）なので各ステートで個別処理する。
+    /// </summary>
+    public void HandleNormalBurstHit(BossSniperBeamUnit unit, PlayerController pc)
+    {
+        if (unit == null || !unit.IsReal) return;
+        if (Health != null) Health.TryApplyBurstDamage(pc, isStunned: false);
     }
 
     // 地形（obstacleLayer）との接触を現在のステートへ渡す（スタン落下の着地検知用）
@@ -299,21 +398,28 @@ public class BossSniper : MonoBehaviour
 
     // ─── 被ダメージ・物理切り替え ─────────────────────
 
-    /// <summary>スタン中に本物へバーストが当たった（Stunned ステートから呼ばれる）。</summary>
-    public void ApplyDamage(PlayerController pc)
+    /// <summary>
+    /// 現フェーズのHPを削り切ったときに Health から呼ばれる。次フェーズへ進み、HPを満タンに。
+    /// フェーズ進行のトリガーはこれ（HPゼロ）だけ。見破りスタンは進行トリガーではなくボーナス帯。
+    /// </summary>
+    public void AdvancePhaseByHP()
     {
-        // バースト回数の回復（PlayerController 側の既存仕様を利用）
-        if (refundPlayerBurstOnDamage && pc != null) pc.OnEnemyKilledInBurst();
+        CurrentPhaseIndex++;
+        onDamaged?.Invoke(CurrentPhaseIndex); // 互換：フェーズ番号を通知
 
-        if (CurrentPhaseIndex >= phases.Length - 1)
+        if (Health != null)
         {
-            TransitionToState(StateDefeated);
-            return;
+            Health.InitPhase(Phase.phaseMaxHP);           // 次フェーズHPを満タンに
+            Health.onPhaseChanged?.Invoke(CurrentPhaseIndex, Phase.phaseMaxHP);
         }
 
-        CurrentPhaseIndex++;
-        onDamaged?.Invoke(CurrentPhaseIndex);
         TransitionToState(StateReturn); // 瞬間移動で復帰し、難易度アップした攻撃を再開
+    }
+
+    /// <summary>最終フェーズのHPを削り切ったときに Health から呼ばれる。撃破へ。</summary>
+    public void DefeatByHP()
+    {
+        TransitionToState(StateDefeated);
     }
 
     /// <summary>スタン落下用：Dynamic に切り替えて重力で落とす。</summary>
@@ -334,6 +440,38 @@ public class BossSniper : MonoBehaviour
     }
 
     // ─── 巡回エリア（多角形）内のランダム位置 ─────────────
+
+    /// <summary>
+    /// 巡回が終わった（AttackTimer が満ちた）ときに向かう先を決める。
+    /// 通常フェーズ: 必ず 全体攻撃 → 分身攻撃 の順。
+    /// 最終フェーズ: 確率（finalPhaseRadialChance）で全体攻撃を挟むか、そのまま分身攻撃かをランダムに（行動を読めなくする）。
+    /// </summary>
+    public IBossSniperState NextAttackAfterPatrol()
+    {
+        bool finalPhase = CurrentPhaseIndex >= phases.Length - 1;
+        if (finalPhase && Random.value >= finalPhaseRadialChance)
+        {
+            return StateSplit;
+        }
+        return StateRadialAttack;
+    }
+
+    /// <summary>ステージ中央＝巡回ポイントの重心（未設定なら初期位置）。全体攻撃の立ち位置。</summary>
+    public Vector2 StageCenter()
+    {
+        Vector2 sum = Vector2.zero;
+        int n = 0;
+        if (patrolPoints != null)
+        {
+            foreach (Transform t in patrolPoints)
+            {
+                if (t == null) continue;
+                sum += (Vector2)t.position;
+                n++;
+            }
+        }
+        return n > 0 ? sum / n : (Vector2)patrolOrigin;
+    }
 
     /// <summary>
     /// 巡回ポイントが作る多角形の内側からランダムな1点を返す（地形に埋まらない位置を優先）。

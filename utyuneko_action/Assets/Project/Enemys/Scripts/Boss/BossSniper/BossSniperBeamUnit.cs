@@ -38,6 +38,9 @@ public class BossSniperBeamUnit : MonoBehaviour
     [Tooltip("レーザーがプレイヤーに与えるダメージ量")]
     public int beamDamage = 1;
 
+    [Tooltip("バースト以外でプレイヤーが本体に接触したとき、プレイヤーに与える接触ダメージ量（本物のみ・偽物は無害）")]
+    public int contactDamage = 1;
+
     [Header("可視化")]
     [Tooltip("射線（照準中）の太さ")]
     public float sightWidth = 0.06f;
@@ -67,6 +70,9 @@ public class BossSniperBeamUnit : MonoBehaviour
     [Tooltip("角度を変える速さ（度/秒）。0以下なら即時に切り替え")]
     public float visualRotationSpeed = 360f;
 
+    [Tooltip("照準方向への傾き（Z回転）の速さ（度/秒）。全ての攻撃（照準・ロック・発射）で銃口が射線の方向を向くときの追従の速さ")]
+    public float tiltRotationSpeed = 720f;
+
     [Header("瞬間移動の収縮演出")]
     [Tooltip("収縮しきったときのXZスケール倍率。0だと描画やスケール復元が壊れることがあるので僅かに残す")]
     public float shrunkenScale = 0.02f;
@@ -88,6 +94,11 @@ public class BossSniperBeamUnit : MonoBehaviour
     private Vector2 lockedDir = Vector2.left; // 現在の照準／固定方向
     private float currentVisualAngle;
     private bool hasVisualAngleInit;
+
+    // 照準方向への傾き（射線の方向に銃口を合わせる）。ビームを出しているフレームだけ有効になり、
+    // 攻撃していない間（巡回移動中など）は滑らかに水平へ戻る
+    private bool aimTiltActive;   // このフレームでビームを出したか（各Tickが立てる）
+    private float currentTilt;
 
     // 収縮演出（XZのみ縮めて縦線状に消える）
     private Vector3 baseScale = Vector3.one;
@@ -137,6 +148,7 @@ public class BossSniperBeamUnit : MonoBehaviour
         targetLayers = src.targetLayers;
         maxBeamLength = src.maxBeamLength;
         beamDamage = src.beamDamage;
+        contactDamage = src.contactDamage;
         sightWidth = src.sightWidth;
         beamWidth = src.beamWidth;
         aimColor = src.aimColor;
@@ -145,6 +157,7 @@ public class BossSniperBeamUnit : MonoBehaviour
         leftAngle = src.leftAngle;
         rightAngle = src.rightAngle;
         visualRotationSpeed = src.visualRotationSpeed;
+        tiltRotationSpeed = src.tiltRotationSpeed;
         shrunkenScale = src.shrunkenScale;
     }
 
@@ -206,6 +219,7 @@ public class BossSniperBeamUnit : MonoBehaviour
         Vector2 d = DirectionToPlayer();
         if (d.sqrMagnitude > 0.0001f) lockedDir = d;
         DrawBeam(lockedDir, aimColor, sightWidth);
+        aimTiltActive = true; // 照準中は銃口を射線方向へ傾ける
         UpdateModelFacing();
     }
 
@@ -213,6 +227,7 @@ public class BossSniperBeamUnit : MonoBehaviour
     public void LockTick()
     {
         DrawBeam(lockedDir, lockColor, sightWidth);
+        aimTiltActive = true; // ロック中も射線方向へ傾ける
         UpdateModelFacing();
     }
 
@@ -221,6 +236,7 @@ public class BossSniperBeamUnit : MonoBehaviour
     {
         DrawBeam(lockedDir, fireColor, beamWidth);
         ApplyBeamDamage();
+        aimTiltActive = true; // 発射中も射線方向へ傾ける
         UpdateModelFacing();
     }
 
@@ -236,6 +252,25 @@ public class BossSniperBeamUnit : MonoBehaviour
         Vector2 d = DirectionToPlayer();
         if (d.sqrMagnitude > 0.0001f) lockedDir = d;
         UpdateModelFacing();
+    }
+
+    /// <summary>
+    /// 指定したワールド座標の方向へ照準を固定する（偏差撃ちなど、プレイヤーの現在位置以外を狙うとき用）。
+    /// 以後 LockTick / FireTick はこの方向を使う（AimTick / FaceTick を呼ぶと上書きされるので注意）。
+    /// </summary>
+    public void SetAimPoint(Vector2 worldPoint)
+    {
+        Vector2 d = worldPoint - FireOrigin();
+        if (d.sqrMagnitude > 0.0001f) lockedDir = d.normalized;
+    }
+
+    /// <summary>
+    /// 指定した方向へ照準を固定する（全体攻撃の回転連射など、角度で狙いを決めるとき用）。
+    /// 以後 LockTick / FireTick はこの方向を使う（AimTick / FaceTick を呼ぶと上書きされるので注意）。
+    /// </summary>
+    public void SetAimDirection(Vector2 dir)
+    {
+        if (dir.sqrMagnitude > 0.0001f) lockedDir = dir.normalized;
     }
 
     // ─── 方向・判定 ──────────────────────────────
@@ -290,15 +325,23 @@ public class BossSniperBeamUnit : MonoBehaviour
 
     private void HandleContact(Collider2D col)
     {
-        if (OnBurstHit == null) return;
-
         PlayerController pc = col.GetComponentInParent<PlayerController>();
         if (pc == null) return;
 
-        // 「バースト状態の体当たり」だけを攻撃として受け付ける
         if (pc.CurrentState == pc.StateBurst)
         {
-            OnBurstHit.Invoke(this, pc);
+            // 「バースト状態の体当たり」は攻撃としてボスのステートへ通知（無敵扱いはステートが判断）
+            if (OnBurstHit != null) OnBurstHit.Invoke(this, pc);
+        }
+        else
+        {
+            // バースト以外で本物に触れたら、プレイヤーがダメージを受ける（偽物は無害）。
+            // スタン中も含めて常に有害。ただし瞬間移動で消えている間は当たり判定自体が無効。
+            if (IsReal && contactDamage > 0)
+            {
+                PlayerHealth hp = col.GetComponentInParent<PlayerHealth>();
+                if (hp != null) hp.TakeDamage(contactDamage);
+            }
         }
     }
 
@@ -324,7 +367,22 @@ public class BossSniperBeamUnit : MonoBehaviour
             currentVisualAngle = target;
         }
 
-        visualTransform.localRotation = Quaternion.Euler(0f, currentVisualAngle, 0f);
+        // 照準方向への傾き（Z回転）。ビームを出しているフレーム（aimTiltActive）だけ射線の角度へ傾け、
+        // 出していない間は 0（水平）へ戻る。右向きなら射線の角度そのまま、
+        // 左向きなら「左（180度）からのずれ」を傾きにする（左右の振り向きと矛盾しないように）
+        float targetTilt = 0f;
+        if (aimTiltActive)
+        {
+            float dirAngle = Mathf.Atan2(lockedDir.y, lockedDir.x) * Mathf.Rad2Deg;
+            targetTilt = lockedDir.x >= 0f ? dirAngle : Mathf.DeltaAngle(180f, dirAngle);
+        }
+        currentTilt = Mathf.MoveTowardsAngle(currentTilt, targetTilt, tiltRotationSpeed * Time.deltaTime);
+
+        // まず左右へ振り向き（Y回転）、その上から射線の角度へ傾ける（画面の回転軸＝Z回転）
+        visualTransform.localRotation =
+            Quaternion.AngleAxis(currentTilt, Vector3.forward) * Quaternion.Euler(0f, currentVisualAngle, 0f);
+
+        aimTiltActive = false; // 毎フレームの終わりに倒す。次フレームも攻撃中なら各Tickが立て直す
     }
 
     private float TargetVisualAngle()
@@ -374,7 +432,7 @@ public class BossSniperBeamUnit : MonoBehaviour
         line.SetPosition(1, origin + dir * len);
     }
 
-    void OnDestroy()
+    private void OnDestroy()
     {
         if (lineMaterial != null) Destroy(lineMaterial);
     }

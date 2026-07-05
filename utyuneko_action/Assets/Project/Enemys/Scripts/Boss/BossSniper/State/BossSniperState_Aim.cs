@@ -31,11 +31,13 @@ public class BossSniperState_Aim : BossSniperStateBase
     {
         if (unit.IsReal)
         {
-            boss.TransitionToState(boss.StateStunFall); // 本物を見破られた！
+            // 本物を見破った：通常ダメージを入れたうえでスタン落下へ（スタン中は倍率一撃のボーナス帯）
+            boss.HandleNormalBurstHit(unit, pc);
+            boss.TransitionToState(boss.StateStunFall);
         }
         else
         {
-            boss.DestroyClone(unit);
+            boss.DestroyClone(unit); // 偽物は消えるだけ
         }
     }
 }

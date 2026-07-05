@@ -2,14 +2,15 @@ using UnityEngine;
 
 /// <summary>
 /// 通常状態：巡回ポイントが作る多角形エリアの内側を、一定間隔でランダムに瞬間移動する。
-/// 攻撃の間隔（timeBetweenAttacks）が満ちたら分身展開（Split）へ。
+/// 瞬間移動のタイミングで、確率（Phase.patrolShotChance）により「出現撃ち」（PatrolShot）に化ける。
+/// 分身攻撃までの残り時間（boss.AttackTimer）が満ちたら分身展開（Split）へ。
+/// AttackTimer はボス側が持つので、出現撃ちを挟んでもリセットされない。
 /// この間ボスは無敵（OnBurstHit を実装していないので、当たっても何も起きない）。
 /// </summary>
 public class BossSniperState_Patrol : BossSniperStateBase
 {
     private readonly BossSniperTeleport teleport = new BossSniperTeleport();
     private float teleportTimer;
-    private float attackTimer;
 
     public override void Enter(BossSniper boss)
     {
@@ -17,7 +18,6 @@ public class BossSniperState_Patrol : BossSniperStateBase
         boss.RestoreFlightBody();
         boss.SelfUnit.HideBeam();
         teleportTimer = boss.teleportInterval;
-        attackTimer = boss.timeBetweenAttacks;
     }
 
     public override void UpdateState()
@@ -31,20 +31,35 @@ public class BossSniperState_Patrol : BossSniperStateBase
             return;
         }
 
-        // 一定間隔でエリア内のランダム位置へ瞬間移動
+        // 分身攻撃の間隔が満ちたら（テレポ中でないときに）次の攻撃へ。
+        // 行き先はフェーズにより異なる：通常は 全体攻撃→分身、最終フェーズは全体攻撃を挟むかランダム
+        boss.AttackTimer -= Time.deltaTime;
+        if (boss.AttackTimer <= 0f)
+        {
+            boss.TransitionToState(boss.NextAttackAfterPatrol());
+            return;
+        }
+
+        // 一定間隔で瞬間移動。確率で「出現撃ち」に化ける（テレポート自体は PatrolShot 側が行う）
         teleportTimer -= Time.deltaTime;
         if (teleportTimer <= 0f)
         {
             teleportTimer = boss.teleportInterval;
-            teleport.Begin(boss.SelfUnit, boss.RandomPatrolPoint(), boss.teleportShrinkTime, boss.teleportExpandTime);
-            return;
-        }
 
-        // 攻撃間隔が満ちたら（テレポ中でないときに）分身展開へ
-        attackTimer -= Time.deltaTime;
-        if (attackTimer <= 0f)
-        {
-            boss.TransitionToState(boss.StateSplit);
+            if (Random.value < boss.Phase.patrolShotChance)
+            {
+                boss.TransitionToState(boss.StatePatrolShot);
+            }
+            else
+            {
+                teleport.Begin(boss.SelfUnit, boss.RandomPatrolPoint(), boss.teleportShrinkTime, boss.teleportExpandTime);
+            }
         }
+    }
+
+    // 巡回中も本物に当てれば通常ダメージ（無敵時間つき）。テレポで消えている間は当たり判定が無効
+    public override void OnBurstHit(BossSniperBeamUnit unit, PlayerController pc)
+    {
+        boss.HandleNormalBurstHit(unit, pc);
     }
 }

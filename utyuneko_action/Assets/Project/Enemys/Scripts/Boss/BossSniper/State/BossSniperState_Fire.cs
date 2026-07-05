@@ -32,4 +32,11 @@ public class BossSniperState_Fire : BossSniperStateBase
             boss.TransitionToState(boss.StateReturn);
         }
     }
+
+    // 発射中も本物に当てれば通常ダメージ（分身展開中なので本物のみ・偽物は消える）
+    public override void OnBurstHit(BossSniperBeamUnit unit, PlayerController pc)
+    {
+        if (unit.IsReal) boss.HandleNormalBurstHit(unit, pc);
+        else boss.DestroyClone(unit);
+    }
 }

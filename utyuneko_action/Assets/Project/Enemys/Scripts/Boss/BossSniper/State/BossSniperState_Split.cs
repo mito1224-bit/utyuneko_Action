@@ -20,6 +20,7 @@ public class BossSniperState_Split : BossSniperStateBase
         // プレイヤー不在・プレハブ未設定なら攻撃できないので巡回へ戻る
         if (boss.Player == null || boss.clonePrefab == null)
         {
+            boss.AttackTimer = boss.timeBetweenAttacks; // すぐ再突入してループしないよう仕切り直す
             boss.TransitionToState(boss.StatePatrol);
             return;
         }
@@ -76,5 +77,13 @@ public class BossSniperState_Split : BossSniperStateBase
             if (u.IsScaleAnimating) return false;
         }
         return true;
+    }
+
+    // 展開中（収縮〜出現）は当たり判定が無効なので実際には当たりにくいが、
+    // 万一当たったら本物のみ通常ダメージ・偽物は消える扱いに統一
+    public override void OnBurstHit(BossSniperBeamUnit unit, PlayerController pc)
+    {
+        if (unit.IsReal) boss.HandleNormalBurstHit(unit, pc);
+        else boss.DestroyClone(unit);
     }
 }

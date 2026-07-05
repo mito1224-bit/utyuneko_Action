@@ -19,6 +19,8 @@ public class BossSniperState_StunFall : BossSniperStateBase
         boss.SelfUnit.HideBeam();
         boss.BeginFallBody(); // Dynamic に切り替えて落下開始（コライダーも有効化される）
 
+        if (boss.Health != null) boss.Health.ResetStunHit(); // このスタンの「倍率一撃」枠をリセット
+
         timer = Mathf.Max(0.5f, boss.stunFallTimeout);
         stillTimer = 0f;
 

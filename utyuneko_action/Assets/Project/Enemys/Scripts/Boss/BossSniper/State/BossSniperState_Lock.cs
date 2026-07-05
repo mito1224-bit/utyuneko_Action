@@ -29,11 +29,13 @@ public class BossSniperState_Lock : BossSniperStateBase
     {
         if (unit.IsReal)
         {
-            boss.TransitionToState(boss.StateStunFall); // 発射直前まで見破りは有効
+            // 発射直前まで見破りは有効。通常ダメージを入れてスタン落下へ
+            boss.HandleNormalBurstHit(unit, pc);
+            boss.TransitionToState(boss.StateStunFall);
         }
         else
         {
-            boss.DestroyClone(unit);
+            boss.DestroyClone(unit); // 偽物は消えるだけ
         }
     }
 }

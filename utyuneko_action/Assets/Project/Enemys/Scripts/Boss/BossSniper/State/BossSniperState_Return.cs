@@ -13,6 +13,7 @@ public class BossSniperState_Return : BossSniperStateBase
         boss.DespawnClones();
         boss.SelfUnit.HideBeam();
         boss.RestoreFlightBody(); // スタン明けなら Dynamic → Kinematic に戻る
+        boss.AttackTimer = boss.timeBetweenAttacks; // 攻撃サイクルの区切り：次の分身攻撃までの時間を補充
 
         teleport.Begin(boss.SelfUnit, boss.RandomPatrolPoint(), boss.teleportShrinkTime, boss.teleportExpandTime);
     }
