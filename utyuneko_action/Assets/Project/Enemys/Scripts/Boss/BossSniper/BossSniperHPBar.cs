@@ -1,50 +1,50 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// ƒ{ƒXƒXƒiƒCƒp[‚ÌHPƒo[UIB
-/// BossSniperHealth ‚ÌƒCƒxƒ“ƒgionHPChanged / onDamaged / onPhaseChangedj‚ğó‚¯æ‚Á‚ÄA
-/// Slider ‚ğ“®‚©‚·‚¾‚¯‚Ì•\¦–ğBHP‚Ì”’lŠÇ—‚Í BossSniperHealth ‚É”C‚¹‚éB
+/// ãƒœã‚¹ã‚¹ãƒŠã‚¤ãƒ‘ãƒ¼ã®HPãƒãƒ¼UIã€‚
+/// BossSniperHealth ã®ã‚¤ãƒ™ãƒ³ãƒˆï¼ˆonHPChanged / onDamagedï¼‰ã‚’å—ã‘å–ã£ã¦ã€
+/// Slider ã‚’å‹•ã‹ã™ã ã‘ã®è¡¨ç¤ºå½¹ã€‚HPã®æ•°å€¤ç®¡ç†ã¯ BossSniperHealth ã«ä»»ã›ã‚‹ã€‚
 ///
-/// •\¦•ûj: uŒ»ƒtƒF[ƒYHP‚¾‚¯v‚ğ‰f‚·iƒtƒF[ƒY‚²‚Æ‚É–ƒ^ƒ“¨ƒ[ƒ‚ğŒJ‚è•Ô‚·jB
-/// onHPChanged ‚Í (Œ»İHP, Œ»ƒtƒF[ƒYÅ‘åHP) ‚ğ“n‚·‚Ì‚ÅAmaxValue ‚à–ˆ‰ñXV‚µ‚Ä
-/// ƒtƒF[ƒY‚ª•Ï‚í‚Á‚ÄHPƒXƒP[ƒ‹‚ª•Ï‚í‚Á‚Ä‚à³‚µ‚­–ƒ^ƒ“•\¦‚É‚È‚éB
+/// è¡¨ç¤ºæ–¹é‡: ã€Œç¾ãƒ•ã‚§ãƒ¼ã‚ºHPã ã‘ã€ã‚’æ˜ ã™ï¼ˆãƒ•ã‚§ãƒ¼ã‚ºã”ã¨ã«æº€ã‚¿ãƒ³â†’ã‚¼ãƒ­ã‚’ç¹°ã‚Šè¿”ã™ï¼‰ã€‚
+/// onHPChanged ã¯ (ç¾åœ¨HP, ç¾ãƒ•ã‚§ãƒ¼ã‚ºæœ€å¤§HP) ã‚’æ¸¡ã™ã®ã§ã€maxValue ã‚‚æ¯å›æ›´æ–°ã—ã¦
+/// ãƒ•ã‚§ãƒ¼ã‚ºãŒå¤‰ã‚ã£ã¦HPã‚¹ã‚±ãƒ¼ãƒ«ãŒå¤‰ã‚ã£ã¦ã‚‚æ­£ã—ãæº€ã‚¿ãƒ³è¡¨ç¤ºã«ãªã‚‹ã€‚
 ///
-/// c‘œƒQ[ƒW:
-///   mainSlideriè‘OEÔj= ‘¦À‚ÉŒ»İHP‚ÖB
-///   subSlideri‰œE”’j  = ’x‚ê‚Ä’Ç]BŒ¸‚Á‚½uŠÔ‚¾‚¯·•ª‚ª”’‚­Œ©‚¦‚Äƒ_ƒ[ƒW—Ê‚ª“`‚í‚éB
+/// æ®‹åƒã‚²ãƒ¼ã‚¸:
+///   mainSliderï¼ˆæ‰‹å‰ãƒ»èµ¤ï¼‰= å³åº§ã«ç¾åœ¨HPã¸ã€‚
+///   subSliderï¼ˆå¥¥ãƒ»ç™½ï¼‰  = é…ã‚Œã¦è¿½å¾“ã€‚æ¸›ã£ãŸç¬é–“ã ã‘å·®åˆ†ãŒç™½ãè¦‹ãˆã¦ãƒ€ãƒ¡ãƒ¼ã‚¸é‡ãŒä¼ã‚ã‚‹ã€‚
 ///
-/// ƒZƒbƒgƒAƒbƒv:
-///   1. Canvas > Slider ‚ğ2‚Âd‚Ë‚Ä’u‚­i‰œ=sub/”’Aè‘O=main/ÔjBInteractable ‚ÍƒIƒtAƒnƒ“ƒhƒ‹‚Ííœ„§B
-///   2. ‚±‚ÌƒXƒNƒŠƒvƒg‚ğ Canvas “à‚Ì“K“–‚ÈƒIƒuƒWƒFƒNƒg‚É•t‚¯AmainSlider / subSlider ‚ğŠ„‚è“–‚Ä‚éB
-///   3. ƒ{ƒX‚Ì BossSniperHealth ‚ğ bossHealth ‚ÉŠ„‚è“–‚Ä‚éi–¢Š„‚è“–‚Ä‚È‚çÀs‚ÉƒV[ƒ“‚©‚ç’T‚·jB
+/// ã‚»ãƒƒãƒˆã‚¢ãƒƒãƒ—:
+///   1. Canvas > Slider ã‚’2ã¤é‡ã­ã¦ç½®ãï¼ˆå¥¥=sub/ç™½ã€æ‰‹å‰=main/èµ¤ï¼‰ã€‚Interactable ã¯ã‚ªãƒ•ã€ãƒãƒ³ãƒ‰ãƒ«ã¯å‰Šé™¤æ¨å¥¨ã€‚
+///   2. ã“ã®ã‚¹ã‚¯ãƒªãƒ—ãƒˆã‚’ Canvas å†…ã®é©å½“ãªã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã«ä»˜ã‘ã€mainSlider / subSlider ã‚’å‰²ã‚Šå½“ã¦ã‚‹ã€‚
+///   3. ãƒœã‚¹ã® BossSniperHealth ã‚’ bossHealth ã«å‰²ã‚Šå½“ã¦ã‚‹ï¼ˆæœªå‰²ã‚Šå½“ã¦ãªã‚‰å®Ÿè¡Œæ™‚ã«ã‚·ãƒ¼ãƒ³ã‹ã‚‰æ¢ã™ï¼‰ã€‚
 ///
-/// ƒCƒxƒ“ƒg‚ÍƒR[ƒh‘¤‚Å©“®w“Ç‚·‚é‚Ì‚ÅAƒCƒ“ƒXƒyƒNƒ^[‚Å‚Ìè“®”zü‚Í•s—vB
+/// ã‚¤ãƒ™ãƒ³ãƒˆã¯ã‚³ãƒ¼ãƒ‰å´ã§è‡ªå‹•è³¼èª­ã™ã‚‹ã®ã§ã€ã‚¤ãƒ³ã‚¹ãƒšã‚¯ã‚¿ãƒ¼ã§ã®æ‰‹å‹•é…ç·šã¯ä¸è¦ã€‚
 /// </summary>
 public class BossSniperHPBar : MonoBehaviour
 {
-    [Header("QÆ")]
-    [Tooltip("•\¦‘ÎÛ‚Ìƒ{ƒXHPB–¢Š„‚è“–‚Ä‚È‚çÀs‚ÉƒV[ƒ“‚©‚ç’T‚·")]
+    [Header("å‚ç…§")]
+    [Tooltip("è¡¨ç¤ºå¯¾è±¡ã®ãƒœã‚¹HPã€‚æœªå‰²ã‚Šå½“ã¦ãªã‚‰å®Ÿè¡Œæ™‚ã«ã‚·ãƒ¼ãƒ³ã‹ã‚‰æ¢ã™")]
     public BossSniperHealth bossHealth;
 
-    [Header("ƒQ[ƒW")]
-    [Tooltip("è‘OEÔB‘¦À‚ÉŒ»İHP‚Ö“®‚­")]
+    [Header("ã‚²ãƒ¼ã‚¸")]
+    [Tooltip("æ‰‹å‰ãƒ»èµ¤ã€‚å³åº§ã«ç¾åœ¨HPã¸å‹•ã")]
     public Slider mainSlider;
 
-    [Tooltip("‰œE”’B’x‚ê‚Ä’Ç]‚·‚éc‘œƒQ[ƒWi–³‚¯‚ê‚Îc‘œ‚È‚µ‚Å‚à“®‚­j")]
+    [Tooltip("å¥¥ãƒ»ç™½ã€‚é…ã‚Œã¦è¿½å¾“ã™ã‚‹æ®‹åƒã‚²ãƒ¼ã‚¸ï¼ˆç„¡ã‘ã‚Œã°æ®‹åƒãªã—ã§ã‚‚å‹•ãï¼‰")]
     public Slider subSlider;
 
-    [Header("‰‰o")]
-    [Tooltip("c‘œi”’j‚ªŒ»İHP‚Ö’Ç‚¢‚Â‚­‘¬‚³")]
+    [Header("æ¼”å‡º")]
+    [Tooltip("æ®‹åƒï¼ˆç™½ï¼‰ãŒç¾åœ¨HPã¸è¿½ã„ã¤ãé€Ÿã•")]
     public float subFollowSpeed = 3f;
 
-    [Tooltip("”í’e‚ÉŒy‚­ƒo[‚ğ—h‚ç‚·‹­‚³iƒsƒNƒZƒ‹jB0‚Å–³Œø")]
+    [Tooltip("è¢«å¼¾æ™‚ã«è»½ããƒãƒ¼ã‚’æºã‚‰ã™å¼·ã•ï¼ˆãƒ”ã‚¯ã‚»ãƒ«ï¼‰ã€‚0ã§ç„¡åŠ¹")]
     public float shakeStrength = 8f;
 
-    [Tooltip("”í’e‚Ì—h‚ê‚ÌŠÔi•bj")]
+    [Tooltip("è¢«å¼¾æ™‚ã®æºã‚Œã®æ™‚é–“ï¼ˆç§’ï¼‰")]
     public float shakeDuration = 0.15f;
 
-    private RectTransform shakeTarget;   // —h‚ç‚·‘ÎÛi‚±‚ÌƒIƒuƒWƒFƒNƒg‚ÌRectj
+    private RectTransform shakeTarget;   // æºã‚‰ã™å¯¾è±¡ï¼ˆã“ã®ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã®Rectï¼‰
     private Vector2 shakeHomePos;
     private float shakeTimer;
 
@@ -56,7 +56,7 @@ public class BossSniperHPBar : MonoBehaviour
 
     void OnEnable()
     {
-        // QÆ‚ª–³‚¯‚ê‚ÎƒV[ƒ“‚©‚ç’T‚·
+        // å‚ç…§ãŒç„¡ã‘ã‚Œã°ã‚·ãƒ¼ãƒ³ã‹ã‚‰æ¢ã™
         if (bossHealth == null)
         {
 #if UNITY_2023_1_OR_NEWER
@@ -67,7 +67,7 @@ public class BossSniperHPBar : MonoBehaviour
         }
         Subscribe(true);
 
-        // Šù‚É‰Šú‰»Ï‚İ‚È‚çŒ»İ’l‚ğ”½‰f
+        // æ—¢ã«åˆæœŸåŒ–æ¸ˆã¿ãªã‚‰ç¾åœ¨å€¤ã‚’åæ˜ 
         if (bossHealth != null && bossHealth.MaxHP > 0f)
         {
             SetImmediate(bossHealth.CurrentHP, bossHealth.MaxHP);
@@ -86,26 +86,24 @@ public class BossSniperHPBar : MonoBehaviour
         {
             bossHealth.onHPChanged.AddListener(OnHPChanged);
             bossHealth.onDamaged.AddListener(OnDamaged);
-            bossHealth.onPhaseChanged.AddListener(OnPhaseChanged);
         }
         else
         {
             bossHealth.onHPChanged.RemoveListener(OnHPChanged);
             bossHealth.onDamaged.RemoveListener(OnDamaged);
-            bossHealth.onPhaseChanged.RemoveListener(OnPhaseChanged);
         }
     }
 
     void Update()
     {
-        // c‘œƒQ[ƒW‚Ì’Ç]iunscaled ‚ÅƒXƒ[‰‰o’†‚àÀŠÔ‚Å“®‚­j
+        // æ®‹åƒã‚²ãƒ¼ã‚¸ã®è¿½å¾“ï¼ˆunscaled ã§ã‚¹ãƒ­ãƒ¼æ¼”å‡ºä¸­ã‚‚å®Ÿæ™‚é–“ã§å‹•ãï¼‰
         if (subSlider != null && mainSlider != null && subSlider.value > mainSlider.value)
         {
             subSlider.value = Mathf.Lerp(subSlider.value, mainSlider.value, Time.unscaledDeltaTime * subFollowSpeed);
             if (subSlider.value - mainSlider.value < 0.01f) subSlider.value = mainSlider.value;
         }
 
-        // ”í’eƒVƒFƒCƒN
+        // è¢«å¼¾ã‚·ã‚§ã‚¤ã‚¯
         if (shakeTimer > 0f && shakeTarget != null)
         {
             shakeTimer -= Time.unscaledDeltaTime;
@@ -121,9 +119,9 @@ public class BossSniperHPBar : MonoBehaviour
         }
     }
 
-    // „Ÿ„Ÿ„Ÿ ƒCƒxƒ“ƒgƒnƒ“ƒhƒ‰ „Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ
+    // â”€â”€â”€ ã‚¤ãƒ™ãƒ³ãƒˆãƒãƒ³ãƒ‰ãƒ© â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-    // Œ»İHP‚ª•Ï‚í‚Á‚½FÔ‚ğ‘¦’Ç]BÅ‘åHP‚àXV‚µ‚ÄuŒ»ƒtƒF[ƒYHP‚¾‚¯v‚ğ‰f‚·
+    // ç¾åœ¨HPãŒå¤‰ã‚ã£ãŸï¼šèµ¤ã‚’å³è¿½å¾“ã€‚æœ€å¤§HPã‚‚æ›´æ–°ã—ã¦ã€Œç¾ãƒ•ã‚§ãƒ¼ã‚ºHPã ã‘ã€ã‚’æ˜ ã™
     private void OnHPChanged(float current, float max)
     {
         if (mainSlider != null)
@@ -134,21 +132,15 @@ public class BossSniperHPBar : MonoBehaviour
         if (subSlider != null)
         {
             subSlider.maxValue = max;
-            // c‘œ‚Í’Ç]‚É”C‚¹‚éB‚½‚¾‚µ‘‰ÁiƒtƒF[ƒYØ‘Ö‚Å–ƒ^ƒ“‰»j‚Í‘¦”½‰f‚µ‚Ä”’c‚è‚ğ–h‚®
+            // æ®‹åƒã¯è¿½å¾“ã«ä»»ã›ã‚‹ã€‚ãŸã ã—å¢—åŠ ï¼ˆãƒ•ã‚§ãƒ¼ã‚ºåˆ‡æ›¿ã§æº€ã‚¿ãƒ³åŒ–ï¼‰ã¯å³åæ˜ ã—ã¦ç™½æ®‹ã‚Šã‚’é˜²ã
             if (current >= subSlider.value) subSlider.value = current;
         }
     }
 
-    // ”í’eFƒo[‚ğŒy‚­—h‚ç‚·
+    // è¢«å¼¾ï¼šãƒãƒ¼ã‚’è»½ãæºã‚‰ã™
     private void OnDamaged(float damage)
     {
         if (shakeStrength > 0f) shakeTimer = shakeDuration;
-    }
-
-    // ƒtƒF[ƒYØ‘ÖFŸƒtƒF[ƒY‚ÌHP‚Å–ƒ^ƒ“‚É‚µ’¼‚·ic‘œ‚à‘¦–ƒ^ƒ“‚É‚µ‚Ä”’c‚è‚ğÁ‚·j
-    private void OnPhaseChanged(int phaseIndex, float max)
-    {
-        SetImmediate(max, max);
     }
 
     private void SetImmediate(float current, float max)

@@ -11,7 +11,7 @@ public class BossSniperState_Fire : BossSniperStateBase
     public override void Enter(BossSniper boss)
     {
         base.Enter(boss);
-        timer = Mathf.Max(0f, boss.Phase.fireDuration);
+        timer = Mathf.Max(0f, boss.Difficulty.fireDuration);
 
         // fireDuration=0 でも最低1回は判定
         foreach (BossSniperBeamUnit u in boss.Units)
@@ -37,6 +37,6 @@ public class BossSniperState_Fire : BossSniperStateBase
     public override void OnBurstHit(BossSniperBeamUnit unit, PlayerController pc)
     {
         if (unit.IsReal) boss.HandleNormalBurstHit(unit, pc);
-        else boss.DestroyClone(unit);
+        else boss.DestroyClone(unit, pc);
     }
 }

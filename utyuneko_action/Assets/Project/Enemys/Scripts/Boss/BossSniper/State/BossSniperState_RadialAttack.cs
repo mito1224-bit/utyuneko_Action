@@ -1,23 +1,23 @@
-using System.Collections.Generic;
+п»їusing System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// ‘S‘МЌUЊ‚ЃFѓXѓeЃ[ѓW’†‰›ЃiЏ„‰сѓ|ѓCѓ“ѓg‚МЏdђSЃj‚ЦЏuЉФ€Ъ“®‚µЃA
-/// —­‚ЯЃiЏ‰’e‚МѓЌѓbѓNЋЛђь‚р’сЋ¦Ѓj‚р‹І‚с‚Е‚©‚зЃA‰с“]‚µ‚И‚Є‚зЋl•ы”Є•ы‚Ц1–{‚ё‚ВѓXѓiѓCѓpЃ[AЋЛ‚·‚йЃB
-///   ЏuЉФ€Ъ“® ЃЁ —­‚ЯЃiЏ‰’e‚МЋЛђь‚рђФ‚­’сЋ¦Ѓj ЃЁ [ѓЌѓbѓNЃiђФ‚ўЋЛђьЃj ЃЁ ѓЊЃ[ѓUЃ[] ‚рЊJ‚и•Ф‚µ ЃЁ •ЄђgЌUЊ‚‚ЦЃB
+/// е…ЁдЅ“ж”»ж’ѓпјљг‚№гѓ†гѓјг‚ёдё­е¤®пј€е·Ўе›ћгѓќг‚¤гѓігѓ€гЃ®й‡Ќеїѓпј‰гЃёзћ¬й–“з§»е‹•гЃ—гЂЃ
+/// жєњг‚Ѓпј€е€ќејѕгЃ®гѓ­гѓѓг‚Їе°„з·љг‚’жЏђз¤єпј‰г‚’жЊџг‚“гЃ§гЃ‹г‚‰гЂЃе›ћи»ўгЃ—гЃЄгЃЊг‚‰е››ж–№е…«ж–№гЃё1жњ¬гЃљгЃ¤г‚№гѓЉг‚¤гѓ‘гѓјйЂЈе°„гЃ™г‚‹гЂ‚
+///   зћ¬й–“з§»е‹• в†’ жєњг‚Ѓпј€е€ќејѕгЃ®е°„з·љг‚’иµ¤гЃЏжЏђз¤єпј‰ в†’ [гѓ­гѓѓг‚Їпј€иµ¤гЃ„е°„з·љпј‰ в†’ гѓ¬гѓјг‚¶гѓј] г‚’з№°г‚Љиї”гЃ— в†’ е€†иє«ж”»ж’ѓгЃёгЂ‚
 ///
-/// ‰с“]‚МЋd•ы:
-///   - Џ‰’e‚НѓvѓЊѓCѓ„Ѓ[‚М•ыЊь‚р‘_‚¤ЃB‰с“]•ыЊь‚НЃuѓvѓЊѓCѓ„Ѓ[‚Й‹Я‚ў‘¤‚©‚з‰с‚иЌћ‚ЮЃv‚ж‚¤‚Й‘I‚Ф
-///     ЃiЏ‰’e‚МЋџ‚ЄѓvѓЊѓCѓ„Ѓ[ђі–К‚р‚И‚ј‚йЊь‚«ЃjЃB
-///   - 1”­‚І‚Ж‚Й radialAngleStep “x‚ё‚В‰с“]‚·‚йЃB‘S’e‚МЋЛЉp‚Н Enter ‚Еђж‚ЙЊ€‚Я‚Д‚Ё‚­ЃB
+/// е›ћи»ўгЃ®д»•ж–№:
+///   - е€ќејѕгЃЇгѓ—гѓ¬г‚¤гѓ¤гѓјгЃ®ж–№еђ‘г‚’з‹™гЃ†гЂ‚е›ћи»ўж–№еђ‘гЃЇгЂЊгѓ—гѓ¬г‚¤гѓ¤гѓјгЃ«иї‘гЃ„еЃґгЃ‹г‚‰е›ћг‚Љиѕјг‚ЂгЂЌг‚€гЃ†гЃ«йЃёгЃ¶
+///     пј€е€ќејѕгЃ®ж¬ЎгЃЊгѓ—гѓ¬г‚¤гѓ¤гѓјж­Јйќўг‚’гЃЄгЃћг‚‹еђ‘гЃЌпј‰гЂ‚
+///   - 1з™єгЃ”гЃЁгЃ« radialAngleStep еє¦гЃљгЃ¤е›ћи»ўгЃ™г‚‹гЂ‚е…ЁејѕгЃ®е°„и§’гЃЇ Enter гЃ§е…€гЃ«ж±єг‚ЃгЃ¦гЃЉгЃЏгЂ‚
 ///
-/// —­‚ЯЃiradialWindupTimeЃE‘SѓtѓFЃ[ѓY‹¤’КЃj:
-///   - ’†‰›“ћ’…ЊгЃAЏ‰’e‚МѓЌѓbѓNЋЛђьЃiђФЃEЌЧЃj‚рЏo‚µ‚Ѕ‚Ь‚Ь‘Т‚їЃAѓvѓЊѓCѓ„Ѓ[‚Й”р‚Ї‚йЏЂ”х‚р‚і‚№‚йЃB
-///   - —\ЌђђьЃiђж“З‚Э‚М•Ўђ”ђьЃj‚НЋg‚н‚И‚ўЃB•\Ћ¦‚·‚й‚М‚НЏн‚ЙЃuЌЎ‚Ь‚і‚Й‘_‚Б‚Д‚ў‚й1–{Ѓv‚ѕ‚ЇЃB
+/// жєњг‚Ѓпј€radialWindupTimeгѓ»е…Ёгѓ•г‚§гѓјг‚єе…±йЂљпј‰:
+///   - дё­е¤®е€°зќЂеѕЊгЂЃе€ќејѕгЃ®гѓ­гѓѓг‚Їе°„з·љпј€иµ¤гѓ»зґ°пј‰г‚’е‡єгЃ—гЃџгЃѕгЃѕеѕ…гЃЎгЂЃгѓ—гѓ¬г‚¤гѓ¤гѓјгЃ«йЃїгЃ‘г‚‹жє–е‚™г‚’гЃ•гЃ›г‚‹гЂ‚
+///   - дє€е‘Љз·љпј€е…€иЄ­гЃїгЃ®и¤‡ж•°з·љпј‰гЃЇдЅїг‚ЏгЃЄгЃ„гЂ‚иЎЁз¤єгЃ™г‚‹гЃ®гЃЇеёёгЃ«гЂЊд»ЉгЃѕгЃ•гЃ«з‹™гЃЈгЃ¦гЃ„г‚‹1жњ¬гЂЌгЃ гЃ‘гЂ‚
 ///
-/// ”­ЋЛ‰сђ”ЃEѓЌѓbѓNЋћЉФ‚НѓtѓFЃ[ѓYђЭ’иЃiPhase.radialShotCount / radialLockTimeЃj‚ЕѓXѓPЃ[ѓ‹ЃB
+/// з™єе°„е›ћж•°гѓ»гѓ­гѓѓг‚Їж™‚й–“гЃЇгѓ•г‚§гѓјг‚єиЁ­е®љпј€Phase.radialShotCount / radialLockTimeпј‰гЃ§г‚№г‚±гѓјгѓ«гЂ‚
 ///
-/// ЊЎђ§ѓtѓFЃ[ѓY‚М€к•”‚И‚М‚ЕЃA‚±‚МЉФ‚аѓ{ѓX‚Н–і“GЃiOnBurstHit ‚рЋА‘•‚µ‚Д‚ў‚И‚ўЃjЃB
+/// з‰Ѕе€¶гѓ•г‚§гѓјг‚єгЃ®дёЂйѓЁгЃЄгЃ®гЃ§гЂЃгЃ“гЃ®й–“г‚‚гѓњг‚№гЃЇз„Ўж•µпј€OnBurstHit г‚’е®џиЈ…гЃ—гЃ¦гЃ„гЃЄгЃ„пј‰гЂ‚
 /// </summary>
 public class BossSniperState_RadialAttack : BossSniperStateBase
 {
@@ -26,24 +26,24 @@ public class BossSniperState_RadialAttack : BossSniperStateBase
 
     private readonly BossSniperTeleport teleport = new BossSniperTeleport();
 
-    private List<Vector2> shotDirs;   // ‘S’e‚МЋЛђь•ыЊьЃiЊ‚‚ВЏ‡ЃjЃBEnter ‚ЕЉm’и
-    private int shotIndex;            // Ћџ‚ЙЊ‚‚В’e‚МѓCѓ“ѓfѓbѓNѓX
+    private List<Vector2> shotDirs;   // е…ЁејѕгЃ®е°„з·љж–№еђ‘пј€ж’ѓгЃ¤й †пј‰гЂ‚Enter гЃ§зўєе®љ
+    private int shotIndex;            // ж¬ЎгЃ«ж’ѓгЃ¤ејѕгЃ®г‚¤гѓігѓ‡гѓѓг‚Їг‚№
 
     public override void Enter(BossSniper boss)
     {
         base.Enter(boss);
 
-        int count = Mathf.Max(1, boss.Phase.radialShotCount);
+        int count = Mathf.Max(1, boss.Difficulty.radialShotCount);
         float stepMag = boss.radialAngleStep;
 
-        // Џ‰’e‚НѓvѓЊѓCѓ„Ѓ[•ыЊьЃB’†‰›Ѓi”­ЋЛЊґ“_Ѓj‚©‚зЊ©‚ЅѓvѓЊѓCѓ„Ѓ[‚МЉp“x‚рЏ‰’e‚МЋЛЉp‚Й‚·‚й
+        // е€ќејѕгЃЇгѓ—гѓ¬г‚¤гѓ¤гѓјж–№еђ‘гЂ‚дё­е¤®пј€з™єе°„еЋџз‚№пј‰гЃ‹г‚‰и¦‹гЃџгѓ—гѓ¬г‚¤гѓ¤гѓјгЃ®и§’еє¦г‚’е€ќејѕгЃ®е°„и§’гЃ«гЃ™г‚‹
         Vector2 origin = boss.StageCenter();
         Vector2 toPlayer = boss.Player != null ? ((Vector2)boss.Player.position - origin) : Vector2.right;
         float startAngle = Mathf.Atan2(toPlayer.y, toPlayer.x) * Mathf.Rad2Deg;
 
-        // ‰с“]•ыЊь‚НЃuѓvѓЊѓCѓ„Ѓ[‚Й‹Я‚ў‘¤‚©‚з‰с‚иЌћ‚ЮЃvЊь‚«ЃB
-        // = Џ‰’eЃiѓvѓЊѓCѓ„Ѓ[ђі–КЃj‚МЃgЋџ‚М’eЃh‚ЄѓvѓЊѓCѓ„Ѓ[‚ЦЉс‚Б‚Д‚ў‚­‰с‚и•ы‚р‘I‚ФЃB
-        // ѓvѓЊѓCѓ„Ѓ[‚МЌ¶‰E‚З‚ї‚з‚Ц‰с‚й‚©‚НЃAѓvѓЊѓCѓ„Ѓ[‘¬“x‚М‰Ўђ¬•Є‚ЕЊ€‚Я‚йЃiЋ~‚Ь‚Б‚Д‚ў‚к‚Оѓ‰ѓ“ѓ_ѓЂЃjЃB
+        // е›ћи»ўж–№еђ‘гЃЇгЂЊгѓ—гѓ¬г‚¤гѓ¤гѓјгЃ«иї‘гЃ„еЃґгЃ‹г‚‰е›ћг‚Љиѕјг‚ЂгЂЌеђ‘гЃЌгЂ‚
+        // = е€ќејѕпј€гѓ—гѓ¬г‚¤гѓ¤гѓјж­Јйќўпј‰гЃ®вЂњж¬ЎгЃ®ејѕвЂќгЃЊгѓ—гѓ¬г‚¤гѓ¤гѓјгЃёеЇ„гЃЈгЃ¦гЃ„гЃЏе›ћг‚Љж–№г‚’йЃёгЃ¶гЂ‚
+        // гѓ—гѓ¬г‚¤гѓ¤гѓјгЃ®е·¦еЏігЃ©гЃЎг‚‰гЃёе›ћг‚‹гЃ‹гЃЇгЂЃгѓ—гѓ¬г‚¤гѓ¤гѓјйЂџеє¦гЃ®жЁЄж€ђе€†гЃ§ж±єг‚Ѓг‚‹пј€ж­ўгЃѕгЃЈгЃ¦гЃ„г‚ЊгЃ°гѓ©гѓігѓЂгѓ пј‰гЂ‚
         float sign = PickRotationSign(boss, origin, toPlayer);
         float stepDeg = stepMag * sign;
 
@@ -61,11 +61,11 @@ public class BossSniperState_RadialAttack : BossSniperStateBase
         teleport.Begin(boss.SelfUnit, origin, boss.teleportShrinkTime, boss.teleportExpandTime);
     }
 
-    // ‰с“]•ыЊьЃi+1/-1Ѓj‚рЃuѓvѓЊѓCѓ„Ѓ[‚Й‹Я‚ў‘¤‚©‚зЃv‚МЉП“_‚Е‘I‚Ф
+    // е›ћи»ўж–№еђ‘пј€+1/-1пј‰г‚’гЂЊгѓ—гѓ¬г‚¤гѓ¤гѓјгЃ«иї‘гЃ„еЃґгЃ‹г‚‰гЂЌгЃ®и¦із‚№гЃ§йЃёгЃ¶
     private float PickRotationSign(BossSniper boss, Vector2 origin, Vector2 toPlayer)
     {
-        // ѓvѓЊѓCѓ„Ѓ[‚Є“®‚ў‚Д‚ў‚й‚И‚зЃAђiЌs•ыЊь‚р’З‚ў‚©‚Ї‚йЊь‚«‚Й‰с‚йЃi‹Я‚ў‘¤‚рдr‚Я‘±‚Ї‚йЃjЃB
-        // toPlayer ‚Ж player‘¬“x ‚МЉOђП(z)•„Ќ†‚ЕЃAЋћЊv‰с‚и/”ЅЋћЊv‰с‚и‚рЊ€‚Я‚йЃB
+        // гѓ—гѓ¬г‚¤гѓ¤гѓјгЃЊе‹•гЃ„гЃ¦гЃ„г‚‹гЃЄг‚‰гЂЃйЂІиЎЊж–№еђ‘г‚’иїЅгЃ„гЃ‹гЃ‘г‚‹еђ‘гЃЌгЃ«е›ћг‚‹пј€иї‘гЃ„еЃґг‚’и€ђг‚Ѓз¶љгЃ‘г‚‹пј‰гЂ‚
+        // toPlayer гЃЁ playerйЂџеє¦ гЃ®е¤–з©Ќ(z)з¬¦еЏ·гЃ§гЂЃж™‚иЁ€е›ћг‚Љ/еЏЌж™‚иЁ€е›ћг‚Љг‚’ж±єг‚Ѓг‚‹гЂ‚
         if (boss.PlayerRb != null)
         {
             Vector2 v = boss.PlayerRb.linearVelocity;
@@ -75,7 +75,7 @@ public class BossSniperState_RadialAttack : BossSniperStateBase
                 if (Mathf.Abs(cross) > 0.0001f) return Mathf.Sign(cross);
             }
         }
-        return Random.value < 0.5f ? 1f : -1f; // Ћ~‚Ь‚Б‚Д‚ў‚к‚ОЌ¶‰Eѓ‰ѓ“ѓ_ѓЂ
+        return Random.value < 0.5f ? 1f : -1f; // ж­ўгЃѕгЃЈгЃ¦гЃ„г‚ЊгЃ°е·¦еЏігѓ©гѓігѓЂгѓ 
     }
 
     public override void UpdateState()
@@ -86,7 +86,7 @@ public class BossSniperState_RadialAttack : BossSniperStateBase
                 teleport.Update();
                 if (!teleport.Running)
                 {
-                    // ЏoЊ»‚µ‚Ѕ‚з—­‚Я‚ЦЃBЏ‰’e‚МЋЛђь‚рЊЕ’и‚µ‚ДѓЌѓbѓNЋЛђь‚рЏo‚µ‚Д‚Ё‚­
+                    // е‡єзЏѕгЃ—гЃџг‚‰жєњг‚ЃгЃёгЂ‚е€ќејѕгЃ®е°„з·љг‚’е›єе®љгЃ—гЃ¦гѓ­гѓѓг‚Їе°„з·љг‚’е‡єгЃ—гЃ¦гЃЉгЃЏ
                     boss.SelfUnit.SetAimDirection(shotDirs[shotIndex]);
                     step = Step.Windup;
                     timer = Mathf.Max(0f, boss.radialWindupTime);
@@ -94,7 +94,7 @@ public class BossSniperState_RadialAttack : BossSniperStateBase
                 break;
 
             case Step.Windup:
-                boss.SelfUnit.LockTick(); // —­‚Я’†‚НЏ‰’e‚МѓЌѓbѓNЋЛђьЃiђФЃEЌЧЃj‚рЏo‚µ‚Д‘Т‚В
+                boss.SelfUnit.LockTick(); // жєњг‚Ѓдё­гЃЇе€ќејѕгЃ®гѓ­гѓѓг‚Їе°„з·љпј€иµ¤гѓ»зґ°пј‰г‚’е‡єгЃ—гЃ¦еѕ…гЃ¤
                 if (Countdown())
                 {
                     step = Step.Firing;
@@ -109,7 +109,7 @@ public class BossSniperState_RadialAttack : BossSniperStateBase
                 {
                     step = Step.Firing;
                     timer = Mathf.Max(0f, boss.radialFireDuration);
-                    boss.SelfUnit.FireTick(); // fireDuration=0 ‚Е‚аЌЕ’б1‰с‚Н”»’и
+                    boss.SelfUnit.FireTick(); // fireDuration=0 гЃ§г‚‚жњЂдЅЋ1е›ћгЃЇе€¤е®љ
                 }
                 break;
 
@@ -120,23 +120,23 @@ public class BossSniperState_RadialAttack : BossSniperStateBase
                     shotIndex++;
                     if (shotIndex < shotDirs.Count)
                     {
-                        BeginLock(); // ‰с“]‚µ‚ДЋџ’e‚Ц
+                        BeginLock(); // е›ћи»ўгЃ—гЃ¦ж¬ЎејѕгЃё
                     }
                     else
                     {
-                        boss.TransitionToState(boss.StateSplit); // Њ‚‚їђШ‚Б‚Ѕ‚з–{–Ѕ‚М•ЄђgЌUЊ‚‚Ц
+                        boss.TransitionToState(boss.StateSplit); // ж’ѓгЃЎе€‡гЃЈгЃџг‚‰жњ¬е‘ЅгЃ®е€†иє«ж”»ж’ѓгЃё
                     }
                 }
                 break;
         }
     }
 
-    // Ћџ‚ЙЊ‚‚В’e‚МЋЛђь‚ЕѓЌѓbѓNЉJЋn
+    // ж¬ЎгЃ«ж’ѓгЃ¤ејѕгЃ®е°„з·љгЃ§гѓ­гѓѓг‚Їй–‹е§‹
     private void BeginLock()
     {
         boss.SelfUnit.SetAimDirection(shotDirs[shotIndex]);
         step = Step.Locking;
-        timer = Mathf.Max(0.05f, boss.Phase.radialLockTime);
+        timer = Mathf.Max(0.05f, boss.Difficulty.radialLockTime);
     }
 
     public override void Exit()
@@ -144,7 +144,7 @@ public class BossSniperState_RadialAttack : BossSniperStateBase
         boss.SelfUnit.HideBeam();
     }
 
-    // ‘S‘МЌUЊ‚’†‚а–{•Ё‚Й“–‚Д‚к‚О’КЏнѓ_ѓЃЃ[ѓWЃi–і“GЋћЉФ‚В‚«Ѓj
+    // е…ЁдЅ“ж”»ж’ѓдё­г‚‚жњ¬з‰©гЃ«еЅ“гЃ¦г‚ЊгЃ°йЂљеёёгѓЂгѓЎгѓјг‚ёпј€з„Ўж•µж™‚й–“гЃ¤гЃЌпј‰
     public override void OnBurstHit(BossSniperBeamUnit unit, PlayerController pc)
     {
         boss.HandleNormalBurstHit(unit, pc);

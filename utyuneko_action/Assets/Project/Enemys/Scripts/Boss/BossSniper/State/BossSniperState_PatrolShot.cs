@@ -33,7 +33,7 @@ public class BossSniperState_PatrolShot : BossSniperStateBase
             return;
         }
 
-        shotsRemaining = Mathf.Max(1, boss.Phase.patrolShotCount);
+        shotsRemaining = Mathf.Max(1, boss.Difficulty.patrolShotCount);
 
         step = Step.Teleporting;
         teleport.Begin(boss.SelfUnit, boss.RandomPatrolPoint(), boss.teleportShrinkTime, boss.teleportExpandTime);
@@ -96,7 +96,7 @@ public class BossSniperState_PatrolShot : BossSniperStateBase
         boss.SelfUnit.SetAimPoint(aimPoint);
 
         step = Step.Locking;
-        timer = Mathf.Max(0.05f, boss.Phase.patrolShotLockTime);
+        timer = Mathf.Max(0.05f, boss.Difficulty.patrolShotLockTime);
     }
 
     public override void Exit()

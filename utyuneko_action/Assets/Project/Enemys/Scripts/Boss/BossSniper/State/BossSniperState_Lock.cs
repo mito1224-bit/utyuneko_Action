@@ -9,7 +9,7 @@ public class BossSniperState_Lock : BossSniperStateBase
     public override void Enter(BossSniper boss)
     {
         base.Enter(boss);
-        timer = Mathf.Max(0f, boss.Phase.lockTime);
+        timer = Mathf.Max(0f, boss.Difficulty.lockTime);
     }
 
     public override void UpdateState()
@@ -35,7 +35,7 @@ public class BossSniperState_Lock : BossSniperStateBase
         }
         else
         {
-            boss.DestroyClone(unit); // 偽物は消えるだけ
+            boss.DestroyClone(unit, pc); // 偽物は消えるだけ
         }
     }
 }

@@ -46,7 +46,7 @@ public class BossSniperState_Patrol : BossSniperStateBase
         {
             teleportTimer = boss.teleportInterval;
 
-            if (Random.value < boss.Phase.patrolShotChance)
+            if (Random.value < boss.Difficulty.patrolShotChance)
             {
                 boss.TransitionToState(boss.StatePatrolShot);
             }

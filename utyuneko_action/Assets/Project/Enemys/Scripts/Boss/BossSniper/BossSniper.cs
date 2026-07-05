@@ -12,16 +12,22 @@ using UnityEngine.Events;
 ///                   偏差撃ち／直撃狙いが混ざる牽制。撃ち終えたら Patrol へ戻る）
 ///     → RadialAttack（全体攻撃：ステージ中央＝巡回ポイントの重心へテレポートし、
 ///                     回転しながら四方八方へ1本ずつ連射。撃ち切ったら分身攻撃へ。
-///                     通常フェーズは毎サイクル必ず挟む。最終フェーズのみ挟むかどうかがランダム）
+///                     通常時は毎サイクル必ず挟む。強化時（HP半分以下）のみ挟むかどうかがランダム）
 ///     → Split（分身展開：本体が収縮して消え、全ユニットが配置ポイントに同時出現）
 ///     → Aim（照準：射線がプレイヤーを追う）→ Lock（固定・最終警告）→ Fire（レーザー発射）
 ///     → Return（瞬間移動で巡回エリアへ帰還）→ Patrol …
 ///
 ///   Aim / Lock 中に本物へバースト体当たり
 ///     → StunFall（無敵のまま落下）→ 着地 → StunGrace（着地猶予・まだ無敵）
-///     → Stunned（ここだけダメージを受け付ける）
-///        - 被弾: フェーズが進んで Return（最終フェーズなら Defeated）
-///        - 時間切れ: Return（同じフェーズで攻撃を繰り返す）
+///     → Stunned（スタン倍率の一撃が1回だけ通るボーナス帯）→ StunRecover → Return
+///
+/// HP・難易度（フェーズ制は廃止）:
+///   - HPは BossSniperHealth の単一プール（maxHP）。削り切ったら撃破（Defeated）。
+///   - 難易度パラメータは normalSettings（通常）／ enragedSettings（強化）の2セットで、
+///     HPがしきい値（既定：半分）以下になると自動で強化セットへ切り替わる（Difficulty プロパティ）。
+///   - 強化時は巡回中に「お供分身」1体が常駐し、巡回テレポートしながらプレイヤーを狙撃する。
+///     お供分身はバーストで破壊でき（バースト回数を回復）、その巡回中は再出現しない。
+///     巡回（Patrol / PatrolShot）以外の状態では退場する。
 ///
 /// 移動はすべて瞬間移動（XZスケール収縮 → 座標切替 → 復元。消えている間は当たり判定なし）。
 /// 例外はスタンの落下のみ（Dynamic な Rigidbody2D の重力に任せる）。
@@ -40,20 +46,14 @@ using UnityEngine.Events;
 [RequireComponent(typeof(BossSniperHealth))]
 public class BossSniper : MonoBehaviour
 {
-    // ─── フェーズ（難易度）設定 ─────────────────────
+    // ─── 難易度設定（通常／強化の2セット。HP比率で自動切替） ───
 
     [System.Serializable]
-    public class PhaseSettings
+    public class DifficultySettings
     {
+        [Header("分身攻撃")]
         [Tooltip("ユニット総数（本物1を含む）。4なら 本物1＋偽物3")]
         public int totalUnits = 4;
-
-        [Header("フェーズHP・被弾")]
-        [Tooltip("このフェーズのHP。満タンから始まり、削り切ったら次フェーズへ。最終フェーズで削り切ると撃破")]
-        public float phaseMaxHP = 100f;
-
-        [Tooltip("スタン中に通る一撃の倍率。通常の速度依存ダメージにこれを掛ける（見破りスタンのボーナス）")]
-        public float stunDamageMultiplier = 3f;
 
         [Tooltip("照準（射線がプレイヤーを追う）時間")]
         public float aimTime = 1.5f;
@@ -64,10 +64,14 @@ public class BossSniper : MonoBehaviour
         [Tooltip("レーザー（攻撃判定）が出ている時間")]
         public float fireDuration = 0.25f;
 
+        [Header("スタン")]
         [Tooltip("着地して猶予が明けてから、ダメージを受け付けている時間")]
         public float stunDuration = 4f;
 
-        [Header("巡回ショット（このフェーズでの難易度）")]
+        [Tooltip("スタン中に通る一撃の倍率。通常の速度依存ダメージにこれを掛ける（見破りスタンのボーナス）")]
+        public float stunDamageMultiplier = 4f;
+
+        [Header("巡回ショット（出現撃ち）")]
         [Tooltip("巡回中の瞬間移動が「出現撃ち」になる確率（0〜1）")]
         [Range(0f, 1f)] public float patrolShotChance = 0.5f;
 
@@ -77,7 +81,7 @@ public class BossSniper : MonoBehaviour
         [Tooltip("1回の出現撃ちで連続して撃つ回数。2発目以降は毎回狙いを付け直す（偏差／直撃も毎回抽選）")]
         public int patrolShotCount = 1;
 
-        [Header("全体攻撃（このフェーズでの難易度）")]
+        [Header("全体攻撃")]
         [Tooltip("全体攻撃で撃つ総数。角度ステップ×回数ぶんだけ回転しながら連射する")]
         public int radialShotCount = 10;
 
@@ -85,13 +89,33 @@ public class BossSniper : MonoBehaviour
         public float radialLockTime = 0.3f;
     }
 
-    [Header("フェーズ設定（配列の長さ＝撃破に必要なヒット数）")]
-    [Tooltip("スタン中に攻撃を受けるたびに次の要素へ進む。既定は3フェーズ＝3回で撃破")]
-    public PhaseSettings[] phases = new PhaseSettings[]
+    [Header("難易度（通常時：HPが強化しきい値より上）")]
+    public DifficultySettings normalSettings = new DifficultySettings
     {
-        new PhaseSettings { totalUnits = 4, phaseMaxHP = 120f, stunDamageMultiplier = 4f, aimTime = 1.5f,  patrolShotChance = 0.35f, patrolShotLockTime = 0.6f, patrolShotCount = 1, radialShotCount = 8,  radialLockTime = 0.35f },
-        new PhaseSettings { totalUnits = 5, phaseMaxHP = 150f, stunDamageMultiplier = 4f, aimTime = 1.35f, patrolShotChance = 0.55f, patrolShotLockTime = 0.5f, patrolShotCount = 2, radialShotCount = 12, radialLockTime = 0.3f },
-        new PhaseSettings { totalUnits = 6, phaseMaxHP = 180f, stunDamageMultiplier = 5f, aimTime = 1.2f,  patrolShotChance = 0.75f, patrolShotLockTime = 0.4f, patrolShotCount = 3, radialShotCount = 16, radialLockTime = 0.25f },
+        totalUnits = 4,
+        aimTime = 1.5f,
+        patrolShotChance = 0.35f,
+        patrolShotLockTime = 0.6f,
+        patrolShotCount = 1,
+        radialShotCount = 8,
+        radialLockTime = 0.35f,
+        stunDuration = 4f,
+        stunDamageMultiplier = 4f,
+    };
+
+    [Header("難易度（強化時：HPが半分以下）")]
+    [Tooltip("BossSniperHealth の enragedThresholdRatio（既定0.5＝半分）を下回ると、こちらのセットに切り替わる")]
+    public DifficultySettings enragedSettings = new DifficultySettings
+    {
+        totalUnits = 6,
+        aimTime = 1.2f,
+        patrolShotChance = 0.75f,
+        patrolShotLockTime = 0.4f,
+        patrolShotCount = 3,
+        radialShotCount = 16,
+        radialLockTime = 0.25f,
+        stunDuration = 3f,
+        stunDamageMultiplier = 5f,
     };
 
     // ─── 巡回（多角形エリア内の瞬間移動） ─────────────
@@ -142,11 +166,45 @@ public class BossSniper : MonoBehaviour
     [Tooltip("1発ごとに回転する角度（度）。回転方向と開始角度は毎回ランダム")]
     public float radialAngleStep = 30f;
 
-    [Tooltip("中央に到着してから初弾までの溜め時間。この間に初弾のロック射線を出してプレイヤーに避ける準備をさせる（全フェーズ共通）")]
+    [Tooltip("中央に到着してから初弾までの溜め時間。この間に初弾のロック射線を出してプレイヤーに避ける準備をさせる")]
     public float radialWindupTime = 1.2f;
 
-    [Tooltip("最終フェーズで、巡回のあとに全体攻撃を挟む確率（0〜1）。挟まない場合はそのまま分身攻撃へ。最終フェーズ以外は必ず挟む")]
-    [Range(0f, 1f)] public float finalPhaseRadialChance = 0.5f;
+    [Tooltip("強化時（HP半分以下）で、巡回のあとに全体攻撃を挟む確率（0〜1）。挟まない場合はそのまま分身攻撃へ。通常時は必ず挟む")]
+    [Range(0f, 1f)] public float enragedRadialChance = 0.5f;
+
+    // ─── お供分身（強化時・巡回中のみ常駐する1体） ─────────
+
+    [System.Serializable]
+    public class CompanionSettings
+    {
+        [Tooltip("お供分身が瞬間移動する間隔（秒）。テレポ後に1発撃ってから次のテレポまで待つ")]
+        public float teleportInterval = 3f;
+
+        [Tooltip("出現〜レーザー発射までのロック時間。本体の出現撃ちより長め（弱め）にするのがおすすめ")]
+        public float lockTime = 0.8f;
+
+        [Tooltip("レーザーが出ている時間")]
+        public float fireDuration = 0.12f;
+
+        [Tooltip("レーザーのダメージ量（本体より弱めに設定できる）")]
+        public int beamDamage = 1;
+
+        [Tooltip("偏差撃ちになる確率（0〜1）。外れは直撃狙い")]
+        [Range(0f, 1f)] public float leadChance = 0.4f;
+
+        [Tooltip("偏差撃ちのとき、プレイヤーの何秒先を狙うか")]
+        public float leadTime = 0.5f;
+    }
+
+    [Header("お供分身（強化時・巡回中のみ）")]
+    [Tooltip("お供分身を使うか。オフなら強化時でも出現しない")]
+    public bool companionEnabled = true;
+
+    [Tooltip("お供分身の攻撃パラメータ（本体より弱めに調整する用）")]
+    public CompanionSettings companionSettings = new CompanionSettings();
+
+    [Tooltip("偽物（分身攻撃の偽物・お供分身）をバーストで破壊したとき、プレイヤーのバースト回数を回復させるか")]
+    public bool refundPlayerBurstOnCloneDestroyed = true;
 
     // ─── 分身の展開 ────────────────────────────────
 
@@ -199,9 +257,9 @@ public class BossSniper : MonoBehaviour
     [Header("イベント")]
     public UnityEvent onSplit;          // 分身展開の開始
     public UnityEvent onStunned;        // スタン開始（本物を見破られた）
-    public UnityEvent<int> onDamaged;   // ダメージを受けた（引数＝新しいフェーズ番号 0始まり）
+    public UnityEvent onEnraged;        // 強化モードに入った（HPが半分以下になった瞬間・1回だけ）
     public UnityEvent onDefeated;       // 撃破された
-    public UnityEvent onCloneDestroyed; // 偽物が破壊された
+    public UnityEvent onCloneDestroyed; // 偽物（お供分身含む）が破壊された
 
     // ─── ステート（プレイヤーと同じ流儀で公開プロパティにする） ───
 
@@ -242,8 +300,11 @@ public class BossSniper : MonoBehaviour
     /// <summary>HP・ダメージ・無敵時間を管理するコンポーネント（同じ GameObject 上）。</summary>
     public BossSniperHealth Health { get; private set; }
 
-    /// <summary>現在が最終フェーズか。</summary>
-    public bool IsFinalPhase => CurrentPhaseIndex >= phases.Length - 1;
+    /// <summary>強化モード（HPが半分以下）か。難易度セットとお供分身の出現条件に使う。</summary>
+    public bool IsEnraged => Health != null && Health.IsEnraged;
+
+    /// <summary>現在のHP状態に応じた難易度セット（通常／強化）。</summary>
+    public DifficultySettings Difficulty => IsEnraged ? enragedSettings : normalSettings;
 
     /// <summary>
     /// 次の分身攻撃までの残り時間。ボス側が持つことで、
@@ -255,8 +316,9 @@ public class BossSniper : MonoBehaviour
     /// <summary>展開中のユニット一覧（本物を含む）。分身展開中以外は空。</summary>
     public List<BossSniperBeamUnit> Units { get; } = new List<BossSniperBeamUnit>();
 
-    public int CurrentPhaseIndex { get; private set; }
-    public PhaseSettings Phase => phases[Mathf.Clamp(CurrentPhaseIndex, 0, phases.Length - 1)];
+    // お供分身（強化時・巡回中のみ常駐する1体）
+    private BossSniperCompanion companion;
+    private bool companionKilledThisPatrol; // 撃破されたら、その巡回中は再出現しない
 
     private Vector3 patrolOrigin;
 
@@ -303,13 +365,15 @@ public class BossSniper : MonoBehaviour
         patrolOrigin = transform.position;
         AttackTimer = timeBetweenAttacks;
 
-        if (Health != null) Health.InitPhase(Phase.phaseMaxHP); // 最初のフェーズHPを満タンに
+        // HPの初期化は BossSniperHealth が自分で行う（単一HP・フェーズ廃止）
 
         TransitionToState(StatePatrol);
     }
 
     void Update()
     {
+        UpdateCompanionPresence(); // お供分身の出現管理（強化時・巡回中のみ）
+
         if (HitStopActive) return; // ボスだけフリーズ中は内部時間を止める
         currentState?.UpdateState();
     }
@@ -329,6 +393,20 @@ public class BossSniper : MonoBehaviour
 
         currentState = newState;
         currentState.Enter(this);
+
+        // 巡回（Patrol / PatrolShot）以外へ移ったら、お供分身は退場。
+        // 撃破フラグもここでリセットするので、次に巡回へ戻ったときは再出現できる
+        if (!IsPatrolLikeState(currentState))
+        {
+            DespawnCompanion();
+            companionKilledThisPatrol = false;
+        }
+    }
+
+    /// <summary>巡回系のステート（お供分身が居られる場面）か。出現撃ちも巡回の一部として扱う。</summary>
+    public bool IsPatrolLikeState(IBossSniperState s)
+    {
+        return s == StatePatrol || s == StatePatrolShot;
     }
 
     // ─── ステートへのイベント中継 ─────────────────────
@@ -386,12 +464,14 @@ public class BossSniper : MonoBehaviour
         }
     }
 
-    /// <summary>偽物を1体破壊する（見破りの外れ）。</summary>
-    public void DestroyClone(BossSniperBeamUnit unit)
+    /// <summary>偽物を1体破壊する（見破りの外れ）。破壊者が居ればバースト回数を回復させる。</summary>
+    public void DestroyClone(BossSniperBeamUnit unit, PlayerController pc = null)
     {
         if (unit == null || unit.IsReal) return;
         Units.Remove(unit);
         Destroy(unit.gameObject);
+
+        if (refundPlayerBurstOnCloneDestroyed && pc != null) pc.OnEnemyKilledInBurst();
         onCloneDestroyed?.Invoke();
     }
 
@@ -405,27 +485,63 @@ public class BossSniper : MonoBehaviour
         Units.Clear();
     }
 
-    // ─── 被ダメージ・物理切り替え ─────────────────────
+    // ─── お供分身の管理 ─────────────────────────────
 
-    /// <summary>
-    /// 現フェーズのHPを削り切ったときに Health から呼ばれる。次フェーズへ進み、HPを満タンに。
-    /// フェーズ進行のトリガーはこれ（HPゼロ）だけ。見破りスタンは進行トリガーではなくボーナス帯。
-    /// </summary>
-    public void AdvancePhaseByHP()
+    // 毎フレーム：出現条件が揃っていて不在なら生成する（強化時・巡回中・未撃破・プレハブあり）
+    private void UpdateCompanionPresence()
     {
-        CurrentPhaseIndex++;
-        onDamaged?.Invoke(CurrentPhaseIndex); // 互換：フェーズ番号を通知
+        if (companion != null) return;
+        if (!companionEnabled || !IsEnraged) return;
+        if (!IsPatrolLikeState(currentState)) return;
+        if (companionKilledThisPatrol) return;
+        if (clonePrefab == null || Player == null) return;
 
-        if (Health != null)
-        {
-            Health.InitPhase(Phase.phaseMaxHP);           // 次フェーズHPを満タンに
-            Health.onPhaseChanged?.Invoke(CurrentPhaseIndex, Phase.phaseMaxHP);
-        }
-
-        TransitionToState(StateReturn); // 瞬間移動で復帰し、難易度アップした攻撃を再開
+        SpawnCompanion();
     }
 
-    /// <summary>最終フェーズのHPを削り切ったときに Health から呼ばれる。撃破へ。</summary>
+    private void SpawnCompanion()
+    {
+        GameObject go = Instantiate(clonePrefab, RandomPatrolPoint(), Quaternion.identity);
+        BossSniperBeamUnit u = go.GetComponent<BossSniperBeamUnit>();
+        if (u == null) u = go.AddComponent<BossSniperBeamUnit>();
+
+        u.CopySettingsFrom(SelfUnit);
+        u.Init(Player);
+        u.IsReal = false;
+        u.beamDamage = Mathf.Max(0, companionSettings.beamDamage); // 本体より弱く設定できる
+
+        companion = go.AddComponent<BossSniperCompanion>();
+        companion.Init(this, u);
+    }
+
+    /// <summary>お供分身がバーストで撃破された（BossSniperCompanion から呼ばれる）。</summary>
+    public void OnCompanionKilled(PlayerController pc)
+    {
+        companionKilledThisPatrol = true; // この巡回中は再出現しない
+        companion = null;
+
+        if (refundPlayerBurstOnCloneDestroyed && pc != null) pc.OnEnemyKilledInBurst();
+        onCloneDestroyed?.Invoke();
+    }
+
+    private void DespawnCompanion()
+    {
+        if (companion != null)
+        {
+            Destroy(companion.gameObject);
+            companion = null;
+        }
+    }
+
+    // ─── 被ダメージ・物理切り替え ─────────────────────
+
+    /// <summary>強化モードに入った瞬間に Health から呼ばれる（HPがしきい値を下回った・1回だけ）。</summary>
+    public void NotifyEnraged()
+    {
+        onEnraged?.Invoke();
+    }
+
+    /// <summary>HPを削り切ったときに Health から呼ばれる。撃破へ。</summary>
     public void DefeatByHP()
     {
         TransitionToState(StateDefeated);
@@ -452,13 +568,12 @@ public class BossSniper : MonoBehaviour
 
     /// <summary>
     /// 巡回が終わった（AttackTimer が満ちた）ときに向かう先を決める。
-    /// 通常フェーズ: 必ず 全体攻撃 → 分身攻撃 の順。
-    /// 最終フェーズ: 確率（finalPhaseRadialChance）で全体攻撃を挟むか、そのまま分身攻撃かをランダムに（行動を読めなくする）。
+    /// 通常時: 必ず 全体攻撃 → 分身攻撃 の順。
+    /// 強化時（HP半分以下）: 確率（enragedRadialChance）で全体攻撃を挟むか、そのまま分身攻撃かをランダムに（行動を読めなくする）。
     /// </summary>
     public IBossSniperState NextAttackAfterPatrol()
     {
-        bool finalPhase = CurrentPhaseIndex >= phases.Length - 1;
-        if (finalPhase && Random.value >= finalPhaseRadialChance)
+        if (IsEnraged && Random.value >= enragedRadialChance)
         {
             return StateSplit;
         }

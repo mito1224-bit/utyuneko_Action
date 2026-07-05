@@ -41,7 +41,7 @@ public class BossSniperState_Split : BossSniperStateBase
 
                 // 縮み切った → 「この瞬間のプレイヤー位置」を中心に配置ポイントを計算し、
                 // 本体を移動・偽物を収縮状態で生成して、全員同時に出現を始める
-                int count = Mathf.Max(2, boss.Phase.totalUnits);
+                int count = Mathf.Max(2, boss.Difficulty.totalUnits);
                 List<Vector2> slots = boss.BuildFormationSlots(count, boss.Player.position);
                 int realIndex = Random.Range(0, slots.Count);
                 boss.DeployFormation(slots, realIndex);
@@ -84,6 +84,6 @@ public class BossSniperState_Split : BossSniperStateBase
     public override void OnBurstHit(BossSniperBeamUnit unit, PlayerController pc)
     {
         if (unit.IsReal) boss.HandleNormalBurstHit(unit, pc);
-        else boss.DestroyClone(unit);
+        else boss.DestroyClone(unit, pc);
     }
 }

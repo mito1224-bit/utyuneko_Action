@@ -60738,8 +60738,8 @@ MonoBehaviour:
   maxBeamLength: 100
   beamDamage: 1
   contactDamage: 1
-  sightWidth: 0.06
-  beamWidth: 0.4
+  sightWidth: 0.2
+  beamWidth: 1
   aimColor: {r: 1, g: 1, b: 0, a: 0.5882353}
   lockColor: {r: 1, g: 0.39215687, b: 0, a: 0.5882353}
   fireColor: {r: 1, g: 0, b: 0, a: 1}
@@ -60761,43 +60761,30 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0534cf015c1462a4d8645d546a2266da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BossSniper
-  phases:
-  - totalUnits: 4
-    phaseMaxHP: 100
-    stunDamageMultiplier: 4
-    aimTime: 2
-    lockTime: 1
-    fireDuration: 0.25
-    stunDuration: 5
-    patrolShotChance: 0.5
-    patrolShotLockTime: 2
-    patrolShotCount: 3
-    radialShotCount: 16
-    radialLockTime: 0.1
-  - totalUnits: 5
-    phaseMaxHP: 150
-    stunDamageMultiplier: 4
-    aimTime: 2
-    lockTime: 1
-    fireDuration: 0.25
-    stunDuration: 4
-    patrolShotChance: 0.75
-    patrolShotLockTime: 1.5
-    patrolShotCount: 4
-    radialShotCount: 24
-    radialLockTime: 0.05
-  - totalUnits: 6
-    phaseMaxHP: 200
-    stunDamageMultiplier: 5
-    aimTime: 1
+  normalSettings:
+    totalUnits: 4
+    aimTime: 1.5
     lockTime: 0.5
     fireDuration: 0.5
-    stunDuration: 3
+    stunDuration: 4
+    stunDamageMultiplier: 4
     patrolShotChance: 1
-    patrolShotLockTime: 1
-    patrolShotCount: 5
-    radialShotCount: 32
-    radialLockTime: 0.01
+    patrolShotLockTime: 0.7
+    patrolShotCount: 4
+    radialShotCount: 8
+    radialLockTime: 0.1
+  enragedSettings:
+    totalUnits: 6
+    aimTime: 1
+    lockTime: 0.2
+    fireDuration: 0.5
+    stunDuration: 3
+    stunDamageMultiplier: 3
+    patrolShotChance: 1
+    patrolShotLockTime: 0.4
+    patrolShotCount: 6
+    radialShotCount: 16
+    radialLockTime: 0.05
   playerTag: Player
   patrolPoints:
   - {fileID: 126321677}
@@ -60809,13 +60796,22 @@ MonoBehaviour:
   timeBetweenAttacks: 15
   teleportShrinkTime: 0.1
   teleportExpandTime: 0.1
-  patrolShotFireDuration: 0.15
-  patrolShotLeadTime: 0.5
+  patrolShotFireDuration: 0.2
+  patrolShotLeadTime: 0.2
   patrolShotLeadChance: 0.6
-  radialFireDuration: 0.2
-  radialAngleStep: 15
+  radialFireDuration: 0.5
+  radialAngleStep: 17
   radialWindupTime: 1.5
-  finalPhaseRadialChance: 1
+  enragedRadialChance: 0.5
+  companionEnabled: 1
+  companionSettings:
+    teleportInterval: 3
+    lockTime: 0.8
+    fireDuration: 0.12
+    beamDamage: 1
+    leadChance: 0.4
+    leadTime: 0.5
+  refundPlayerBurstOnCloneDestroyed: 1
   clonePrefab: {fileID: 3508370510583888243, guid: 9a3890c412f463941a7ff7cd1f3d3a65, type: 3}
   formationRadius: 20
   formationMinY: 0
@@ -60827,7 +60823,7 @@ MonoBehaviour:
   stunGravityScale: 5
   postLandingGrace: 0.5
   stunFallTimeout: 5
-  stunRecoverDelay: 0.6
+  stunRecoverDelay: 0.5
   destroyDelayOnDefeat: 0
   onSplit:
     m_PersistentCalls:
@@ -60835,7 +60831,7 @@ MonoBehaviour:
   onStunned:
     m_PersistentCalls:
       m_Calls: []
-  onDamaged:
+  onEnraged:
     m_PersistentCalls:
       m_Calls: []
   onDefeated:
@@ -60871,6 +60867,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c09891811d60dbe49924bcdaaefa7754, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BossSniperHealth
+  maxHP: 400
+  enragedThresholdRatio: 0.5
   basePlayerDamage: 8
   playerSpeedDamageMultiplier: 0.4
   damageInterval: 0.5
@@ -60882,7 +60880,7 @@ MonoBehaviour:
   onDamaged:
     m_PersistentCalls:
       m_Calls: []
-  onPhaseChanged:
+  onEnraged:
     m_PersistentCalls:
       m_Calls: []
 --- !u!114 &1336955517

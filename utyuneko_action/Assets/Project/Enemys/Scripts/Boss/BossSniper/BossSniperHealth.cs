@@ -5,24 +5,31 @@ using UnityEngine.Events;
 /// ボススナイパーのHP・ダメージ・無敵時間を管理する専用コンポーネント。
 /// コントローラ（BossSniper）から分離し、被弾の「数値まわり」だけをここに集約する。
 ///
-/// 設計:
-///   - HPはフェーズごと（BossSniper.PhaseSettings.phaseMaxHP）。満タンから始まり、
-///     削り切ったら BossSniper.AdvancePhaseByHP() を呼んで次フェーズへ。最終フェーズで
-///     削り切ると撃破（BossSniper.DefeatByHP()）。フェーズ進行のトリガーはHPゼロのみ。
+/// 設計（フェーズ制は廃止・単一HP）:
+///   - HPは maxHP の1本。削り切ったら BossSniper.DefeatByHP() で撃破。
+///   - HPが enragedThresholdRatio（既定0.5＝半分）以下になると「強化モード」（IsEnraged）。
+///     難易度セットの切り替え（BossSniper.Difficulty）とお供分身の出現条件に使われる。
+///     初めて下回った瞬間に onEnraged と BossSniper.NotifyEnraged() を1回だけ発火する。
 ///   - ダメージ計算は速度依存: basePlayerDamage + プレイヤー速度 × playerSpeedDamageMultiplier。
 ///   - 通常時は damageInterval の無敵時間で連続ヒットを抑制。
-///   - スタン中は倍率（Phase.stunDamageMultiplier）を掛けた一撃が「1回だけ」通る。
+///   - スタン中は倍率（Difficulty.stunDamageMultiplier）を掛けた一撃が「1回だけ」通る。
 ///     一撃が通ったら stunConsumed が立ち、同じスタン中はそれ以上ダメージを受けない。
-///     （復帰までの間の置き＝stunRecoverDelay は BossSniper 側のスタン処理で扱う）
 ///
 /// 呼び出し口:
 ///   各ステートの被弾判定（本物へバースト体当たり）で TryApplyBurstDamage(unit, pc, isStunned) を呼ぶ。
-///   戻り値は「ダメージが実際に入ったか」。スタンの一撃判定にも使える。
+///   戻り値は「ダメージが実際に入ったか」。
 ///
-/// HPバー等への通知はすべて UnityEvent。表示方法（現フェーズHPだけを映す等）は購読側で決める。
+/// HPバー等への通知はすべて UnityEvent。
 /// </summary>
 public class BossSniperHealth : MonoBehaviour
 {
+    [Header("基礎ステータス")]
+    [Tooltip("ボスの最大HP（1本のプール）。削り切ったら撃破")]
+    public float maxHP = 400f;
+
+    [Tooltip("強化モードに入るHP比率。0.5なら半分以下で強化（難易度セット切替＋お供分身が出現）")]
+    [Range(0f, 1f)] public float enragedThresholdRatio = 0.5f;
+
     [Header("被弾ダメージ（速度依存）")]
     [Tooltip("プレイヤーのバースト体当たりの基礎ダメージ")]
     public float basePlayerDamage = 8f;
@@ -43,26 +50,30 @@ public class BossSniperHealth : MonoBehaviour
     public bool autoFlashOnDamage = true;
 
     [Header("イベント（HPバー・SE・エフェクト接続用）")]
-    [Tooltip("現在HPが変わった（引数: 現在HP, 現フェーズ最大HP）。現フェーズHPだけを映すHPバーはこれを購読")]
+    [Tooltip("現在HPが変わった（引数: 現在HP, 最大HP）")]
     public UnityEvent<float, float> onHPChanged = new UnityEvent<float, float>();
 
     [Tooltip("ダメージを受けた（引数: 与ダメージ量）。被弾フラッシュ・シェイク等に")]
     public UnityEvent<float> onDamaged = new UnityEvent<float>();
 
-    [Tooltip("フェーズが切り替わった（引数: 新フェーズ番号 0始まり, その最大HP）。切替演出に")]
-    public UnityEvent<int, float> onPhaseChanged = new UnityEvent<int, float>();
+    [Tooltip("強化モードに入った（HPがしきい値を下回った瞬間・1回だけ）。演出の切替などに")]
+    public UnityEvent onEnraged = new UnityEvent();
 
-    /// <summary>現フェーズの残りHP。</summary>
+    /// <summary>現在の残りHP。</summary>
     public float CurrentHP { get; private set; }
 
-    /// <summary>現フェーズの最大HP。</summary>
-    public float MaxHP { get; private set; }
+    /// <summary>最大HP（HPバー互換用のプロパティ）。</summary>
+    public float MaxHP => maxHP;
+
+    /// <summary>強化モード（HPがしきい値以下）か。</summary>
+    public bool IsEnraged => CurrentHP <= maxHP * enragedThresholdRatio;
 
     private BossSniper boss;
     private BossSniperFlash flash;
     private BossSniperHitStop hitStop;
     private float invincibilityTimer;
-    private bool stunConsumed; // 現在のスタンで既に一撃を消費したか
+    private bool stunConsumed;   // 現在のスタンで既に一撃を消費したか
+    private bool enragedNotified; // onEnraged を発火済みか（1回だけ）
 
     void Awake()
     {
@@ -70,21 +81,18 @@ public class BossSniperHealth : MonoBehaviour
         if (boss == null) boss = GetComponentInParent<BossSniper>();
         flash = GetComponent<BossSniperFlash>();
         hitStop = GetComponent<BossSniperHitStop>();
+
+        CurrentHP = Mathf.Max(1f, maxHP);
+    }
+
+    void Start()
+    {
+        onHPChanged?.Invoke(CurrentHP, maxHP); // HPバーへ初期値を通知
     }
 
     void Update()
     {
         if (invincibilityTimer > 0f) invincibilityTimer -= Time.deltaTime;
-    }
-
-    /// <summary>フェーズ開始時に現在HPを満タンへ。BossSniper から呼ばれる。</summary>
-    public void InitPhase(float maxHP)
-    {
-        MaxHP = Mathf.Max(1f, maxHP);
-        CurrentHP = MaxHP;
-        stunConsumed = false;
-        invincibilityTimer = 0f;
-        onHPChanged?.Invoke(CurrentHP, MaxHP);
     }
 
     /// <summary>スタンに入るときに呼ぶ。スタンの「一撃」枠をリセットする。</summary>
@@ -105,7 +113,7 @@ public class BossSniperHealth : MonoBehaviour
             if (stunConsumed) return false;
             stunConsumed = true;
 
-            float dmg = ComputeBaseDamage(pc) * Mathf.Max(1f, boss.Phase.stunDamageMultiplier);
+            float dmg = ComputeBaseDamage(pc) * Mathf.Max(1f, boss.Difficulty.stunDamageMultiplier);
             ApplyDamage(dmg, unit, pc, fromStun: true);
             return true;
         }
@@ -138,27 +146,26 @@ public class BossSniperHealth : MonoBehaviour
         onDamaged?.Invoke(damage);
         if (autoFlashOnDamage && flash != null) flash.Flash(); // 本物だけがここを通る＝本物だけ光る
 
+        // 撃破判定
         if (CurrentHP <= 0f)
         {
             CurrentHP = 0f;
-            onHPChanged?.Invoke(CurrentHP, MaxHP);
+            onHPChanged?.Invoke(CurrentHP, maxHP);
 
-            // フェーズHPを削り切った → 次フェーズ or 撃破（判断は BossSniper に委ねる）
-            if (boss.IsFinalPhase)
-            {
-                if (hitStop != null) hitStop.PlayDefeat(); // 撃破：全体スロー（長め）＋強いシェイク
-                boss.DefeatByHP();
-            }
-            else
-            {
-                // フェーズ最後の一撃：スタン由来なら手応えを出す、通常ならボスだけ軽く止める
-                TriggerHitStop(unit, fromStun);
-                boss.AdvancePhaseByHP();
-            }
+            if (hitStop != null) hitStop.PlayDefeat(); // 撃破：全体スロー（長め）＋強いシェイク
+            boss.DefeatByHP();
             return;
         }
 
-        onHPChanged?.Invoke(CurrentHP, MaxHP);
+        onHPChanged?.Invoke(CurrentHP, maxHP);
+
+        // 強化モードへの移行判定（初めて下回った瞬間に1回だけ通知）
+        if (!enragedNotified && IsEnraged)
+        {
+            enragedNotified = true;
+            onEnraged?.Invoke();
+            boss.NotifyEnraged();
+        }
 
         TriggerHitStop(unit, fromStun);
     }
