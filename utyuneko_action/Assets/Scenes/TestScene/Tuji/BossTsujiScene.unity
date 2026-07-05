@@ -231,87 +231,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1001 &180250610
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 2169912746579619458, guid: 220f2e4c5325fa945b92da349915494c, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: -5.553389
-      objectReference: {fileID: 0}
-    - target: {fileID: 2169912746579619458, guid: 220f2e4c5325fa945b92da349915494c, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 2.38
-      objectReference: {fileID: 0}
-    - target: {fileID: 2169912746579619458, guid: 220f2e4c5325fa945b92da349915494c, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2169912746579619458, guid: 220f2e4c5325fa945b92da349915494c, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 2169912746579619458, guid: 220f2e4c5325fa945b92da349915494c, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2169912746579619458, guid: 220f2e4c5325fa945b92da349915494c, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2169912746579619458, guid: 220f2e4c5325fa945b92da349915494c, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2169912746579619458, guid: 220f2e4c5325fa945b92da349915494c, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2169912746579619458, guid: 220f2e4c5325fa945b92da349915494c, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2169912746579619458, guid: 220f2e4c5325fa945b92da349915494c, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5798287196019791269, guid: 220f2e4c5325fa945b92da349915494c, type: 3}
-      propertyPath: maxForce
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 5798287196019791269, guid: 220f2e4c5325fa945b92da349915494c, type: 3}
-      propertyPath: minForce
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 5798287196019791269, guid: 220f2e4c5325fa945b92da349915494c, type: 3}
-      propertyPath: upwardBlend
-      value: 0.682
-      objectReference: {fileID: 0}
-    - target: {fileID: 5798287196019791269, guid: 220f2e4c5325fa945b92da349915494c, type: 3}
-      propertyPath: deathGravity
-      value: 15
-      objectReference: {fileID: 0}
-    - target: {fileID: 5798287196019791269, guid: 220f2e4c5325fa945b92da349915494c, type: 3}
-      propertyPath: lingerAfterLanding
-      value: 0.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 6006725496384287287, guid: 220f2e4c5325fa945b92da349915494c, type: 3}
-      propertyPath: maxHp
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7665654292937676110, guid: 220f2e4c5325fa945b92da349915494c, type: 3}
-      propertyPath: m_Name
-      value: PierceEnemy
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 220f2e4c5325fa945b92da349915494c, type: 3}
 --- !u!1 &340266666
 GameObject:
   m_ObjectHideFlags: 0
@@ -1069,87 +988,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1064275557}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!1001 &1083761189
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 4182934295666711013, guid: e80156cfef26b9542a6604a30130d465, type: 3}
-      propertyPath: maxForce
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 4182934295666711013, guid: e80156cfef26b9542a6604a30130d465, type: 3}
-      propertyPath: minForce
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 4182934295666711013, guid: e80156cfef26b9542a6604a30130d465, type: 3}
-      propertyPath: upwardBlend
-      value: 0.695
-      objectReference: {fileID: 0}
-    - target: {fileID: 4182934295666711013, guid: e80156cfef26b9542a6604a30130d465, type: 3}
-      propertyPath: deathGravity
-      value: 15
-      objectReference: {fileID: 0}
-    - target: {fileID: 4182934295666711013, guid: e80156cfef26b9542a6604a30130d465, type: 3}
-      propertyPath: forcePerDamage
-      value: 3
-      objectReference: {fileID: 0}
-    - target: {fileID: 4182934295666711013, guid: e80156cfef26b9542a6604a30130d465, type: 3}
-      propertyPath: lingerAfterLanding
-      value: 0.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 5038645550579602482, guid: e80156cfef26b9542a6604a30130d465, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: -3.2046125
-      objectReference: {fileID: 0}
-    - target: {fileID: 5038645550579602482, guid: e80156cfef26b9542a6604a30130d465, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 1.59
-      objectReference: {fileID: 0}
-    - target: {fileID: 5038645550579602482, guid: e80156cfef26b9542a6604a30130d465, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5038645550579602482, guid: e80156cfef26b9542a6604a30130d465, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 5038645550579602482, guid: e80156cfef26b9542a6604a30130d465, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5038645550579602482, guid: e80156cfef26b9542a6604a30130d465, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5038645550579602482, guid: e80156cfef26b9542a6604a30130d465, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5038645550579602482, guid: e80156cfef26b9542a6604a30130d465, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5038645550579602482, guid: e80156cfef26b9542a6604a30130d465, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5038645550579602482, guid: e80156cfef26b9542a6604a30130d465, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7810206305696732228, guid: e80156cfef26b9542a6604a30130d465, type: 3}
-      propertyPath: m_Name
-      value: ReflectEnemy
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: e80156cfef26b9542a6604a30130d465, type: 3}
 --- !u!1 &1139864548
 GameObject:
   m_ObjectHideFlags: 0
@@ -1836,6 +1674,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7864a9f4642d5cc4cb2e6f9fc086b08f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::KeepUprightUI
+  target: {fileID: 0}
+  smoothSpeed: 12
+  offset: {x: 0, y: 1.5, z: 0}
 --- !u!114 &1416736172
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2372,10 +2213,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6b9eee37852e04c42ae26d1cf6163177, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AfterImageEffect
-  afterImagePrefab: {fileID: 7374766668121083705, guid: 6396d535b50282641aac5e41cec5a522, type: 3}
+  afterImageMaterial: {fileID: 0}
   spawnInterval: 0.1
   fadeSpeed: 4
   alpha: 0.6
+  followSpeed: 5
 --- !u!114 &1514832256
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2390,7 +2232,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerChargeGauge
   playerController: {fileID: 1514832257}
   gaugeImage: {fileID: 1658157477}
-  reloadSpeed: 8
 --- !u!114 &1514832257
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2412,6 +2253,7 @@ MonoBehaviour:
   burstSpeed: 25
   reflectEfficiency: 1
   maxBurstCount: 3
+  maxReflect: 3
   currentBurstCount: 0
   canCancelBurstWithJump: 1
   aimPivot: {fileID: 661080000}
@@ -2434,6 +2276,7 @@ MonoBehaviour:
   damageDuration: 1
   useTrail: 1
   useAfterImage: 1
+  reloadSpeed: 8
   visualManager: {fileID: 0}
   leanAngle: 20
   rb2D: {fileID: 0}
@@ -2445,6 +2288,8 @@ MonoBehaviour:
   currentChargeLevel: 0
   currentChargeTimer: 0
   anim: {fileID: 0}
+  trajectoryLine: {fileID: 0}
+  damageEffect: {fileID: 0}
 --- !u!23 &1514832258
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -2893,10 +2738,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6b9eee37852e04c42ae26d1cf6163177, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AfterImageEffect
-  afterImagePrefab: {fileID: 7374766668121083705, guid: 6396d535b50282641aac5e41cec5a522, type: 3}
+  afterImageMaterial: {fileID: 0}
   spawnInterval: 0.1
   fadeSpeed: 4
   alpha: 0.6
+  followSpeed: 5
 --- !u!114 &1671615256
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2911,7 +2757,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerChargeGauge
   playerController: {fileID: 0}
   gaugeImage: {fileID: 713611419}
-  reloadSpeed: 8
 --- !u!114 &1671615257
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2929,9 +2774,14 @@ MonoBehaviour:
   chargeLeanSmoothing: 30
   useDrillRotation: 1
   drillSpeed: 1440
+  idleBobbingAmount: 0.05
+  walkBobbingAmount: 0.12
+  walkBobbingSpeed: 20
   useSquashAndStretch: 1
   maxSquashAmount: 0.7
   squashDuration: 0.15
+  stretchY: 1.25
+  squashY: 0.75
   playerSquashVisual: {fileID: 1302249190}
   playerVisual: {fileID: 566160961}
 --- !u!114 &1671615258
@@ -2955,6 +2805,7 @@ MonoBehaviour:
   burstSpeed: 25
   reflectEfficiency: 1
   maxBurstCount: 3
+  maxReflect: 3
   currentBurstCount: 0
   canCancelBurstWithJump: 1
   aimPivot: {fileID: 2013235850}
@@ -2977,6 +2828,7 @@ MonoBehaviour:
   damageDuration: 0.6
   useTrail: 1
   useAfterImage: 1
+  reloadSpeed: 8
   visualManager: {fileID: 1671615257}
   leanAngle: 20
   rb2D: {fileID: 0}
@@ -2988,6 +2840,8 @@ MonoBehaviour:
   currentChargeLevel: 0
   currentChargeTimer: 0
   anim: {fileID: 0}
+  trajectoryLine: {fileID: 0}
+  damageEffect: {fileID: 0}
 --- !u!58 &1671615259
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -3101,6 +2955,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5865a3e7d12a7f04390a8faa3f53c12d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HoverSensor
+  groundLayer:
+    serializedVersion: 2
+    m_Bits: 0
   baseHoverForce: 150
   hoverDamping: 25
   targetOverlap: 0.025
@@ -3482,6 +3339,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7864a9f4642d5cc4cb2e6f9fc086b08f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::KeepUprightUI
+  target: {fileID: 0}
+  smoothSpeed: 12
+  offset: {x: 0, y: 1.5, z: 0}
 --- !u!114 &2020724333
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3575,6 +3435,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5865a3e7d12a7f04390a8faa3f53c12d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HoverSensor
+  groundLayer:
+    serializedVersion: 2
+    m_Bits: 0
   baseHoverForce: 150
   hoverDamping: 25
   targetOverlap: 0.025
@@ -3642,8 +3505,6 @@ SceneRoots:
   - {fileID: 168439669}
   - {fileID: 1434647729}
   - {fileID: 2000815031}
-  - {fileID: 1083761189}
-  - {fileID: 180250610}
   - {fileID: 1369921653}
   - {fileID: 1514832260}
   - {fileID: 1671615261}
