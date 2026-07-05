@@ -19,6 +19,11 @@ public class PlayerState_Charge : IPlayerState
         SoundManager.Instance.PlayLoopSE(p.gameObject, SeType.PlayerCharging);
         SoundManager.Instance.FadeBGMVolume(0.5f, 0.5f);
 
+        if (p.anim != null)
+        {
+            p.anim.SetBool("isBurst", true);
+        }
+
         if (p.hoverSensor != null) p.hoverSensor.GetComponent<Collider2D>().enabled = false;
 
         // インスペクターの「useInertiaInCharge」を見て慣性を残すか、その場停止かを切り替える
@@ -135,7 +140,7 @@ public class PlayerState_Charge : IPlayerState
 
     private void OnCollisionEnter(Collision2D collision)
     {
-        if (((1 << collision.gameObject.layer) & p.GetGroundLayerMask()) != 0) //
+        if (((1 << collision.gameObject.layer) & p.GetReflectionLayerMask()) != 0) //
         {
             if (!p.useInertiaInCharge) return; //
 

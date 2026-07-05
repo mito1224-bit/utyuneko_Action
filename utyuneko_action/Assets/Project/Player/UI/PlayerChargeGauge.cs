@@ -89,4 +89,13 @@ public class PlayerChargeGauge : MonoBehaviour
             gaugeImage.color = Color.cyan;
         }
     }
+
+    public void RecoveryGauge(int value)
+    {
+        if (playerController == null || gaugeImage == null) return;
+        float max = playerController.maxBurstCount;
+        if (max < value) value = (int)max;
+        gaugeImage.fillAmount += (value / max);
+        playerController.currentBurstCount--;
+    }
 }
