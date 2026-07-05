@@ -94,6 +94,71 @@ public class CameraFollowWithZoom : MonoBehaviour
         if (updateInFixedUpdate) MoveCamera(Time.fixedDeltaTime);
     }
 
+    //void MoveCamera(float deltaTime)
+    //{
+    //    if (target == null) return;
+
+    //    float targetZOffset = offset.z;
+    //    if (!isLocked)
+    //    {
+    //        float currentFloatingHeight = 0f;
+    //        Vector2 rayStart = new Vector2(target.position.x, target.position.y);
+    //        RaycastHit2D hit = Physics2D.Raycast(rayStart, Vector2.down, 100f, groundLayer2D);
+
+    //        if (hit.collider != null) currentFloatingHeight = target.position.y - hit.point.y;
+
+    //        filteredFloatingHeight = Mathf.Lerp(filteredFloatingHeight, currentFloatingHeight, heightFilterSpeed * deltaTime);
+
+    //        if (filteredFloatingHeight > heightThreshold)
+    //        {
+    //            float excessHeight = filteredFloatingHeight - heightThreshold;
+    //            targetZOffset = offset.z - (excessHeight * zoomSensitivity);
+    //            targetZOffset = Mathf.Clamp(targetZOffset, maxZOffset, minZOffset);
+    //        }
+    //    }
+    //    else
+    //    {
+    //        targetZOffset = lockedZOffset;
+    //    }
+
+    //    currentDynamicZ = Mathf.Lerp(currentDynamicZ, targetZOffset, zoomSmoothSpeed * deltaTime);
+
+    //    Vector2 targetLookAhead = Vector2.zero;
+    //    if (!isLocked)
+    //    {
+    //        float facingSign = lastFacingSign;
+    //        if (targetRb2D != null && Mathf.Abs(targetRb2D.linearVelocity.x) > 0.1f)
+    //        {
+    //            facingSign = targetRb2D.linearVelocity.x > 0f ? 1f : -1f;
+    //        }
+    //        lastFacingSign = facingSign;
+    //        if (invertLookAhead) facingSign *= -1f;
+    //        targetLookAhead.x = facingSign * lookAheadDistance;
+    //    }
+
+    //    // --- MoveCamera メソッドの後半部分を以下のように修正 ---
+
+    //    // 【大復活】これが消えていたため先行表示が機能していませんでした！
+    //    currentLookAhead = Vector2.Lerp(currentLookAhead, targetLookAhead, lookAheadSmoothSpeed * deltaTime);
+    //    // （中略：Look Aheadの計算など）
+
+    //    // 最終的なカメラ位置の計算と移動
+    //    Vector3 targetPosition;
+    //    if (isLocked)
+    //    {
+    //        // X, Y は固定位置、Zは lockedZOffset に向かって補間された currentDynamicZ を適用
+    //        targetPosition = new Vector3(lockedPosition.x, lockedPosition.y, currentDynamicZ);
+    //    }
+    //    else
+    //    {
+    //        targetPosition = target.position + offset + new Vector3(currentLookAhead.x, currentLookAhead.y, 0f);
+    //        targetPosition.z = currentDynamicZ;
+    //    }
+
+    //    // 最後に全体のポジションを Lerp
+    //    transform.position = Vector3.Lerp(transform.position, targetPosition, positionSmoothSpeed * deltaTime);
+    //}
+
     void MoveCamera(float deltaTime)
     {
         if (target == null) return;
@@ -121,6 +186,7 @@ public class CameraFollowWithZoom : MonoBehaviour
             targetZOffset = lockedZOffset;
         }
 
+        // 【復活】Z軸のなめらかな移動計算（これがないとズームが効きません）
         currentDynamicZ = Mathf.Lerp(currentDynamicZ, targetZOffset, zoomSmoothSpeed * deltaTime);
 
         Vector2 targetLookAhead = Vector2.zero;
@@ -136,20 +202,24 @@ public class CameraFollowWithZoom : MonoBehaviour
             targetLookAhead.x = facingSign * lookAheadDistance;
         }
 
+        // 【大復活】これが消えていたため先行表示が機能していませんでした！
         currentLookAhead = Vector2.Lerp(currentLookAhead, targetLookAhead, lookAheadSmoothSpeed * deltaTime);
 
         // 最終的なカメラ位置の計算と移動
         Vector3 targetPosition;
         if (isLocked)
         {
+            // X, Y は固定位置、Zは補間された currentDynamicZ を適用
             targetPosition = new Vector3(lockedPosition.x, lockedPosition.y, currentDynamicZ);
         }
         else
         {
+            // 計算された currentLookAhead をしっかり座標に加算
             targetPosition = target.position + offset + new Vector3(currentLookAhead.x, currentLookAhead.y, 0f);
             targetPosition.z = currentDynamicZ;
         }
 
+        // 最後に全体のポジションをなめらかに追従
         transform.position = Vector3.Lerp(transform.position, targetPosition, positionSmoothSpeed * deltaTime);
     }
 
@@ -242,6 +312,125 @@ public class CameraFollowWithZoom : MonoBehaviour
         isEventWorking = false;
         eventCameraCoroutine = null;
     }
+
+    //カメラズームイベント用
+    // ===================================================================
+    // 【新規】ズーム専用・一括版
+    // 指定した場所・指定したカメラ距離(Z)へ移動し、時間経過で自動で戻る
+    // ===================================================================
+    public void PlayZoomEvent(Transform eventTarget, float targetZValue, float timeToTarget, float freezeDuration, float timeToReturn)
+    {
+        if (eventTarget == null) return;
+        if (isEventWorking) return;
+
+        eventCameraCoroutine = StartCoroutine(ZoomEventRoutine(eventTarget, targetZValue, timeToTarget, freezeDuration, timeToReturn));
+    }
+
+    private IEnumerator ZoomEventRoutine(Transform eventTarget, float targetZValue, float timeToTarget, float freezeDuration, float timeToReturn)
+    {
+        isEventWorking = true;
+        SetPlayerActiveState(false);
+
+        // --- ① 指定時間（timeToTarget）をかけて確実に移動するフェーズ ---
+        Vector3 startPos = transform.position;
+        float startZ = currentDynamicZ;
+        float elapsed = 0f;
+
+        // 次のフレームから MoveCamera の標準 Lerp を一時的にバイパスするため、ロック状態にする
+        LockCamera(eventTarget.position, targetZValue);
+
+        while (elapsed < timeToTarget)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / timeToTarget);
+            float curve = Mathf.SmoothStep(0f, 1f, t); // 滑らかな加速・減速（イージング）
+
+            // 座標とZ軸を時間ベースで強制補間
+            transform.position = Vector3.Lerp(startPos, new Vector3(eventTarget.position.x, eventTarget.position.y, transform.position.z), curve);
+            currentDynamicZ = Mathf.Lerp(startZ, targetZValue, curve);
+            transform.position = new Vector3(transform.position.x, transform.position.y, currentDynamicZ);
+
+            yield return null;
+        }
+
+        // --- ② ターゲット地点で指定時間（freezeDuration）停止するフェーズ ---
+        yield return new WaitForSeconds(freezeDuration);
+
+        // --- ③ Unlockして元の通常速度でプレイヤーに戻るフェーズ ---
+        UnlockCamera();
+        yield return new WaitForSeconds(timeToReturn);
+
+        SetPlayerActiveState(true);
+        isEventWorking = false;
+        eventCameraCoroutine = null;
+    }
+    // ===================================================================
+    //【新規】ズーム専用・分離版①（行く方）
+    // 指定した場所・指定したカメラ距離(Z)にクローズアップし、そのまま維持する
+    // ===================================================================
+    public void StartZoomTrack(Transform eventTarget, float targetZValue, float timeToTarget)
+    {
+        if (eventTarget == null) return;
+        if (isEventWorking) return;
+
+        // 分離版①も時間指定で動かすため、内部的に専用のコルーチンを回します
+        eventCameraCoroutine = StartCoroutine(StartZoomTrackRoutine(eventTarget, targetZValue, timeToTarget));
+    }
+    private IEnumerator StartZoomTrackRoutine(Transform eventTarget, float targetZValue, float timeToTarget)
+    {
+        isEventWorking = true;
+        SetPlayerActiveState(false);
+
+        Vector3 startPos = transform.position;
+        float startZ = currentDynamicZ;
+        float elapsed = 0f;
+
+        LockCamera(eventTarget.position, targetZValue);
+
+        // 指定時間をかけて滑らかにターゲット座標（とズーム）へ移動
+        while (elapsed < timeToTarget)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / timeToTarget);
+            float curve = Mathf.SmoothStep(0f, 1f, t);
+
+            transform.position = Vector3.Lerp(startPos, new Vector3(eventTarget.position.x, eventTarget.position.y, transform.position.z), curve);
+            currentDynamicZ = Mathf.Lerp(startZ, targetZValue, curve);
+            transform.position = new Vector3(transform.position.x, transform.position.y, currentDynamicZ);
+
+            yield return null;
+        }
+
+        // 移動完了後は、Update側で完全にターゲットをロックオン維持（帰らない）
+        eventCameraCoroutine = null;
+    }
+    // ===================================================================
+    // 【新規】ズーム専用・分離版②（帰る方）
+    // ズームロックを解除し、指定した時間をかけてプレイヤー（元の通常距離）に戻る
+    // ===================================================================
+    public void ReturnFromZoomEvent(float timeToReturn = 1.0f)
+    {
+        if (!isEventWorking) return;
+
+        if (eventCameraCoroutine != null) StopCoroutine(eventCameraCoroutine);
+        eventCameraCoroutine = StartCoroutine(ReturnFromZoomRoutine(timeToReturn));
+    }
+
+    private IEnumerator ReturnFromZoomRoutine(float timeToReturn)
+    {
+        UnlockCamera();
+
+        yield return new WaitForSeconds(timeToReturn);
+
+        positionSmoothSpeed = defaultPositionSmoothSpeed;
+        zoomSmoothSpeed = defaultZoomSmoothSpeed;
+
+        SetPlayerActiveState(true);
+        isEventWorking = false;
+        eventCameraCoroutine = null;
+    }
+
+
 
     // 強制停止安全弁（スキップ対策も分離版に対応！）
     public void ForceStopEventCameraWork()
