@@ -52,7 +52,7 @@ public class BossSniperState_Patrol : BossSniperStateBase
             }
             else
             {
-                teleport.Begin(boss.SelfUnit, boss.RandomPatrolPoint(), boss.teleportShrinkTime, boss.teleportExpandTime);
+                teleport.Begin(boss.SelfUnit, boss.RandomPatrolPoint(), boss.teleportShrinkTime, boss.teleportExpandTime, onBeforeExpand: () => boss.SelfUnit.SnapVisualToPlayerImmediate());
             }
         }
     }

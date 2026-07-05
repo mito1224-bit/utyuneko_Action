@@ -18,7 +18,7 @@ using UnityEngine;
 /// </summary>
 public class BossSniperCompanion : MonoBehaviour
 {
-    private enum Step { Appearing, Idle, Teleporting, Locking, Firing }
+    private enum Step { Appearing, Idle, Teleporting, PreparingAim, Locking, Firing }
     private Step step;
 
     private BossSniper boss;
@@ -63,17 +63,27 @@ public class BossSniperCompanion : MonoBehaviour
                 timer -= Time.deltaTime;
                 if (timer <= 0f)
                 {
-                    teleport.Begin(unit, boss.RandomPatrolPoint(), boss.teleportShrinkTime, boss.teleportExpandTime);
+                    teleport.Begin(unit, boss.RandomPatrolPoint(), boss.teleportShrinkTime, boss.teleportExpandTime, onBeforeExpand: () => boss.SelfUnit.SnapVisualToPlayerImmediate());
+
                     step = Step.Teleporting;
                 }
                 break;
 
             case Step.Teleporting:
-                unit.FaceTick();
+                unit.FacePlayerVisualOnlyTick();
                 teleport.Update();
                 if (!teleport.Running)
                 {
-                    BeginLock(); // 出現した瞬間に狙いを固定して撃つ
+                    BeginPrepareAim(); // 出現した瞬間に狙いを固定して撃つ
+                }
+                break;
+
+            case Step.PreparingAim:
+                unit.AimVisualOnlyTick();
+                if(unit.IsVisualAlignedToAim())
+                {
+                    timer = Mathf.Max(0.05f, cs.lockTime);
+                    step = Step.Locking;
                 }
                 break;
 
@@ -102,7 +112,7 @@ public class BossSniperCompanion : MonoBehaviour
     }
 
     // 出現した瞬間に狙いを1回だけ決めて固定する（本体の出現撃ちと同じ流儀・パラメータは弱め設定）
-    private void BeginLock()
+    private void BeginPrepareAim()
     {
         BossSniper.CompanionSettings cs = boss.companionSettings;
 
@@ -123,8 +133,7 @@ public class BossSniperCompanion : MonoBehaviour
 
         unit.SetAimPoint(aimPoint);
 
-        timer = Mathf.Max(0.05f, cs.lockTime);
-        step = Step.Locking;
+        step = Step.PreparingAim;
     }
 
     // プレイヤーのバースト体当たり → 撃破（バースト回数の回復と再出現禁止はボス側が処理）

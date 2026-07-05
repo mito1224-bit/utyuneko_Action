@@ -16,7 +16,7 @@ using UnityEngine;
 /// </summary>
 public class BossSniperState_PatrolShot : BossSniperStateBase
 {
-    private enum Step { Teleporting, Locking, Firing }
+    private enum Step { Teleporting, PreparingAim, Locking, Firing }
     private Step step;
 
     private readonly BossSniperTeleport teleport = new BossSniperTeleport();
@@ -36,7 +36,7 @@ public class BossSniperState_PatrolShot : BossSniperStateBase
         shotsRemaining = Mathf.Max(1, boss.Difficulty.patrolShotCount);
 
         step = Step.Teleporting;
-        teleport.Begin(boss.SelfUnit, boss.RandomPatrolPoint(), boss.teleportShrinkTime, boss.teleportExpandTime);
+        teleport.Begin(boss.SelfUnit, boss.RandomPatrolPoint(), boss.teleportShrinkTime, boss.teleportExpandTime, onBeforeExpand: () => boss.SelfUnit.SnapVisualToPlayerImmediate());
     }
 
     public override void UpdateState()
@@ -50,7 +50,16 @@ public class BossSniperState_PatrolShot : BossSniperStateBase
                 teleport.Update();
                 if (!teleport.Running)
                 {
-                    BeginLock(); // 出現した瞬間に狙いを固定
+                    BeginPrepareAim();
+                }
+                break;
+
+            case Step.PreparingAim:
+                boss.SelfUnit.AimVisualOnlyTick();
+                if (boss.SelfUnit.IsVisualAlignedToAim())
+                {
+                    step = Step.Locking;
+                    timer = Mathf.Max(0.05f, boss.Difficulty.patrolShotLockTime);
                 }
                 break;
 
@@ -71,7 +80,7 @@ public class BossSniperState_PatrolShot : BossSniperStateBase
                     shotsRemaining--;
                     if (shotsRemaining > 0)
                     {
-                        BeginLock(); // まだ残弾がある → 狙いを付け直して次弾（偏差／直撃も再抽選）
+                        BeginPrepareAim(); // まだ残弾がある → 狙いを付け直して次弾（偏差／直撃も再抽選）
                     }
                     else
                     {
@@ -83,7 +92,7 @@ public class BossSniperState_PatrolShot : BossSniperStateBase
     }
 
     // 出現した瞬間に狙いを1回だけ決めて固定する
-    private void BeginLock()
+    private void BeginPrepareAim()
     {
         Vector2 aimPoint = boss.Player.position;
 
@@ -95,8 +104,7 @@ public class BossSniperState_PatrolShot : BossSniperStateBase
 
         boss.SelfUnit.SetAimPoint(aimPoint);
 
-        step = Step.Locking;
-        timer = Mathf.Max(0.05f, boss.Difficulty.patrolShotLockTime);
+        step = Step.PreparingAim;
     }
 
     public override void Exit()

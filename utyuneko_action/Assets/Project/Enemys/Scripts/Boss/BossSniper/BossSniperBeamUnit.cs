@@ -261,6 +261,110 @@ public class BossSniperBeamUnit : MonoBehaviour
     }
 
     /// <summary>
+    /// 現在の lockedDir 方向に、見た目の左右向きがほぼ追いついているか。
+    /// FaceTick() の後に呼ぶ想定。
+    /// </summary>
+    public bool IsVisualFacingCurrentDirection(float angleTolerance = 2f)
+    {
+        if (visualTransform == null) return true;
+
+        // まだ初期化されていないなら、向き合わせ未完了扱い
+        if (!hasVisualAngleInit) return false;
+
+        float target = TargetVisualAngle();
+        return Mathf.Abs(Mathf.DeltaAngle(currentVisualAngle, target)) <= angleTolerance;
+    }
+
+    /// <summary>
+    /// 線は出さず、現在の lockedDir 方向へモデルだけ向ける。
+    /// 予測線・ロック線を出す前の「構え」用。
+    /// </summary>
+    public void AimVisualOnlyTick()
+    {
+        if (visualTransform == null) return;
+
+        // ビームを出している扱いにして、Z傾きも lockedDir に合わせる
+        aimTiltActive = true;
+        UpdateModelFacing();
+    }
+
+    /// <summary>
+    /// 線は出さず、プレイヤー方向へモデルだけ向ける。
+    /// 分身攻撃の Aim に入る前など、まだ狙いを固定しない場面用。
+    /// </summary>
+    public void FacePlayerVisualOnlyTick()
+    {
+        Vector2 d = DirectionToPlayer();
+        if (d.sqrMagnitude > 0.0001f) lockedDir = d;
+
+        aimTiltActive = true;
+        UpdateModelFacing();
+    }
+
+    /// <summary>
+    /// 現在の lockedDir 方向へ、見た目の左右向きと傾きがほぼ追いついているか。
+    /// AimVisualOnlyTick() / FacePlayerVisualOnlyTick() の後に呼ぶ想定。
+    /// </summary>
+    public bool IsVisualAlignedToAim(float angleTolerance = 2f)
+    {
+        if (visualTransform == null) return true;
+        if (!hasVisualAngleInit) return false;
+
+        float targetVisual = TargetVisualAngle();
+
+        float dirAngle = Mathf.Atan2(lockedDir.y, lockedDir.x) * Mathf.Rad2Deg;
+        float targetTilt = lockedDir.x >= 0f
+            ? dirAngle
+            : Mathf.DeltaAngle(180f, dirAngle);
+
+        bool visualOk =
+            Mathf.Abs(Mathf.DeltaAngle(currentVisualAngle, targetVisual)) <= angleTolerance;
+
+        bool tiltOk =
+            Mathf.Abs(Mathf.DeltaAngle(currentTilt, targetTilt)) <= angleTolerance;
+
+        return visualOk && tiltOk;
+    }
+
+    /// <summary>
+    /// 線は出さず、現在のプレイヤー方向へモデルを即座に向ける。
+    /// テレポート先へ座標を変えた直後、出現アニメを始める前に使う。
+    /// </summary>
+    public void SnapVisualToPlayerImmediate()
+    {
+        Vector2 d = DirectionToPlayer();
+
+        if (d.sqrMagnitude > 0.0001f)
+        {
+            lockedDir = d.normalized;
+        }
+
+        SnapVisualToCurrentAimImmediate();
+    }
+
+    /// <summary>
+    /// 線は出さず、現在の lockedDir 方向へモデルを即座に向ける。
+    /// </summary>
+    public void SnapVisualToCurrentAimImmediate()
+    {
+        if (visualTransform == null) return;
+
+        currentVisualAngle = TargetVisualAngle();
+        hasVisualAngleInit = true;
+
+        float dirAngle = Mathf.Atan2(lockedDir.y, lockedDir.x) * Mathf.Rad2Deg;
+        currentTilt = lockedDir.x >= 0f
+            ? dirAngle
+            : Mathf.DeltaAngle(180f, dirAngle);
+
+        visualTransform.localRotation =
+            Quaternion.AngleAxis(currentTilt, Vector3.forward) *
+            Quaternion.Euler(0f, currentVisualAngle, 0f);
+
+        aimTiltActive = false;
+    }
+
+    /// <summary>
     /// 指定したワールド座標の方向へ照準を固定する（偏差撃ちなど、プレイヤーの現在位置以外を狙うとき用）。
     /// 以後 LockTick / FireTick はこの方向を使う（AimTick / FaceTick を呼ぶと上書きされるので注意）。
     /// </summary>

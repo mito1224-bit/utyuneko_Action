@@ -21,7 +21,7 @@ using UnityEngine;
 /// </summary>
 public class BossSniperState_RadialAttack : BossSniperStateBase
 {
-    private enum Step { Teleporting, Windup, Locking, Firing }
+    private enum Step { Teleporting, PreparingWindup, Windup, PreparingLock, Locking, Firing }
     private Step step;
 
     private readonly BossSniperTeleport teleport = new BossSniperTeleport();
@@ -88,6 +88,14 @@ public class BossSniperState_RadialAttack : BossSniperStateBase
                 {
                     // 出現したら溜めへ。初弾の射線を固定してロック射線を出しておく
                     boss.SelfUnit.SetAimDirection(shotDirs[shotIndex]);
+                    step = Step.PreparingWindup;
+                }
+                break;
+
+            case Step.PreparingWindup:
+                boss.SelfUnit.AimVisualOnlyTick();
+                if (boss.SelfUnit.IsVisualAlignedToAim())
+                {
                     step = Step.Windup;
                     timer = Mathf.Max(0f, boss.radialWindupTime);
                 }
@@ -100,6 +108,15 @@ public class BossSniperState_RadialAttack : BossSniperStateBase
                     step = Step.Firing;
                     timer = Mathf.Max(0f, boss.radialFireDuration);
                     boss.SelfUnit.FireTick();
+                }
+                break;
+
+            case Step.PreparingLock:
+                boss.SelfUnit.AimVisualOnlyTick();
+                if (boss.SelfUnit.IsVisualAlignedToAim())
+                {
+                    step = Step.Locking;
+                    timer = Mathf.Max(0.05f, boss.Difficulty.radialLockTime);
                 }
                 break;
 
@@ -135,8 +152,7 @@ public class BossSniperState_RadialAttack : BossSniperStateBase
     private void BeginLock()
     {
         boss.SelfUnit.SetAimDirection(shotDirs[shotIndex]);
-        step = Step.Locking;
-        timer = Mathf.Max(0.05f, boss.Difficulty.radialLockTime);
+        step = Step.PreparingLock;
     }
 
     public override void Exit()

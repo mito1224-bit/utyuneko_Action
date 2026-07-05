@@ -10,7 +10,7 @@ using UnityEngine;
 /// </summary>
 public class BossSniperState_Split : BossSniperStateBase
 {
-    private enum Step { Shrinking, Expanding }
+    private enum Step { Shrinking, Expanding, TurningToPlayer }
     private Step step;
 
     public override void Enter(BossSniper boss)
@@ -45,9 +45,12 @@ public class BossSniperState_Split : BossSniperStateBase
                 List<Vector2> slots = boss.BuildFormationSlots(count, boss.Player.position);
                 int realIndex = Random.Range(0, slots.Count);
                 boss.DeployFormation(slots, realIndex);
-
                 foreach (BossSniperBeamUnit u in boss.Units)
                 {
+                    // 出現アニメ前にプレイヤー方向へ即向ける
+                    u.SnapVisualToPlayerImmediate();
+
+                    // 向いた状態で出現
                     u.BeginExpand(boss.teleportExpandTime);
                 }
                 step = Step.Expanding;
@@ -65,7 +68,26 @@ public class BossSniperState_Split : BossSniperStateBase
                 {
                     u.SetHitboxEnabled(true);
                 }
-                boss.TransitionToState(boss.StateAim);
+                step = Step.TurningToPlayer;
+                break;
+
+            case Step.TurningToPlayer:
+                bool allReady = true;
+
+                foreach (BossSniperBeamUnit u in boss.Units)
+                {
+                    u.FacePlayerVisualOnlyTick();
+
+                    if (!u.IsVisualAlignedToAim())
+                    {
+                        allReady = false;
+                    }
+                }
+
+                if (allReady)
+                {
+                    boss.TransitionToState(boss.StateAim);
+                }
                 break;
         }
     }

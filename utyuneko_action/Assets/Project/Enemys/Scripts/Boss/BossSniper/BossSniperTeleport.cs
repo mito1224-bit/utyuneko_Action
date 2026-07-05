@@ -13,16 +13,18 @@ public class BossSniperTeleport
     private BossSniperBeamUnit unit;
     private Vector2 destination;
     private float expandTime;
+    private System.Action onBeforeExpand;
     private System.Action onFinished;
 
     /// <summary>シーケンスが進行中か。</summary>
     public bool Running => step != Step.Idle;
 
-    public void Begin(BossSniperBeamUnit unit, Vector2 destination, float shrinkTime, float expandTime, System.Action onFinished = null)
+    public void Begin(BossSniperBeamUnit unit, Vector2 destination, float shrinkTime, float expandTime, System.Action onBeforeExpand = null, System.Action onFinished = null)
     {
         this.unit = unit;
         this.destination = destination;
         this.expandTime = expandTime;
+        this.onBeforeExpand = onBeforeExpand;
         this.onFinished = onFinished;
 
         unit.SetHitboxEnabled(false); // 消えている間は当たらない
@@ -39,6 +41,9 @@ public class BossSniperTeleport
         {
             // 縮み切った → 座標を切り替えて復元開始
             unit.transform.position = destination;
+            //出現アニメの開始前に、向きを確定させる
+            onBeforeExpand?.Invoke();
+            //向きがあった状態で出現
             unit.BeginExpand(expandTime);
             step = Step.Expanding;
         }
