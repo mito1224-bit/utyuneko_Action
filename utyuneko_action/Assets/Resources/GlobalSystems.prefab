@@ -385,6 +385,8 @@ GameObject:
   - component: {fileID: 535574599180727805}
   - component: {fileID: 8558751110699233988}
   - component: {fileID: 602109535505354693}
+  - component: {fileID: 2115825123118132970}
+  - component: {fileID: 1353988914025696706}
   - component: {fileID: 8357568181695198290}
   m_Layer: 0
   m_Name: TransitionManager
@@ -427,6 +429,10 @@ MonoBehaviour:
     effect: {fileID: 8558751110699233988}
   - type: 2
     effect: {fileID: 602109535505354693}
+  - type: 3
+    effect: {fileID: 2115825123118132970}
+  - type: 4
+    effect: {fileID: 1353988914025696706}
   duration: 0.5
 --- !u!114 &535574599180727805
 MonoBehaviour:
@@ -467,6 +473,38 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FadeEffect
   transitionMaterial: {fileID: 2100000, guid: 407aa3b59d8b76a42b5ee9e7a7ad0d0d, type: 2}
+--- !u!114 &2115825123118132970
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8741556381754363572}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1c104853fde340f40ada9cf7461ef78f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SquareStepTransitionEffect
+  transitionMaterial: {fileID: 2100000, guid: eb332dcdefc50e54eac6edfbc814a011, type: 2}
+  useSmoothStep: 0
+--- !u!114 &1353988914025696706
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8741556381754363572}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dfd59929e72fb044da99beb89ff868f9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SquareStepZoomTransitionEffect
+  transitionMaterial: {fileID: 2100000, guid: eb332dcdefc50e54eac6edfbc814a011, type: 2}
+  useSmoothStep: 0
+  cameraFollowWithZoom: {fileID: 0}
+  zoomTargetZ: -5
+  eventPositionSpeed: 3
+  eventZoomSpeed: 2
 --- !u!114 &8357568181695198290
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -483,3 +521,4 @@ MonoBehaviour:
   wipeKey: 107
   digitalRainKey: 108
   fadeRainKey: 109
+  squareStepKey: 110

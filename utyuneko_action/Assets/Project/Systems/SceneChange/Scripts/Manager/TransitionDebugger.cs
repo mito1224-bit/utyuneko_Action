@@ -8,6 +8,7 @@ public class TransitionDebugger : MonoBehaviour
     [SerializeField] private KeyCode wipeKey = KeyCode.Alpha1;
     [SerializeField] private KeyCode digitalRainKey = KeyCode.Alpha2;
     [SerializeField] private KeyCode fadeRainKey = KeyCode.Alpha3;
+    [SerializeField] private KeyCode squareStepKey = KeyCode.Alpha4;
 
     void Update()
     {
@@ -27,6 +28,12 @@ public class TransitionDebugger : MonoBehaviour
         {
             Debug.Log($"[TransitionDebugger] DigitalRain é¿çs Å® {targetSceneName}");
             TransitionManager.Instance.ChangeScene(targetSceneName, TransitionType.Fade);
+        }
+
+        if (Input.GetKeyDown(squareStepKey))
+        {
+            Debug.Log($"[TransitionDebugger] DigitalRain é¿çs Å® {targetSceneName}");
+            TransitionManager.Instance.ChangeScene(targetSceneName, TransitionType.SquareStepZoom);
         }
     }
 }
