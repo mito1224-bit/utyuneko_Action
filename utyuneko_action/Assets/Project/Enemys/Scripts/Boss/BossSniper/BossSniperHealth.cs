@@ -16,7 +16,7 @@ using UnityEngine.Events;
 ///     （復帰までの間の置き＝stunRecoverDelay は BossSniper 側のスタン処理で扱う）
 ///
 /// 呼び出し口:
-///   各ステートの被弾判定（本物へバースト体当たり）で TryApplyBurstDamage(pc, isStunned) を呼ぶ。
+///   各ステートの被弾判定（本物へバースト体当たり）で TryApplyBurstDamage(unit, pc, isStunned) を呼ぶ。
 ///   戻り値は「ダメージが実際に入ったか」。スタンの一撃判定にも使える。
 ///
 /// HPバー等への通知はすべて UnityEvent。表示方法（現フェーズHPだけを映す等）は購読側で決める。
@@ -60,6 +60,7 @@ public class BossSniperHealth : MonoBehaviour
 
     private BossSniper boss;
     private BossSniperFlash flash;
+    private BossSniperHitStop hitStop;
     private float invincibilityTimer;
     private bool stunConsumed; // 現在のスタンで既に一撃を消費したか
 
@@ -68,6 +69,7 @@ public class BossSniperHealth : MonoBehaviour
         boss = GetComponent<BossSniper>();
         if (boss == null) boss = GetComponentInParent<BossSniper>();
         flash = GetComponent<BossSniperFlash>();
+        hitStop = GetComponent<BossSniperHitStop>();
     }
 
     void Update()
@@ -95,7 +97,7 @@ public class BossSniperHealth : MonoBehaviour
     /// 本物へのバースト体当たりを受けてダメージを試みる。実際に入ったら true。
     /// isStunned=true のときはスタン倍率が乗る一撃（そのスタン中1回だけ）。
     /// </summary>
-    public bool TryApplyBurstDamage(PlayerController pc, bool isStunned)
+    public bool TryApplyBurstDamage(BossSniperBeamUnit unit, PlayerController pc, bool isStunned)
     {
         if (isStunned)
         {
@@ -104,7 +106,7 @@ public class BossSniperHealth : MonoBehaviour
             stunConsumed = true;
 
             float dmg = ComputeBaseDamage(pc) * Mathf.Max(1f, boss.Phase.stunDamageMultiplier);
-            ApplyDamage(dmg, pc);
+            ApplyDamage(dmg, unit, pc, fromStun: true);
             return true;
         }
         else
@@ -114,7 +116,7 @@ public class BossSniperHealth : MonoBehaviour
             invincibilityTimer = damageInterval;
 
             float dmg = ComputeBaseDamage(pc);
-            ApplyDamage(dmg, pc);
+            ApplyDamage(dmg, unit, pc, fromStun: false);
             return true;
         }
     }
@@ -125,7 +127,7 @@ public class BossSniperHealth : MonoBehaviour
         return basePlayerDamage + speed * playerSpeedDamageMultiplier;
     }
 
-    private void ApplyDamage(float damage, PlayerController pc)
+    private void ApplyDamage(float damage, BossSniperBeamUnit unit, PlayerController pc, bool fromStun)
     {
         if (damage <= 0f) return;
 
@@ -144,15 +146,36 @@ public class BossSniperHealth : MonoBehaviour
             // フェーズHPを削り切った → 次フェーズ or 撃破（判断は BossSniper に委ねる）
             if (boss.IsFinalPhase)
             {
+                if (hitStop != null) hitStop.PlayDefeat(); // 撃破：全体スロー（長め）＋強いシェイク
                 boss.DefeatByHP();
             }
             else
             {
+                // フェーズ最後の一撃：スタン由来なら手応えを出す、通常ならボスだけ軽く止める
+                TriggerHitStop(unit, fromStun);
                 boss.AdvancePhaseByHP();
             }
             return;
         }
 
         onHPChanged?.Invoke(CurrentHP, MaxHP);
+
+        TriggerHitStop(unit, fromStun);
+    }
+
+    // ダメージ種別に応じてヒットストップ＋シェイクを呼び分ける（撃破は呼び出し側で処理済み）
+    private void TriggerHitStop(BossSniperBeamUnit unit, bool fromStun)
+    {
+        if (hitStop == null) return;
+        if (fromStun)
+        {
+            hitStop.PlayStun(); // スタン一撃：全体スロー＋全方向シェイク
+        }
+        else
+        {
+            // 通常：ボスだけフリーズ＋「殴られた方向」の軸±シェイク
+            Vector2 dir = unit != null ? unit.LastHitDirection : Vector2.right;
+            hitStop.PlayNormal(dir);
+        }
     }
 }

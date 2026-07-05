@@ -222,6 +222,13 @@ public class BossSniper : MonoBehaviour
     public IBossSniperState CurrentState => currentState;
     private IBossSniperState currentState;
 
+    /// <summary>
+    /// ボスだけのヒットストップ中か（BossSniperHitStop が制御）。
+    /// true の間は Update/FixedUpdate でステート更新をスキップし、ボスの内部時間を止める。
+    /// プレイヤー・UI は影響を受けない。
+    /// </summary>
+    public bool HitStopActive { get; set; }
+
     // ─── ステートから使う共有参照 ─────────────────────
 
     public Transform Player { get; private set; }
@@ -303,11 +310,13 @@ public class BossSniper : MonoBehaviour
 
     void Update()
     {
+        if (HitStopActive) return; // ボスだけフリーズ中は内部時間を止める
         currentState?.UpdateState();
     }
 
     void FixedUpdate()
     {
+        if (HitStopActive) return;
         currentState?.FixedUpdateState();
     }
 
@@ -338,7 +347,7 @@ public class BossSniper : MonoBehaviour
     public void HandleNormalBurstHit(BossSniperBeamUnit unit, PlayerController pc)
     {
         if (unit == null || !unit.IsReal) return;
-        if (Health != null) Health.TryApplyBurstDamage(pc, isStunned: false);
+        if (Health != null) Health.TryApplyBurstDamage(unit, pc, isStunned: false);
     }
 
     // 地形（obstacleLayer）との接触を現在のステートへ渡す（スタン落下の着地検知用）

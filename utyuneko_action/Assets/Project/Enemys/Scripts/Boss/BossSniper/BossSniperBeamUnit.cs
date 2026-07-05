@@ -87,6 +87,12 @@ public class BossSniperBeamUnit : MonoBehaviour
     /// <summary>本物（ボス本体）かどうか。BossSniper が設定する。</summary>
     public bool IsReal { get; set; }
 
+    /// <summary>
+    /// 直近のバースト体当たりの方向（プレイヤー→このユニット、正規化）。
+    /// 通常ダメージのシェイクを「殴られた方向の軸」に沿わせるために使う。
+    /// </summary>
+    public Vector2 LastHitDirection { get; private set; } = Vector2.right;
+
     /// <summary>収縮／復元アニメが進行中か。</summary>
     public bool IsScaleAnimating => !Mathf.Approximately(scaleFactor, scaleTarget);
 
@@ -330,6 +336,10 @@ public class BossSniperBeamUnit : MonoBehaviour
 
         if (pc.CurrentState == pc.StateBurst)
         {
+            // 殴られた方向（プレイヤー→このユニット）を記録。通常ダメージのシェイク軸に使う
+            Vector2 dir = (Vector2)transform.position - (Vector2)pc.transform.position;
+            if (dir.sqrMagnitude > 0.0001f) LastHitDirection = dir.normalized;
+
             // 「バースト状態の体当たり」は攻撃としてボスのステートへ通知（無敵扱いはステートが判断）
             if (OnBurstHit != null) OnBurstHit.Invoke(this, pc);
         }

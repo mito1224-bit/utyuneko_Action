@@ -31,7 +31,7 @@ public class BossSniperState_Stunned : BossSniperStateBase
         if (boss.Health == null) return;
 
         // スタン中の一撃（倍率つき・そのスタンで1回だけ）。入ったら間を置いて復帰へ
-        bool applied = boss.Health.TryApplyBurstDamage(pc, isStunned: true);
+        bool applied = boss.Health.TryApplyBurstDamage(unit, pc, isStunned: true);
         if (applied)
         {
             // HPを削り切っていたら Health が既にフェーズ遷移させているので、ここでは触らない
