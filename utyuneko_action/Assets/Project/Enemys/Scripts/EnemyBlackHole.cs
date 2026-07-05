@@ -68,6 +68,7 @@ public class EnemyBlackHole : MonoBehaviour
     private MeshRenderer rangeRenderer;
     private Material rangeMaterial;
     private Mesh rangeMesh;
+    private float swirlAngle; // 渦回転の累積角（ワールドZ回転で適用＝親の回転を継承しない）
 
     void Awake()
     {
@@ -190,9 +191,12 @@ public class EnemyBlackHole : MonoBehaviour
         // 半径が Inspector で変わっても追従（円メッシュは半径1なので半径そのものを掛ける）
         rangeVisual.localScale = Vector3.one * pullRadius;
 
-        // 渦の回転演出（吸い込み中のみ回す）
+        // 渦の回転演出（吸い込み中のみ角度を進める）。
+        // 親（モデル/ルート）の回転を継承すると円が斜めに寝るので、ワールドのZ回転だけを適用して
+        // 常にカメラ正面（XY平面）を保ちつつ渦だけ回す。
         if (!suppressed && swirlSpeed != 0f)
-            rangeVisual.Rotate(0f, 0f, swirlSpeed * Time.deltaTime, Space.Self);
+            swirlAngle += swirlSpeed * Time.deltaTime;
+        rangeVisual.rotation = Quaternion.Euler(0f, 0f, swirlAngle);
 
         // 頂点カラー(中心=不透明/外周=透明)に乗算する基本色。吹き飛び中は薄める
         Color c = coreColor;
