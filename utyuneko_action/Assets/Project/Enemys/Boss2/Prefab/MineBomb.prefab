@@ -237,96 +237,6 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
---- !u!1 &2177247366774819360
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2553316131619912355}
-  - component: {fileID: 5151340583272328114}
-  - component: {fileID: 8479726071572601435}
-  m_Layer: 0
-  m_Name: EnergyCore
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &2553316131619912355
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2177247366774819360}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 8190274940370781870}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!33 &5151340583272328114
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2177247366774819360}
-  m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
---- !u!23 &8479726071572601435
-MeshRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2177247366774819360}
-  m_Enabled: 1
-  m_CastShadows: 1
-  m_ReceiveShadows: 1
-  m_DynamicOccludee: 1
-  m_StaticShadowCaster: 0
-  m_MotionVectors: 1
-  m_LightProbeUsage: 1
-  m_ReflectionProbeUsage: 1
-  m_RayTracingMode: 2
-  m_RayTraceProcedural: 0
-  m_RayTracingAccelStructBuildFlagsOverride: 0
-  m_RayTracingAccelStructBuildFlags: 1
-  m_SmallMeshCulling: 1
-  m_ForceMeshLod: -1
-  m_MeshLodSelectionBias: 0
-  m_RenderingLayerMask: 1
-  m_RendererPriority: 0
-  m_Materials:
-  - {fileID: 2100000, guid: 8db1f475eaa0ac14f9ad87d71387019d, type: 2}
-  m_StaticBatchInfo:
-    firstSubMesh: 0
-    subMeshCount: 0
-  m_StaticBatchRoot: {fileID: 0}
-  m_ProbeAnchor: {fileID: 0}
-  m_LightProbeVolumeOverride: {fileID: 0}
-  m_ScaleInLightmap: 1
-  m_ReceiveGI: 1
-  m_PreserveUVs: 0
-  m_IgnoreNormalsForChartDetection: 0
-  m_ImportantGI: 0
-  m_StitchLightmapSeams: 1
-  m_SelectedEditorRenderState: 3
-  m_MinimumChartSize: 4
-  m_AutoUVMaxDistance: 0.5
-  m_AutoUVMaxAngle: 89
-  m_LightmapParameters: {fileID: 0}
-  m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_MaskInteraction: 0
-  m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &2911729002499610119
 GameObject:
   m_ObjectHideFlags: 0
@@ -361,7 +271,6 @@ Transform:
   m_Children:
   - {fileID: 7604789666676833641}
   - {fileID: 4303746152657433538}
-  - {fileID: 2553316131619912355}
   - {fileID: 5752723731682434654}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -440,24 +349,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f17bb92050651374a8ed1411f2c1cb4d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StageSecondBossMineBomb
-  activeTriggerRadius: 2.5
+  activeTriggerRadius: 4
   fuseDuration: 3
   blowSpeed: 25
   explosionEffect: {fileID: 0}
-  ultimateCounterDamage: 35
-  normalCounterDamage: 20
+  ultimateCounterDamage: 20
+  normalCounterDamage: 10
   baseScaleMultiplier: 1.4
   pulseAmplitude: 0.15
   minPulseSpeed: 5
   maxPulseSpeed: 35
-  energyCoreObject: {fileID: 2177247366774819360}
-  targetRedColor: {r: 1, g: 0.39215687, b: 0, a: 1}
-  minCoreScaleMultiplier: 0.1
-  maxCoreScaleMultiplier: 5
   indicatorRoot: {fileID: 3505400132122449763}
   redCircleTransform: {fileID: 8598432171123609277}
   bombVisual: {fileID: 919132149155446097}
   damageAreaObject: {fileID: 7832461359968415190}
+  startFlashInterval: 0.35
+  endFlashInterval: 0.05
 --- !u!1 &3505400132122449763
 GameObject:
   m_ObjectHideFlags: 0

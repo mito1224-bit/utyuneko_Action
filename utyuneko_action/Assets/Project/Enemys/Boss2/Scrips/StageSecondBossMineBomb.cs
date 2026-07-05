@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using System.Collections.Generic;
 
 [RequireComponent(typeof(Rigidbody2D))]
 public class StageSecondBossMineBomb : MonoBehaviour
@@ -16,16 +17,27 @@ public class StageSecondBossMineBomb : MonoBehaviour
     public float minPulseSpeed = 5f;
     public float maxPulseSpeed = 35f;
 
-    [SerializeField] private GameObject energyCoreObject;
-    public Color targetRedColor = new Color(1f, 0f, 0f, 0.6f);
-    public float minCoreScaleMultiplier = 0.1f;
-    public float maxCoreScaleMultiplier = 3.0f;
-
     [SerializeField] private GameObject indicatorRoot;
     [SerializeField] private Transform redCircleTransform;
     [SerializeField] private GameObject bombVisual;
 
     [SerializeField] private GameObject damageAreaObject;
+
+    [Header("⚙️ ボス共通·赤フラッシュ点滅の設定")]
+    public float startFlashInterval = 0.35f;
+    public float endFlashInterval = 0.05f;
+
+    private List<SpriteRenderer> affectedSprites = new List<SpriteRenderer>();
+    private List<Material> savedSpriteMaterials = new List<Material>();
+    private List<SkinnedMeshRenderer> affectedSkinneds = new List<SkinnedMeshRenderer>();
+    private List<Material> savedSkinMaterials = new List<Material>();
+    private List<MeshRenderer> affectedMeshes = new List<MeshRenderer>();
+    private List<Material> savedMeshMaterials = new List<Material>();
+
+    private Material redFlashMaterial;
+    private bool isSetupCompleted = false;
+    private float blinkTimer = 0f;
+    private bool isFlashOn = false;
 
     private Rigidbody2D rb2d;
     private bool isTriggered = false;
@@ -34,9 +46,7 @@ public class StageSecondBossMineBomb : MonoBehaviour
     private int groundLayerId;
 
     private Vector3 originalVisualScale = Vector3.one;
-    private Vector3 originalCoreScale = Vector3.one;
     private float pulsePhase = 0f;
-    private Renderer coreRenderer;
 
     private bool isTossing = false;
     private Vector3 tossStartPos;
@@ -55,10 +65,46 @@ public class StageSecondBossMineBomb : MonoBehaviour
         groundLayerId = LayerMask.NameToLayer("Ground");
 
         if (bombVisual != null) originalVisualScale = bombVisual.transform.localScale;
-        if (energyCoreObject != null)
+    }
+
+    void Start()
+    {
+        Shader guiTextShader = Shader.Find("GUI/Text Shader");
+        redFlashMaterial = new Material(guiTextShader != null ? guiTextShader : Shader.Find("Sprites/Default"));
+        redFlashMaterial.color = new Color(1f, 0.15f, 0.15f, 1f);
+
+        Transform rootToSearch = bombVisual != null ? bombVisual.transform : transform;
+
+        affectedSprites.Clear(); savedSpriteMaterials.Clear();
+        foreach (var sr in rootToSearch.GetComponentsInChildren<SpriteRenderer>())
         {
-            originalCoreScale = energyCoreObject.transform.localScale;
-            coreRenderer = energyCoreObject.GetComponent<Renderer>();
+            if (sr != null) { affectedSprites.Add(sr); savedSpriteMaterials.Add(sr.sharedMaterial); }
+        }
+        affectedSkinneds.Clear(); savedSkinMaterials.Clear();
+        foreach (var smr in rootToSearch.GetComponentsInChildren<SkinnedMeshRenderer>())
+        {
+            if (smr != null) { affectedSkinneds.Add(smr); savedSkinMaterials.Add(smr.sharedMaterial); }
+        }
+        affectedMeshes.Clear(); savedMeshMaterials.Clear();
+        foreach (var mr in rootToSearch.GetComponentsInChildren<MeshRenderer>())
+        {
+            if (mr != null) { affectedMeshes.Add(mr); savedMeshMaterials.Add(mr.sharedMaterial); }
+        }
+
+        isSetupCompleted = true;
+
+        if (!isTossing)
+        {
+            GameObject playerObj = FindFirstObjectByType<PlayerController>()?.gameObject;
+            if (playerObj != null) playerTransform = playerObj.transform;
+
+            if (indicatorRoot != null)
+            {
+                indicatorRoot.SetActive(true);
+                indicatorRoot.transform.localScale = new Vector3(activeTriggerRadius * 2f, activeTriggerRadius * 2f, 1f);
+            }
+            if (redCircleTransform != null) redCircleTransform.localScale = Vector3.zero;
+            if (damageAreaObject != null) damageAreaObject.SetActive(false);
         }
     }
 
@@ -73,7 +119,6 @@ public class StageSecondBossMineBomb : MonoBehaviour
 
         transform.position = startPos;
 
-        // 🛠️【跳ね上がり防止】投擲中はボス本体とのめり込みによる位置ズレを防ぐためコライダーをオフに
         if (TryGetComponent<Collider2D>(out var col)) col.enabled = false;
 
         if (indicatorRoot != null)
@@ -85,25 +130,6 @@ public class StageSecondBossMineBomb : MonoBehaviour
         }
         if (redCircleTransform != null) redCircleTransform.localScale = Vector3.zero;
         if (damageAreaObject != null) damageAreaObject.SetActive(false);
-        if (energyCoreObject != null) energyCoreObject.SetActive(false);
-    }
-
-    void Start()
-    {
-        if (!isTossing)
-        {
-            GameObject playerObj = FindFirstObjectByType<PlayerController>()?.gameObject;
-            if (playerObj != null) playerTransform = playerObj.transform;
-
-            if (indicatorRoot != null)
-            {
-                indicatorRoot.SetActive(true);
-                indicatorRoot.transform.localScale = new Vector3(activeTriggerRadius * 2f, activeTriggerRadius * 2f, 1f);
-            }
-            if (redCircleTransform != null) redCircleTransform.localScale = Vector3.zero;
-            if (damageAreaObject != null) damageAreaObject.SetActive(false);
-            if (energyCoreObject != null) energyCoreObject.SetActive(false);
-        }
     }
 
     void Update()
@@ -111,6 +137,7 @@ public class StageSecondBossMineBomb : MonoBehaviour
         if (IsBlownAway)
         {
             BlownAwayTimer += Time.deltaTime;
+            if (bombVisual != null) bombVisual.transform.Rotate(Vector3.forward, 450f * Time.deltaTime);
             return;
         }
 
@@ -129,15 +156,7 @@ public class StageSecondBossMineBomb : MonoBehaviour
             {
                 isTossing = false;
                 transform.position = tossTargetPos;
-
-                // 🛠️【めり込み防止解除】配置が完了したのでコライダーを正常化
                 if (TryGetComponent<Collider2D>(out var col)) col.enabled = true;
-
-                // ===================================================================
-                // 🛠️【角度バグ修正】
-                // 投擲移動が終わった瞬間に、グルグル回っていたビジュアルのローカル角度を
-                // 0度（正面向きの真っ直ぐな状態）にピタッとリセットします！
-                // ===================================================================
                 if (bombVisual != null) bombVisual.transform.localRotation = Quaternion.identity;
 
                 GameObject playerObj = FindFirstObjectByType<PlayerController>()?.gameObject;
@@ -153,8 +172,6 @@ public class StageSecondBossMineBomb : MonoBehaviour
                 isTriggered = true;
                 fuseTimer = 0f;
                 SoundManager.Instance.PlaySE(SeType.EnemyExplosionDelay);
-
-                if (energyCoreObject != null) energyCoreObject.SetActive(true);
             }
         }
 
@@ -175,19 +192,43 @@ public class StageSecondBossMineBomb : MonoBehaviour
 
                 bombVisual.transform.localScale = originalVisualScale * finalScaleFactor;
 
-                if (energyCoreObject != null && coreRenderer != null)
-                {
-                    float coreScaleFactor = Mathf.Lerp(minCoreScaleMultiplier, maxCoreScaleMultiplier, progress) + (sineWave * 0.05f);
-                    energyCoreObject.transform.localScale = originalCoreScale * coreScaleFactor;
+                float currentInterval = Mathf.Lerp(startFlashInterval, endFlashInterval, progress);
 
-                    float blinkFactor = (sineWave + 1f) * 0.5f;
-                    Color blinkColor = targetRedColor;
-                    blinkColor.a = Mathf.Lerp(0.1f, targetRedColor.a, blinkFactor * progress);
-                    coreRenderer.material.color = blinkColor;
+                blinkTimer += Time.deltaTime;
+                if (blinkTimer >= currentInterval)
+                {
+                    blinkTimer = 0f;
+                    isFlashOn = !isFlashOn;
+                    ApplyRedFlash(isFlashOn);
                 }
             }
 
             if (fuseTimer >= fuseDuration) NormalExplode();
+        }
+    }
+
+    private void ApplyRedFlash(bool on)
+    {
+        if (!isSetupCompleted) return;
+
+        if (on && redFlashMaterial != null)
+        {
+            foreach (var sr in affectedSprites) if (sr != null) sr.sharedMaterial = redFlashMaterial;
+            foreach (var smr in affectedSkinneds) if (smr != null) smr.sharedMaterial = redFlashMaterial;
+            foreach (var mr in affectedMeshes) if (mr != null) mr.sharedMaterial = redFlashMaterial;
+        }
+        else
+        {
+            for (int i = 0; i < affectedSprites.Count; i++)
+            {
+                if (affectedSprites[i] != null && i < savedSpriteMaterials.Count)
+                {
+                    affectedSprites[i].sharedMaterial = savedSpriteMaterials[i];
+                    affectedSprites[i].color = Color.white;
+                }
+            }
+            for (int i = 0; i < affectedSkinneds.Count; i++) if (affectedSkinneds[i] != null && i < savedSkinMaterials.Count) affectedSkinneds[i].sharedMaterial = savedSkinMaterials[i];
+            for (int i = 0; i < affectedMeshes.Count; i++) if (affectedMeshes[i] != null && i < savedMeshMaterials.Count) affectedMeshes[i].sharedMaterial = savedMeshMaterials[i];
         }
     }
 
@@ -211,15 +252,7 @@ public class StageSecondBossMineBomb : MonoBehaviour
                 StageSecondBossController boss = hitObj.GetComponent<StageSecondBossController>();
                 if (boss != null)
                 {
-                    if (boss.currentDebugStateName == "StageSecondBossUltimateState")
-                    {
-                        boss.TakeDamage(ultimateCounterDamage);
-                        boss.OnMineCounterHit();
-                    }
-                    else
-                    {
-                        boss.TakeDamage(normalCounterDamage);
-                    }
+                    boss.TakeDamage(normalCounterDamage);
                 }
                 ExecuteExplosionCore();
             }
@@ -235,12 +268,22 @@ public class StageSecondBossMineBomb : MonoBehaviour
             PlayerController player = hitObj.GetComponent<PlayerController>();
             if (player != null && player.CurrentState == player.StateBurst)
             {
+                ApplyRedFlash(false);
+
                 isTriggered = false;
                 IsBlownAway = true;
                 BlownAwayTimer = 0f;
 
                 if (indicatorRoot != null) Destroy(indicatorRoot);
                 rb2d.bodyType = RigidbodyType2D.Dynamic;
+
+                // ===================================================================
+                // 🛠️【連動修正】吹っ飛ばされたので、地雷本体のDamageSourceを即座にOFF！
+                // これにより、接触してもプレイヤーがダメージを受けなくなります。
+                // ===================================================================
+                var ds = GetComponent<DamageSource>();
+                if (ds == null) ds = GetComponentInChildren<DamageSource>();
+                if (ds != null) ds.enabled = false;
 
                 Vector2 flyDirection = Vector2.right;
                 if (hitObj.TryGetComponent<Rigidbody2D>(out var playerRb) && playerRb.linearVelocity.magnitude > 0.1f)
@@ -251,7 +294,6 @@ public class StageSecondBossMineBomb : MonoBehaviour
                 SoundManager.Instance.PlaySE(SeType.PlayerBurstBegin);
 
                 if (bombVisual != null) bombVisual.transform.localScale = originalVisualScale;
-                if (energyCoreObject != null) energyCoreObject.SetActive(false);
             }
             else
             {
@@ -262,12 +304,13 @@ public class StageSecondBossMineBomb : MonoBehaviour
 
     private void ExecuteExplosionCore()
     {
+        ApplyRedFlash(false);
+
         rb2d.linearVelocity = Vector2.zero;
         rb2d.bodyType = RigidbodyType2D.Kinematic;
         if (TryGetComponent<Collider2D>(out var col)) col.enabled = false;
 
         if (bombVisual != null) bombVisual.SetActive(false);
-        if (energyCoreObject != null) energyCoreObject.SetActive(false);
 
         SoundManager.Instance.PlaySE(SeType.EnemyExplosion);
         if (explosionEffect != null) Instantiate(explosionEffect, transform.position, Quaternion.identity);
@@ -276,6 +319,17 @@ public class StageSecondBossMineBomb : MonoBehaviour
         {
             damageAreaObject.transform.SetParent(null);
             SyncColliderSize(damageAreaObject, activeTriggerRadius);
+
+            // ===================================================================
+            // 🛠️【連動修正】跳ね返された状態の爆発なら、爆発範囲のDamageSourceもOFF！
+            // これにより、地雷の爆発にプレイヤーが巻き込まれても無傷になります。
+            // ===================================================================
+            if (IsBlownAway)
+            {
+                var areaDs = damageAreaObject.GetComponent<DamageSource>();
+                if (areaDs != null) areaDs.enabled = false;
+            }
+
             damageAreaObject.SetActive(true);
             Destroy(damageAreaObject, 0.2f);
         }
@@ -294,5 +348,12 @@ public class StageSecondBossMineBomb : MonoBehaviour
     {
         if (targetObj.TryGetComponent<CircleCollider2D>(out var circleCol)) circleCol.radius = radius;
         else if (targetObj.TryGetComponent<BoxCollider2D>(out var boxCol)) boxCol.size = new Vector2(radius * 2f, radius * 2f);
+    }
+
+    void OnDestroy()
+    {
+        if (indicatorRoot != null) Destroy(indicatorRoot);
+        ApplyRedFlash(false);
+        if (redFlashMaterial != null) Destroy(redFlashMaterial);
     }
 }

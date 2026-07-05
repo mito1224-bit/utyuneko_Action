@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class StageSecondBossController : MonoBehaviour
 {
@@ -7,9 +8,30 @@ public class StageSecondBossController : MonoBehaviour
     public float currentHP => healthComponent != null ? healthComponent.currentHP : 100f;
     public float maxHP => healthComponent != null ? healthComponent.maxHP : 100f;
 
+    public DamageSource cachedDamageSource { get; private set; }
+    public Vector3 originalVisualLocalPosition { get; private set; }
+    public Quaternion originalVisualLocalRotation { get; private set; }
+    private List<RendererData> originalRendererData = new List<RendererData>();
+
+    private struct RendererData
+    {
+        public SpriteRenderer spriteRenderer;
+        public SkinnedMeshRenderer skinnedRenderer;
+        public MeshRenderer meshRenderer;
+        public Material originalMaterial;
+    }
+
     [Header("基礎ステータス")]
-    [Tooltip("💫 スタン中にプレイヤーから受けるダメージの倍率（3倍！）")]
     public float stunDamageMultiplier = 3.0f;
+
+    [Header("🔥 第2フェーズ（怒りモード）の設定")]
+    public float phase2HpThresholdRatio = 0.5f;
+    public float phase2SpeedMultiplier = 1.4f;
+    [Tooltip("第2フェーズ移行（威嚇咆哮）演出中の被弾ダメージ倍率。0.2ならダメージ80%カット")]
+    public float phaseTransitionDamageMultiplier = 0.2f;
+
+    public float attackSpeedMultiplier { get; set; } = 1.0f;
+    public bool isPhase2Started { get; set; } = false;
 
     [Header("通常攻撃の基本設定")]
     public GameObject timedBombPrefab;
@@ -77,6 +99,16 @@ public class StageSecondBossController : MonoBehaviour
     private float lastUltHP;
     public bool shouldForceUltimate { get; set; } = false;
 
+    [Header("⚙️ 死亡・イベント演出の設定")]
+    public float eventTriggerDistance = 2.5f;
+    public GameObject specialDisappearEffect;
+    public bool isDeathEventStarted { get; set; } = false;
+    private bool isAlreadyDisappeared = false;
+
+
+    [Header("💀 死亡時にアクティブ化するイベントトリガー")]
+    [Tooltip("EventTriggerArea2Dがアタッチされた、ボス戦後の吸い込みイベント用トリガーオブジェクトをセット")]
+    public GameObject absorbEventTriggerObject;
 
     [Header("必殺技（吸引）の設定")]
     public float ultPullRadius = 15f;
@@ -91,6 +123,7 @@ public class StageSecondBossController : MonoBehaviour
     public GameObject ultIndicatorRoot;
     public Transform ultRedCircleTransform;
     public GameObject ultDamageAreaObject;
+    public CameraBoundsTrigger BossStatgeCamera;
 
     public StageSecondBossIdleState StateIdle { get; private set; }
     public StageSecondBossBombTimedState StateBombTimed { get; private set; }
@@ -100,12 +133,16 @@ public class StageSecondBossController : MonoBehaviour
     public StageSecondBossUltimateState StateUltimate { get; private set; }
     public StageSecondBossStunState StateStun { get; private set; }
     public StageSecondBossDeadState StateDead { get; private set; }
+    public StageSecondBossPhaseTransitionState StatePhaseTransition { get; private set; }
+    public StageSecondBossBombCrossState StateBombCross { get; private set; }
+    public StageSecondBossAppearState StateAppear { get; private set; }
 
     private StageSecondBossBaseState currentState;
     public string currentDebugStateName;
 
     private Transform playerTransform;
     private Rigidbody2D playerRb2D;
+    private int groundLayerId;
 
     void Awake()
     {
@@ -117,9 +154,26 @@ public class StageSecondBossController : MonoBehaviour
         StateUltimate = new StageSecondBossUltimateState(this);
         StateStun = new StageSecondBossStunState(this);
         StateDead = new StageSecondBossDeadState(this);
+        StatePhaseTransition = new StageSecondBossPhaseTransitionState(this);
+        StateBombCross = new StageSecondBossBombCrossState(this);
+        StateAppear = new StageSecondBossAppearState(this);
 
         healthComponent = GetComponent<StageSecondBossHealth>();
         if (healthComponent == null) healthComponent = GetComponentInChildren<StageSecondBossHealth>();
+
+        cachedDamageSource = GetComponent<DamageSource>();
+        if (cachedDamageSource == null) cachedDamageSource = GetComponentInChildren<DamageSource>();
+
+        Transform visualTarget = ultVisualOffsetObject != null ? visualTarget = ultVisualOffsetObject : transform;
+        originalVisualLocalPosition = visualTarget.localPosition;
+        originalVisualLocalRotation = visualTarget.localRotation;
+
+        originalRendererData.Clear();
+        foreach (var sr in visualTarget.GetComponentsInChildren<SpriteRenderer>(true)) if (sr != null) originalRendererData.Add(new RendererData { spriteRenderer = sr, originalMaterial = sr.sharedMaterial });
+        foreach (var smr in visualTarget.GetComponentsInChildren<SkinnedMeshRenderer>(true)) if (smr != null) originalRendererData.Add(new RendererData { skinnedRenderer = smr, originalMaterial = smr.sharedMaterial });
+        foreach (var mr in visualTarget.GetComponentsInChildren<MeshRenderer>(true)) if (mr != null) originalRendererData.Add(new RendererData { meshRenderer = mr, originalMaterial = mr.sharedMaterial });
+
+        groundLayerId = LayerMask.NameToLayer("Ground");
     }
 
     void Start()
@@ -136,8 +190,7 @@ public class StageSecondBossController : MonoBehaviour
         if (ultIndicatorRoot != null) ultIndicatorRoot.SetActive(false);
 
         lastUltHP = maxHP;
-
-        TransitionToState(StateIdle);
+        TransitionToState(StateAppear); // 登場演出からスタート
     }
 
     void Update()
@@ -146,19 +199,20 @@ public class StageSecondBossController : MonoBehaviour
 
         if (currentUltCooldownTimer > 0f) currentUltCooldownTimer -= Time.deltaTime;
 
-        if (currentState != StateStun && currentState != StateDead && currentState != StateUltimate)
+        if (currentState != StateStun && currentState != StateDead && currentState != StateUltimate && currentState != StatePhaseTransition && currentState != StateAppear)
         {
             ultTimeTimer += Time.deltaTime;
-            if (ultTimeTimer >= ultTimeInterval)
-            {
-                shouldForceUltimate = true;
-            }
-
-            if (lastUltHP - currentHP >= ultHpInterval)
-            {
-                shouldForceUltimate = true;
-            }
+            if (ultTimeTimer >= ultTimeInterval) shouldForceUltimate = true;
+            if (lastUltHP - currentHP >= ultHpInterval) shouldForceUltimate = true;
         }
+
+        if (!isPhase2Started && currentHP <= maxHP * phase2HpThresholdRatio && currentState != StateDead && currentState != StateAppear)
+        {
+            isPhase2Started = true;
+            TransitionToState(StatePhaseTransition);
+        }
+
+        if (Input.GetKeyDown(KeyCode.P)) TakeDamage(10f);
     }
 
     void FixedUpdate() { if (currentState != null) currentState.FixedUpdate(); }
@@ -167,9 +221,53 @@ public class StageSecondBossController : MonoBehaviour
     {
         if (currentState == newState) return;
         if (currentState != null) currentState.Exit();
+
+        if (healthComponent != null) healthComponent.StopFlashAndReset();
+        ForceResetAllMaterials();
+        StopAllCoroutines();
+
         currentState = newState;
         currentDebugStateName = newState.GetType().Name;
         if (currentState != null) currentState.Enter();
+    }
+
+    private void OnCollisionEnter2D(Collision2D collision) { CheckGroundCollision(collision.gameObject); }
+    private void OnTriggerEnter2D(Collider2D other) { CheckGroundCollision(other.gameObject); }
+
+    private void CheckGroundCollision(GameObject hitObj)
+    {
+        if (hitObj.layer == groundLayerId)
+        {
+            if (currentDebugStateName == "StageSecondBossStunState" || currentDebugStateName == "StageSecondBossDeadState")
+            {
+                if (TryGetComponent<Rigidbody2D>(out var rb))
+                {
+                    rb.mass = 1000f;
+                    rb.linearVelocity = Vector2.zero;
+                    Debug.Log("<color=cyan>⚓ ボス：物理的に地面に着地！ Massを1000にロックして鉄壁化しました。</color>");
+                }
+            }
+
+            // ===================================================================
+            // 🛠️【天才的アイデアの具現化】
+            // ボスが死亡落下し、地面のレイヤーに物理衝突したまさにその瞬間に、
+            // EventTriggerArea2Dがついた判定オブジェクトを自動で叩き起こす（有効化）！
+            // ===================================================================
+            if (currentDebugStateName == "StageSecondBossDeadState")
+            {
+                if (absorbEventTriggerObject != null && !absorbEventTriggerObject.activeSelf)
+                {
+                    absorbEventTriggerObject.SetActive(true);
+                    Debug.Log("<color=green>🎬 ボス：地面に激突着地完了！ 吸い込み演出用の【EventTriggerArea2D】を実体化させました。</color>");
+                }
+            }
+        }
+    }
+
+    public void SetAllDamageSourcesEnabled(bool enabled)
+    {
+        var sources = GetComponentsInChildren<DamageSource>(true);
+        foreach (var src in sources) if (src != null) src.enabled = enabled;
     }
 
     public void TakeDamage(float damage) { if (healthComponent != null) healthComponent.TakeDamage(damage); }
@@ -183,10 +281,6 @@ public class StageSecondBossController : MonoBehaviour
         currentUltCooldownTimer = ultCooldownDuration;
     }
 
-    // ===================================================================
-    // 🛠️【大修正】気絶カウンター受付
-    // 必殺技（StateUltimate）中のみスタンへの遷移を許可するように完全固定！
-    // ===================================================================
     public void OnMineCounterHit()
     {
         if (currentState == StateUltimate)
@@ -194,6 +288,27 @@ public class StageSecondBossController : MonoBehaviour
             Debug.Log("🛡️ 必殺技（ウルト）の強制遮断に成功！気絶落下します。");
             TransitionToState(StateStun);
         }
+    }
+
+    public void ForceResetAllMaterials()
+    {
+        foreach (var data in originalRendererData)
+        {
+            if (data.spriteRenderer != null) { data.spriteRenderer.sharedMaterial = data.originalMaterial; data.spriteRenderer.color = Color.white; }
+            if (data.skinnedRenderer != null) data.skinnedRenderer.sharedMaterial = data.originalMaterial;
+            if (data.meshRenderer != null) data.meshRenderer.sharedMaterial = data.originalMaterial;
+        }
+    }
+
+    public void DisappearBoss()
+    {
+        if (isAlreadyDisappeared) return;
+        isAlreadyDisappeared = true;
+        Vector3 disappearPos = transform.position;
+        if (specialDisappearEffect != null) Instantiate(specialDisappearEffect, disappearPos, Quaternion.identity);
+        else if (ultExplosionEffect != null) Instantiate(ultExplosionEffect, disappearPos, Quaternion.identity);
+        SoundManager.Instance.PlaySE(SeType.EnemyExplosion);
+        Destroy(gameObject);
     }
 
     public void SyncColliderSize(GameObject targetObj, float radius)
@@ -208,106 +323,91 @@ public class StageSecondBossController : MonoBehaviour
         Vector3 startPos = transform.position;
         float t = 0f;
         float afterimageTimer = 0f;
-
         CreateAfterimage();
-
         while (t < duration)
         {
             t += Time.deltaTime;
             float ratio = Mathf.Clamp01(t / duration);
             float smoothRatio = Mathf.SmoothStep(0f, 1f, ratio);
             transform.position = Vector3.Lerp(startPos, targetPos, smoothRatio);
-
             afterimageTimer += Time.deltaTime;
-            if (afterimageTimer >= afterimageInterval)
-            {
-                afterimageTimer = 0f;
-                CreateAfterimage();
-            }
+            if (afterimageTimer >= afterimageInterval) { afterimageTimer = 0f; CreateAfterimage(); }
             yield return null;
         }
         transform.position = targetPos;
     }
 
-    public IEnumerator HoverMoverRoutine(Vector3 targetPos, float duration)
-    {
-        return HoverMoveRoutine(targetPos, duration);
-    }
+    public IEnumerator HoverMoverRoutine(Vector3 targetPos, float duration) { return HoverMoveRoutine(targetPos, duration); }
 
     private void CreateAfterimage()
     {
-        Transform visualTarget = ultVisualOffsetObject != null ? ultVisualOffsetObject : transform;
+        Transform visualTarget = ultVisualOffsetObject != null ? visualTarget = ultVisualOffsetObject : transform;
         if (visualTarget == null) return;
-
         GameObject clone = Instantiate(visualTarget.gameObject, visualTarget.position, visualTarget.rotation);
         clone.name = "BossHoverAfterimage_Clone";
         clone.transform.SetParent(null);
         clone.transform.localScale = visualTarget.lossyScale;
-
         if (clone.TryGetComponent<StageSecondBossController>(out var c)) Destroy(c);
         if (clone.TryGetComponent<Rigidbody2D>(out var rb)) Destroy(rb);
         if (clone.TryGetComponent<Collider2D>(out var col)) Destroy(col);
         if (clone.TryGetComponent<Animator>(out var anim)) Destroy(anim);
         foreach (var childAnim in clone.GetComponentsInChildren<Animator>()) Destroy(childAnim);
         foreach (var childCol in clone.GetComponentsInChildren<Collider2D>()) Destroy(childCol);
-
-        SpriteRenderer[] spriteRenderers = clone.GetComponentsInChildren<SpriteRenderer>();
-        MeshRenderer[] meshRenderers = clone.GetComponentsInChildren<MeshRenderer>();
-        SkinnedMeshRenderer[] skinnedRenderers = clone.GetComponentsInChildren<SkinnedMeshRenderer>();
-
-        foreach (var sr in spriteRenderers) if (sr != null) sr.color = afterimageColor;
-
-        StartCoroutine(FadeOutAfterimageCloneRoutine(clone, spriteRenderers, meshRenderers, skinnedRenderers));
-    }
-
-    private IEnumerator FadeOutAfterimageCloneRoutine(GameObject clone, SpriteRenderer[] sprites, MeshRenderer[] meshes, SkinnedMeshRenderer[] skinneds)
-    {
-        System.Collections.Generic.List<Material> createdMaterials = new System.Collections.Generic.List<Material>();
-
-        foreach (var smr in skinneds)
-        {
-            if (smr == null || !smr.enabled) continue;
-            Mesh bakedMesh = new Mesh();
-            smr.BakeMesh(bakedMesh);
-            GameObject meshObj = smr.gameObject;
-            Destroy(smr);
-            MeshFilter mf = meshObj.AddComponent<MeshFilter>();
-            mf.sharedMesh = bakedMesh;
-            MeshRenderer mr = meshObj.AddComponent<MeshRenderer>();
-            Material newMat = new Material(Shader.Find("Sprites/Default")) { color = afterimageColor };
-            mr.material = newMat;
-            createdMaterials.Add(newMat);
-        }
-
-        foreach (var mr in meshes)
-        {
-            if (mr == null) continue;
-            Material newMat = new Material(Shader.Find("Sprites/Default")) { color = afterimageColor };
-            mr.material = newMat;
-            createdMaterials.Add(newMat);
-        }
-
-        float t = 0f;
-        float duration = afterimageDuration;
-
-        while (t < duration)
-        {
-            t += Time.deltaTime;
-            float ratio = Mathf.Clamp01(t / duration);
-            float alpha = Mathf.Lerp(afterimageColor.a, 0f, ratio);
-
-            foreach (var sr in sprites) if (sr != null) { Color c = sr.color; c.a = alpha; sr.color = c; }
-            foreach (var mat in createdMaterials) if (mat != null) { Color c = mat.color; c.a = alpha; mat.color = c; }
-            yield return null;
-        }
-
-        foreach (var mat in createdMaterials) if (mat != null) Destroy(mat);
-        var meshFilters = clone.GetComponentsInChildren<MeshFilter>();
-        foreach (var mf in meshFilters) if (mf != null && mf.sharedMesh != null && mf.sharedMesh.name == "") Destroy(mf.sharedMesh);
-
-        Destroy(clone);
+        clone.AddComponent<StageSecondBossAfterimageFade>().Initialize(afterimageDuration, afterimageColor);
     }
 
     public Transform GetPlayerTransform() => playerTransform;
     public Rigidbody2D GetPlayerRigidbody() => playerRb2D;
+}
+
+// ===================================================================
+// 🛠️【エラー修正：重要】コピペ漏れが起きないよう、同じファイルの末尾に完全内蔵させました！
+// ===================================================================
+public class StageSecondBossAfterimageFade : MonoBehaviour
+{
+    public void Initialize(float duration, Color targetColor)
+    {
+        var sprites = GetComponentsInChildren<SpriteRenderer>();
+        var meshes = GetComponentsInChildren<MeshRenderer>();
+        var skinneds = GetComponentsInChildren<SkinnedMeshRenderer>();
+
+        foreach (var sr in sprites) if (sr != null) sr.color = targetColor;
+
+        List<Material> createdMaterials = new List<Material>();
+        foreach (var smr in skinneds)
+        {
+            if (smr == null || !smr.enabled) continue;
+            Mesh bakedMesh = new Mesh(); smr.BakeMesh(bakedMesh); GameObject meshObj = smr.gameObject; Destroy(smr);
+            meshObj.AddComponent<MeshFilter>().sharedMesh = bakedMesh;
+            Material newMat = new Material(Shader.Find("Sprites/Default")) { color = targetColor };
+            meshObj.AddComponent<MeshRenderer>().material = newMat; createdMaterials.Add(newMat);
+        }
+        foreach (var mr in meshes)
+        {
+            if (mr == null) continue;
+            Material newMat = new Material(Shader.Find("Sprites/Default")) { color = targetColor };
+            mr.material = newMat; createdMaterials.Add(newMat);
+        }
+
+        StartCoroutine(FadeRoutine(duration, targetColor.a, sprites, createdMaterials));
+    }
+
+    private IEnumerator FadeRoutine(float duration, float startAlpha, SpriteRenderer[] sprites, List<Material> materials)
+    {
+        float t = 0f;
+        while (t < duration)
+        {
+            t += Time.deltaTime;
+            float ratio = Mathf.Clamp01(t / duration);
+            float alpha = Mathf.Lerp(startAlpha, 0f, ratio);
+
+            foreach (var sr in sprites) if (sr != null) { Color c = sr.color; c.a = alpha; sr.color = c; }
+            foreach (var mat in materials) if (mat != null) { Color c = mat.color; c.a = alpha; mat.color = c; }
+            yield return null;
+        }
+        foreach (var mat in materials) if (mat != null) Destroy(mat);
+        var meshFilters = GetComponentsInChildren<MeshFilter>();
+        foreach (var mf in meshFilters) if (mf != null && mf.sharedMesh != null && mf.sharedMesh.name == "") Destroy(mf.sharedMesh);
+        Destroy(gameObject);
+    }
 }

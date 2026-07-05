@@ -8,15 +8,23 @@ public class StageSecondBossHealth : MonoBehaviour
     public float maxHP = 100f;
     public float currentHP;
 
+    [Header("⚙️ UI HPバーとの連動設定")]
+    public StageSecondBossHPBar bossHpBar;
+
     [Header("⚙️ バリアシステムの設定")]
     public bool hasBarrier = true;
     public bool immuneToPlayerWhenBarrierOn = true;
-    public float bombDirectDamage = 35f;
     public GameObject barrierVisualObject;
 
     [Header("⚙️ プレイヤーからの被弾ダメージ設定")]
-    public float basePlayerDamage = 10f;
-    public float playerSpeedDamageMultiplier = 0.8f;
+    public float bombDirectDamage = 15f;
+    public float basePlayerDamage = 4f;
+    public float playerSpeedDamageMultiplier = 0.4f;
+    public float hitStopTime = 0.1f;
+
+    [Header("⚙️ 被弾インターバル（無敵時間）の設定")]
+    public float damageInterval = 0.5f;
+    private float invincibilityTimer = 0f;
 
     [Header("⚙️ 被弾時フラッシュ演出の設定")]
     public float damageFlashDuration = 0.08f;
@@ -25,12 +33,14 @@ public class StageSecondBossHealth : MonoBehaviour
     private StageSecondBossController controller;
     private Material defaultFlashMaterial;
 
-    private List<SpriteRenderer> affectedSprites = new List<SpriteRenderer>();
-    private List<Material> savedSpriteMaterials = new List<Material>();
-    private List<SkinnedMeshRenderer> affectedSkinneds = new List<SkinnedMeshRenderer>();
-    private List<Material> savedSkinnedMaterials = new List<Material>();
-    private List<MeshRenderer> affectedMeshes = new List<MeshRenderer>();
-    private List<Material> savedMeshMaterials = new List<Material>();
+    private struct RendererDefaultMat
+    {
+        public SpriteRenderer sr;
+        public SkinnedMeshRenderer smr;
+        public MeshRenderer mr;
+        public Material origMat;
+    }
+    private List<RendererDefaultMat> defaultMaterials = new List<RendererDefaultMat>();
 
     private bool isFlashing = false;
     private Coroutine flashCoroutine;
@@ -48,7 +58,57 @@ public class StageSecondBossHealth : MonoBehaviour
         if (guiTextShader != null) defaultFlashMaterial = new Material(guiTextShader) { color = Color.white };
         else defaultFlashMaterial = new Material(Shader.Find("Sprites/Default")) { color = Color.white };
 
+        Transform visualRoot = controller != null ? (controller.ultVisualOffsetObject != null ? controller.ultVisualOffsetObject : controller.transform) : transform;
+        defaultMaterials.Clear();
+        foreach (var sr in visualRoot.GetComponentsInChildren<SpriteRenderer>(true)) if (sr != null) defaultMaterials.Add(new RendererDefaultMat { sr = sr, origMat = sr.sharedMaterial });
+        foreach (var smr in visualRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true)) if (smr != null) defaultMaterials.Add(new RendererDefaultMat { smr = smr, origMat = smr.sharedMaterial });
+        foreach (var mr in visualRoot.GetComponentsInChildren<MeshRenderer>(true)) if (mr != null) defaultMaterials.Add(new RendererDefaultMat { mr = mr, origMat = mr.sharedMaterial });
+
         UpdateBarrierVisual();
+
+    }
+
+    void Update()
+    {
+        if (invincibilityTimer > 0f)
+        {
+            invincibilityTimer -= Time.deltaTime;
+        }
+    }
+
+    // ===================================================================
+    // 🛠️【超重要】1枚目の赤波線エラー（見つからないエラー）を消滅させるバリア関数
+    // クラスの内部に確実に定義されるように位置を固定したよ！
+    // ===================================================================
+    public void UpdateBarrierVisual()
+    {
+        if (barrierVisualObject != null)
+        {
+            barrierVisualObject.SetActive(hasBarrier);
+        }
+    }
+
+    public void ResetBarrier()
+    {
+        hasBarrier = true;
+        UpdateBarrierVisual();
+    }
+
+    public void StopFlashAndReset()
+    {
+        if (flashCoroutine != null)
+        {
+            StopCoroutine(flashCoroutine);
+            flashCoroutine = null;
+        }
+        isFlashing = false;
+
+        foreach (var dm in defaultMaterials)
+        {
+            if (dm.sr != null) { dm.sr.sharedMaterial = dm.origMat; dm.sr.color = Color.white; }
+            if (dm.smr != null) dm.smr.sharedMaterial = dm.origMat;
+            if (dm.mr != null) dm.mr.sharedMaterial = dm.origMat;
+        }
     }
 
     private void OnCollisionEnter2D(Collision2D collision) { EvaluateCollision(collision.gameObject); }
@@ -56,7 +116,8 @@ public class StageSecondBossHealth : MonoBehaviour
 
     private void EvaluateCollision(GameObject hitObj)
     {
-        // 👤 プレイヤーのバースト攻撃
+        if (controller != null && controller.currentDebugStateName == "StageSecondBossDeadState") return;
+
         if (hitObj.CompareTag("Player"))
         {
             PlayerController player = hitObj.GetComponent<PlayerController>();
@@ -76,14 +137,12 @@ public class StageSecondBossHealth : MonoBehaviour
             return;
         }
 
-        // 💣 時限爆弾カウンター（プレイヤーが跳ね返したもの）
         if (hitObj.TryGetComponent<StageSecondBossTimedBomb>(out var timedBomb) && timedBomb.IsBlownAway)
         {
             ProcessBombHit(hitObj);
             return;
         }
 
-        // 💣 地雷爆弾カウンター（プレイヤーが跳ね返したもの）
         if (hitObj.TryGetComponent<StageSecondBossMineBomb>(out var mineBomb) && mineBomb.IsBlownAway)
         {
             ProcessBombHit(hitObj);
@@ -91,54 +150,78 @@ public class StageSecondBossHealth : MonoBehaviour
         }
     }
 
-    // ===================================================================
-    // 🛠️【条件厳密化】爆弾直撃時の処理
-    // 必殺技（ウルト）吸引中のみスタンを許可し、通常時は絶対にスタンさせない！
-    // ===================================================================
     private void ProcessBombHit(GameObject bombObj)
     {
-        // 💡 1. 【唯一無二の確定スタン条件】必殺技（ウルト＝吸い込み吸引）中のみ！
-        // それ以外の通常技（クロス、グリッド、追従連撃）の時は、バリアを無視してスタンさせたりしません。
+        if (controller != null && controller.currentDebugStateName == "StageSecondBossDeadState") return;
+
         if (controller != null && controller.currentDebugStateName == "StageSecondBossUltimateState")
         {
-            Debug.Log("<color=red>⚠️ 必殺技（ウルト）チャージ中に爆弾直撃！ バリアを巻き添え破壊して確定遮断スタン！</color>");
+            if (controller.StateUltimate != null && controller.StateUltimate.isCounterAcceptable)
+            {
+                Debug.Log("<color=red>🛡️ 必殺技チャージ中に爆弾直撃！ 確定遮断スタン！</color>");
+                hasBarrier = false;
+                UpdateBarrierVisual();
+                controller.OnMineCounterHit();
+                Destroy(bombObj);
 
-            hasBarrier = false;    // バリア粉砕
-            UpdateBarrierVisual(); // バリアの見た目を消去
-
-            controller.OnMineCounterHit(); // ウルトを強制中断して気絶落下へ
-            Destroy(bombObj);
-            return;
+                TimeManager.Instance.TriggerGlobalSlowMotion(1.0f, 0.2f);
+                return;
+            }
         }
 
-        // 💡 2. 通常時（ウルト中ではない時）にバリアがある場合 ⇄ 【バリアが剥がれるだけ！スタンせず攻撃続行】
         if (hasBarrier)
         {
             hasBarrier = false;
             UpdateBarrierVisual();
-            Debug.Log("<color=green>⚡ 爆弾カウンター直撃！ 通常時のバリアが剥がれました（ボスは攻撃を続行します）。</color>");
-
-            // 被弾の白フラッシュ演出
+            Debug.Log("<color=green>⚡ 爆弾カウンター直撃！ バリアが剥がれました。</color>");
             if (flashCoroutine != null) StopCoroutine(flashCoroutine);
             flashCoroutine = StartCoroutine(DamageFlashRoutine());
+
+            TimeManager.Instance.TriggerGlobalHitStop(hitStopTime);
         }
-        // 💡 3. 通常時（ウルト中ではない時）にバリアが無い場合 ⇄ 【通常攻撃より高い特大ダメージが入るだけ！スタンせず攻撃続行】
         else
         {
             TakeDamage(bombDirectDamage);
-            Debug.Log($"<color=magenta>🔥 バリア無しの生身に爆弾直撃！ 通常より高い特大ダメージ: {bombDirectDamage}（ボスは攻撃を続行します）</color>");
         }
 
-        // 当たった爆弾オブジェクトを消去
         Destroy(bombObj);
     }
 
     public void TakeDamage(float damage)
     {
         if (controller != null && controller.currentDebugStateName == "StageSecondBossDeadState") return;
-        if (controller != null && controller.currentDebugStateName == "StageSecondBossStunState") damage *= controller.stunDamageMultiplier;
+
+        if (controller != null && controller.currentDebugStateName != "StageSecondBossStunState")
+        {
+            if (invincibilityTimer > 0f)
+            {
+                Debug.Log("<color=gray>🛡️ ボス：無敵時間中のためダメージを無効化しました。</color>");
+                return;
+            }
+        }
+
+        if (controller != null && controller.currentDebugStateName == "StageSecondBossStunState")
+        {
+            damage *= controller.stunDamageMultiplier;
+        }
+        else if (controller != null && controller.currentDebugStateName == "StageSecondBossPhaseTransitionState")
+        {
+            damage *= controller.phaseTransitionDamageMultiplier;
+            Debug.Log($"<color=orange>🛡️ ボス：大咆哮ガード発動中！ 被ダメージを {controller.phaseTransitionDamageMultiplier * 100f}% に軽減しました。</color>");
+        }
 
         currentHP -= damage;
+
+        if (controller != null && controller.currentDebugStateName != "StageSecondBossStunState")
+        {
+            invincibilityTimer = damageInterval;
+        }
+
+        if (bossHpBar != null)
+        {
+            bossHpBar.UpdateHP(currentHP);
+            bossHpBar.ShakeBar(0.2f, 12f);
+        }
 
         if (flashCoroutine != null) StopCoroutine(flashCoroutine);
         flashCoroutine = StartCoroutine(DamageFlashRoutine());
@@ -148,56 +231,35 @@ public class StageSecondBossHealth : MonoBehaviour
             currentHP = 0f;
             if (controller != null) controller.TransitionToState(controller.StateDead);
         }
-    }
-
-    public void UpdateBarrierVisual()
-    {
-        if (barrierVisualObject != null) barrierVisualObject.SetActive(hasBarrier);
-    }
-
-    public void ResetBarrier()
-    {
-        hasBarrier = true;
-        UpdateBarrierVisual();
-        Debug.Log("<color=blue>🛡️ ボス：バリアを新しく再展開しました！</color>");
+        else
+        {
+            TimeManager.Instance.TriggerGlobalHitStop(hitStopTime);
+        }
     }
 
     private IEnumerator DamageFlashRoutine()
     {
-        Transform visualRoot = controller != null ? (controller.ultVisualOffsetObject != null ? controller.ultVisualOffsetObject : controller.transform) : transform;
+        isFlashing = true;
         Material matToUse = customFlashMaterial != null ? customFlashMaterial : defaultFlashMaterial;
-
-        if (!isFlashing)
-        {
-            isFlashing = true;
-            var sprites = visualRoot.GetComponentsInChildren<SpriteRenderer>();
-            affectedSprites.Clear(); savedSpriteMaterials.Clear();
-            foreach (var sr in sprites) { if (sr != null) { affectedSprites.Add(sr); savedSpriteMaterials.Add(sr.sharedMaterial); } }
-
-            var skinneds = visualRoot.GetComponentsInChildren<SkinnedMeshRenderer>();
-            affectedSkinneds.Clear(); savedSkinnedMaterials.Clear();
-            foreach (var smr in skinneds) { if (smr != null) { affectedSkinneds.Add(smr); savedSkinnedMaterials.Add(smr.sharedMaterial); } }
-
-            var meshes = visualRoot.GetComponentsInChildren<MeshRenderer>();
-            affectedMeshes.Clear(); savedMeshMaterials.Clear();
-            foreach (var mr in meshes) { if (mr != null) { affectedMeshes.Add(mr); savedMeshMaterials.Add(mr.sharedMaterial); } }
-        }
 
         if (matToUse != null)
         {
-            foreach (var sr in affectedSprites) if (sr != null) sr.sharedMaterial = matToUse;
-            foreach (var smr in affectedSkinneds) if (smr != null) smr.sharedMaterial = matToUse;
-            foreach (var mr in affectedMeshes) if (mr != null) mr.sharedMaterial = matToUse;
+            foreach (var dm in defaultMaterials)
+            {
+                if (dm.sr != null) dm.sr.sharedMaterial = matToUse;
+                if (dm.smr != null) dm.smr.sharedMaterial = matToUse;
+                if (dm.mr != null) dm.mr.sharedMaterial = matToUse;
+            }
         }
 
         yield return new WaitForSeconds(damageFlashDuration);
 
-        for (int i = 0; i < affectedSprites.Count; i++)
+        foreach (var dm in defaultMaterials)
         {
-            if (affectedSprites[i] != null && i < savedSpriteMaterials.Count) { affectedSprites[i].sharedMaterial = savedSpriteMaterials[i]; affectedSprites[i].color = Color.white; }
+            if (dm.sr != null) { dm.sr.sharedMaterial = dm.origMat; dm.sr.color = Color.white; }
+            if (dm.smr != null) dm.smr.sharedMaterial = dm.origMat;
+            if (dm.mr != null) dm.mr.sharedMaterial = dm.origMat;
         }
-        for (int i = 0; i < affectedSkinneds.Count; i++) if (affectedSkinneds[i] != null && i < savedSkinnedMaterials.Count) affectedSkinneds[i].sharedMaterial = savedSkinnedMaterials[i];
-        for (int i = 0; i < affectedMeshes.Count; i++) if (affectedMeshes[i] != null && i < savedMeshMaterials.Count) affectedMeshes[i].sharedMaterial = savedMeshMaterials[i];
 
         isFlashing = false;
         flashCoroutine = null;

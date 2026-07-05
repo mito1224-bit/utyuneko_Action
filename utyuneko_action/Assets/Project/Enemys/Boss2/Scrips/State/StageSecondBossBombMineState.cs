@@ -138,7 +138,7 @@ public class StageSecondBossBombMineState : StageSecondBossBaseState
             visual.localScale = originalScale;
         }
 
-        yield return new WaitForSeconds(0.4f);
+        yield return new WaitForSeconds(0.4f / boss.attackSpeedMultiplier);
         boss.TransitionToState(boss.StateIdle);
     }
 }

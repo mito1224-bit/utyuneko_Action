@@ -4,25 +4,61 @@ public class StageSecondBossStunState : StageSecondBossBaseState
 {
     private float stunTimer = 0f;
     private Vector3 airPosition;
-    private Vector3 originalLocalPosition;
-    private bool isGrounded = false;
     private Rigidbody2D rb;
-    private float currentAngle = 0f;
-
-    private DamageSource cachedDamageSource;
+    private float deadRotationAngle = 90f;
+    private bool isRecoveryStarted = false;
 
     public StageSecondBossStunState(StageSecondBossController boss) : base(boss) { }
 
     public override void Enter()
     {
         stunTimer = 0f;
-        isGrounded = false;
-        currentAngle = 0f;
-
+        isRecoveryStarted = false;
         airPosition = boss.transform.position;
 
+        Debug.Log("<color=yellow>💫 ボス：気絶ダウン。画面上の全ての攻撃予兆を完全クリーンアップします。</color>");
+
+        if (boss.TryGetComponent<StageSecondBossHealth>(out var health))
+        {
+            health.StopFlashAndReset();
+            health.hasBarrier = false;
+            health.UpdateBarrierVisual();
+        }
+        boss.ForceResetAllMaterials();
+
+        // ===================================================================
+        // 🛠️【バグ修正：予測範囲の完全消滅】
+        // ① ウルト中にスタンさせた際、ボス本体のウルト用予測円が残るのを防ぐため、確実にOFF！
+        // ===================================================================
+        if (boss.ultIndicatorRoot != null)
+        {
+            boss.ultIndicatorRoot.SetActive(false);
+        }
+
+        // ===================================================================
+        // ② 通常攻撃の予兆中にスタンさせた際、空中置き去りになるのを防ぐため、
+        // 画面上のすべての「時限爆弾」と「地雷式爆弾」を根こそぎ完全消去！
+        // 爆弾が消えれば、連動してそれぞれの予測範囲（インジケーター）も綺麗に消え去ります。
+        // ===================================================================
+        var timedBombs = Object.FindObjectsByType<StageSecondBossTimedBomb>(FindObjectsSortMode.None);
+        foreach (var bomb in timedBombs)
+        {
+            if (bomb != null) Object.Destroy(bomb.gameObject);
+        }
+
+        var mineBombs = Object.FindObjectsByType<StageSecondBossMineBomb>(FindObjectsSortMode.None);
+        foreach (var bomb in mineBombs)
+        {
+            if (bomb != null) Object.Destroy(bomb.gameObject);
+        }
+
+        // 最初からパッと横倒し（90度）の美しい軸補正にして落とす
         Transform bossVisual = boss.ultVisualOffsetObject != null ? boss.ultVisualOffsetObject : boss.transform;
-        originalLocalPosition = bossVisual.localPosition;
+        bossVisual.localRotation = Quaternion.Euler(0f, 0f, deadRotationAngle);
+
+        Vector3 baseOffset = new Vector3(0f, boss.stunPivotOffsetY, 0f);
+        Vector3 finalRotatedOffset = Quaternion.Euler(0f, 0f, deadRotationAngle) * baseOffset;
+        bossVisual.localPosition = boss.originalVisualLocalPosition + (baseOffset - finalRotatedOffset);
 
         rb = boss.GetComponent<Rigidbody2D>();
         if (rb != null)
@@ -30,14 +66,11 @@ public class StageSecondBossStunState : StageSecondBossBaseState
             rb.bodyType = RigidbodyType2D.Dynamic;
             rb.gravityScale = boss.stunGravityAmount;
             rb.constraints = RigidbodyConstraints2D.FreezeRotation;
+            rb.mass = 1f;
+            rb.linearVelocity = Vector2.zero; // 初速リセット
         }
 
-        cachedDamageSource = boss.GetComponent<DamageSource>();
-        if (cachedDamageSource == null) cachedDamageSource = boss.GetComponentInChildren<DamageSource>();
-
-        if (cachedDamageSource != null) cachedDamageSource.enabled = false;
-
-        Debug.Log("<color=yellow>💫 ボス：気絶ダウン中！プレイヤーの最大コンボチャンス！</color>");
+        boss.SetAllDamageSourcesEnabled(false);
 
         if (boss.bossAnimator != null) boss.bossAnimator.speed = 0f;
         SoundManager.Instance.PlaySE(SeType.EnemyConfusion);
@@ -47,15 +80,17 @@ public class StageSecondBossStunState : StageSecondBossBaseState
     {
         stunTimer += Time.deltaTime;
         Transform bossVisual = boss.ultVisualOffsetObject != null ? boss.ultVisualOffsetObject : boss.transform;
-        float groundY = boss.stageMinY + boss.stunGroundYOffset;
 
-        // --- 演出フェーズ①：スタン終了直前の「空中へのフワッと自動復帰」 ---
         if (stunTimer >= boss.stunDuration - boss.stunRecoveryDuration)
         {
-            if (rb != null)
+            if (!isRecoveryStarted)
             {
-                rb.bodyType = RigidbodyType2D.Kinematic;
-                rb.linearVelocity = Vector2.zero;
+                isRecoveryStarted = true;
+                if (rb != null)
+                {
+                    rb.bodyType = RigidbodyType2D.Kinematic;
+                    rb.linearVelocity = Vector2.zero;
+                }
             }
 
             float recoveryProgress = (stunTimer - (boss.stunDuration - boss.stunRecoveryDuration)) / boss.stunRecoveryDuration;
@@ -63,57 +98,18 @@ public class StageSecondBossStunState : StageSecondBossBaseState
 
             boss.transform.position = Vector3.Lerp(boss.transform.position, airPosition, smoothT);
 
-            currentAngle = Mathf.Lerp(90f, 0f, smoothT);
+            float currentAngle = Mathf.Lerp(deadRotationAngle, 0f, smoothT);
             bossVisual.localRotation = Quaternion.Euler(0f, 0f, currentAngle);
 
             Vector3 baseOffset = new Vector3(0f, boss.stunPivotOffsetY, 0f);
             Vector3 rotatedOffset = Quaternion.Euler(0f, 0f, currentAngle) * baseOffset;
-            bossVisual.localPosition = originalLocalPosition + (baseOffset - rotatedOffset);
+            bossVisual.localPosition = boss.originalVisualLocalPosition + (baseOffset - rotatedOffset);
 
             if (stunTimer >= boss.stunDuration)
             {
-                // 🔥 時間満了！ Exit() を経由して Idle 状態へ戻ります。
                 boss.TransitionToState(boss.StateIdle);
             }
             return;
-        }
-
-        // --- 演出フェーズ②：物理落下 ＆ 地面での気絶ダウン ---
-        if (!isGrounded)
-        {
-            currentAngle += boss.stunRotateSpeed * Time.deltaTime;
-            bossVisual.localRotation = Quaternion.Euler(0f, 0f, currentAngle);
-
-            Vector3 baseOffset = new Vector3(0f, boss.stunPivotOffsetY, 0f);
-            Vector3 rotatedOffset = Quaternion.Euler(0f, 0f, currentAngle) * baseOffset;
-            bossVisual.localPosition = originalLocalPosition + (baseOffset - rotatedOffset);
-
-            bool isVelocityStopped = rb != null && rb.linearVelocity.y >= -0.05f && stunTimer > 0.1f;
-
-            if (boss.transform.position.y <= groundY || isVelocityStopped)
-            {
-                isGrounded = true;
-                if (rb != null)
-                {
-                    rb.bodyType = RigidbodyType2D.Kinematic;
-                    rb.linearVelocity = Vector2.zero;
-                }
-
-                Vector3 correctedPos = boss.transform.position;
-                correctedPos.y = groundY;
-                boss.transform.position = correctedPos;
-
-                currentAngle = 90f;
-                bossVisual.localRotation = Quaternion.Euler(0f, 0f, currentAngle);
-
-                Vector3 finalRotatedOffset = Quaternion.Euler(0f, 0f, currentAngle) * baseOffset;
-                bossVisual.localPosition = originalLocalPosition + (baseOffset - finalRotatedOffset);
-            }
-        }
-        else
-        {
-            float shakeX = Mathf.Sin(Time.time * 40f) * 0.06f;
-            boss.transform.position = new Vector3(airPosition.x + shakeX, groundY, boss.transform.position.z);
         }
     }
 
@@ -123,19 +119,21 @@ public class StageSecondBossStunState : StageSecondBossBaseState
         {
             rb.bodyType = RigidbodyType2D.Kinematic;
             rb.linearVelocity = Vector2.zero;
+            rb.mass = 1000f;
         }
 
-        // ===================================================================
-        // 🛠️【要望の追加】スタン状態が完全になくなったらバリアを新しく生成（復活）する！
-        // 元の空中位置に戻り、Idleステートを始める直前にバリアがパリィンと再展開されます。
-        // ===================================================================
-        boss.ResetBarrier();
+        if (boss.currentHP > 0f)
+        {
+            boss.ResetBarrier();
+            boss.SetAllDamageSourcesEnabled(true);
+        }
 
-        if (cachedDamageSource != null) cachedDamageSource.enabled = true;
         if (boss.bossAnimator != null) boss.bossAnimator.speed = 1f;
 
         Transform visual = boss.ultVisualOffsetObject != null ? boss.ultVisualOffsetObject : boss.transform;
-        visual.localRotation = Quaternion.identity;
-        visual.localPosition = originalLocalPosition;
+        visual.localRotation = boss.originalVisualLocalRotation;
+        visual.localPosition = boss.originalVisualLocalPosition;
+
+        boss.ForceResetAllMaterials();
     }
 }

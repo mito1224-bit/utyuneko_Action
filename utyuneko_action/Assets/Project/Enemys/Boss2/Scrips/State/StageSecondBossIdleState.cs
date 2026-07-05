@@ -9,6 +9,10 @@ public class StageSecondBossIdleState : StageSecondBossBaseState
 
     public override void Enter()
     {
+        idleDuration = Random.Range(1.0f, 1.5f);
+
+        idleDuration /= boss.attackSpeedMultiplier;
+
         idleTimer = 0f;
         if (boss.bossAnimator != null) boss.bossAnimator.speed = 1f;
     }
@@ -34,15 +38,19 @@ public class StageSecondBossIdleState : StageSecondBossBaseState
             // -------------------------------------------------------------------
             float rand = Random.value;
 
-            if (rand < 0.25f)
+            if (rand < 0.20f)
             {
                 boss.TransitionToState(boss.StateBombTimed); // 技①：逆サイド逃げクロス爆撃
             }
-            else if (rand < 0.50f)
+            else if (rand < 0.40f)
+            {
+                boss.TransitionToState(boss.StateBombCross); // 技①：逆サイド逃げクロス爆撃
+            }
+            else if (rand < 0.60f)
             {
                 boss.TransitionToState(boss.StateBombInstantLine); // 技②：天井グリッド爆撃
             }
-            else if (rand < 0.75f)
+            else if (rand < 0.80f)
             {
                 boss.TransitionToState(boss.StateBombMine); // 技③：ステージ中央地雷バラ撒き
             }

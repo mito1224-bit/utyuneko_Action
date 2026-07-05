@@ -18,7 +18,7 @@ public class StageSecondBossUltimateState : StageSecondBossBaseState
     private float pulsePhase = 0f;
 
     private float maxScaleMultiplier = 1.3f;
-    private float pulseAmplitude = 0.1f;
+    private float pulseAmplitude = 0.15f;
     private float minPulseSpeed = 6f;
     private float maxPulseSpeed = 30f;
 
@@ -28,6 +28,9 @@ public class StageSecondBossUltimateState : StageSecondBossBaseState
     private Vector3 explodedScale = Vector3.one;
 
     private bool isHoverMoving = true;
+
+    // ワープ中スタンバグ防止ガードフラグ
+    public bool isCounterAcceptable { get; private set; } = false;
 
     private List<SpriteRenderer> affectedSprites = new List<SpriteRenderer>();
     private List<Material> savedSpriteMaterials = new List<Material>();
@@ -43,6 +46,7 @@ public class StageSecondBossUltimateState : StageSecondBossBaseState
     private bool isFlashOn = false;
     private float startFlashInterval = 0.35f;
     private float endFlashInterval = 0.05f;
+    private float ultMulDuration = 0f;
 
     public StageSecondBossUltimateState(StageSecondBossController boss) : base(boss) { }
 
@@ -56,12 +60,12 @@ public class StageSecondBossUltimateState : StageSecondBossBaseState
         isSetupCompleted = false;
         blinkTimer = 0f;
         isFlashOn = false;
+        isCounterAcceptable = false;
+
+        ultMulDuration = boss.ultDuration / boss.attackSpeedMultiplier;
 
         Debug.Log("<color=red>⚠️ ボス：ウルト発動！中央下部へ高速ホバーワープ！</color>");
 
-        // ===================================================================
-        // 🛠️【新機能連動】ウルト発動に伴い、たまっていた強制タイマーやHP減少量を一括クリア！
-        // ===================================================================
         boss.ResetUltTriggers();
 
         if (boss.bossAnimator != null) boss.bossAnimator.speed = 0f;
@@ -72,7 +76,7 @@ public class StageSecondBossUltimateState : StageSecondBossBaseState
         if (boss.ultIndicatorRoot != null) boss.ultIndicatorRoot.SetActive(false);
 
         float centerX = (boss.stageMinX + boss.stageMaxX) / 2f;
-        float targetY = boss.stageMinY + 2.5f;
+        float targetY = boss.stageMinY + 5.0f;
         Vector3 targetPos = new Vector3(centerX, targetY, boss.transform.position.z);
 
         boss.StartCoroutine(UltimateSequenceRoutine(targetPos));
@@ -83,6 +87,8 @@ public class StageSecondBossUltimateState : StageSecondBossBaseState
         yield return boss.StartCoroutine(boss.HoverMoveRoutine(targetPos, 0.35f));
 
         isHoverMoving = false;
+        isCounterAcceptable = true;
+
         SoundManager.Instance.PlayLoopSE(boss.gameObject, SeType.EnemySuction);
 
         if (boss.ultIndicatorRoot != null)
@@ -129,7 +135,7 @@ public class StageSecondBossUltimateState : StageSecondBossBaseState
 
         UpdateRangeVisual();
 
-        float progress = Mathf.Clamp01(ultTimer / boss.ultDuration);
+        float progress = Mathf.Clamp01(ultTimer / ultMulDuration);
         float currentPulseSpeed = Mathf.Lerp(minPulseSpeed, maxPulseSpeed, progress);
         pulsePhase += Time.deltaTime * currentPulseSpeed;
         float sineWave = Mathf.Sin(pulsePhase);
@@ -163,8 +169,8 @@ public class StageSecondBossUltimateState : StageSecondBossBaseState
         else
         {
             for (int i = 0; i < affectedSprites.Count; i++) if (affectedSprites[i] != null && i < savedSpriteMaterials.Count) { affectedSprites[i].sharedMaterial = savedSpriteMaterials[i]; affectedSprites[i].color = Color.white; }
-            for (int i = 0; i < affectedSkinneds.Count; i++) if (affectedSkinneds[i] != null && i < savedSkinnedMaterials.Count) affectedSkinneds[i].sharedMaterial = savedSkinnedMaterials[i];
-            for (int i = 0; i < affectedMeshes.Count; i++) if (affectedMeshes[i] != null && i < savedMeshMaterials.Count) affectedMeshes[i].sharedMaterial = savedMeshMaterials[i];
+            for (int i = 0; i < affectedSkinneds.Count; i++) if (savedSkinnedMaterials != null && i < savedSkinnedMaterials.Count) { if (affectedSkinneds[i] != null) affectedSkinneds[i].sharedMaterial = savedSkinnedMaterials[i]; }
+            for (int i = 0; i < affectedMeshes.Count; i++) if (savedMeshMaterials != null && i < savedMeshMaterials.Count) { if (affectedMeshes[i] != null) affectedMeshes[i].sharedMaterial = savedMeshMaterials[i]; }
         }
     }
 
@@ -173,7 +179,7 @@ public class StageSecondBossUltimateState : StageSecondBossBaseState
         if (isExploded || isHoverMoving) return;
 
         ultTimer += Time.fixedDeltaTime;
-        float progress = Mathf.Clamp01(ultTimer / boss.ultDuration);
+        float progress = Mathf.Clamp01(ultTimer / ultMulDuration);
         if (boss.ultRedCircleTransform != null) boss.ultRedCircleTransform.localScale = new Vector3(progress, progress, 1f);
 
         Transform player = boss.GetPlayerTransform();
@@ -241,7 +247,7 @@ public class StageSecondBossUltimateState : StageSecondBossBaseState
             }
         }
 
-        if (ultTimer >= boss.ultDuration) ExecuteBigExplosion();
+        if (ultTimer >= ultMulDuration) ExecuteBigExplosion();
     }
 
     private void ExecuteBigExplosion()
@@ -265,10 +271,28 @@ public class StageSecondBossUltimateState : StageSecondBossBaseState
             Object.Destroy(explosionArea, 0.2f);
             boss.ultDamageAreaObject.SetActive(false);
         }
+
+        // ===================================================================
+        // 🛠️【新機能：ウルトフィニッシュ時の全爆弾消滅】
+        // ウルトの巨大な爆風に巻き込まれる形で、ステージ上に残っているすべての
+        // 通常爆弾・地雷を一斉に完全デリートして、画面を美しくリセットします！
+        // ===================================================================
+        StageSecondBossTimedBomb[] timedBombs = Object.FindObjectsByType<StageSecondBossTimedBomb>(FindObjectsSortMode.None);
+        foreach (var bomb in timedBombs)
+        {
+            if (bomb != null) Object.Destroy(bomb.gameObject);
+        }
+
+        StageSecondBossMineBomb[] mineBombs = Object.FindObjectsByType<StageSecondBossMineBomb>(FindObjectsSortMode.None);
+        foreach (var bomb in mineBombs)
+        {
+            if (bomb != null) Object.Destroy(bomb.gameObject);
+        }
+
         CleanUpVisuals();
     }
 
-    public override void Exit() { SoundManager.Instance.StopLoopSE(boss.gameObject); ResetBossVisual(); CleanUpVisuals(); }
+    public override void Exit() { isCounterAcceptable = false; SoundManager.Instance.StopLoopSE(boss.gameObject); ResetBossVisual(); CleanUpVisuals(); boss.ForceResetAllMaterials(); }
     private void ResetBossVisual() { if (boss.bossAnimator != null) boss.bossAnimator.speed = 1f; if (boss.ultVisualOffsetObject != null) boss.ultVisualOffsetObject.localScale = originalLocalScale; ApplyUltimateFlash(false); if (ultRedMaterial != null) { Object.Destroy(ultRedMaterial); ultRedMaterial = null; } }
     private void CreateRangeVisual() { GameObject go = new GameObject("UltimateBlackHoleRange(動的生成)"); rangeVisual = go.transform; rangeVisual.SetParent(null); rangeVisual.position = boss.transform.position; MeshFilter mf = go.AddComponent<MeshFilter>(); rangeMesh = BuildDiscMesh(48); mf.sharedMesh = rangeMesh; rangeRenderer = go.AddComponent<MeshRenderer>(); rangeRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; rangeRenderer.receiveShadows = false; rangeRenderer.sortingOrder = -2; rangeMaterial = new Material(Shader.Find("Sprites/Default")); rangeMaterial.renderQueue = 3000; rangeRenderer.material = rangeMaterial; }
     private Mesh BuildDiscMesh(int segments) { Mesh mesh = new Mesh { name = "UltimateDiscMesh" }; Vector3[] verts = new Vector3[segments + 1]; Color[] cols = new Color[segments + 1]; verts[0] = Vector3.zero; cols[0] = Color.white; for (int i = 0; i < segments; i++) { float a = (i / (float)segments) * Mathf.PI * 2f; verts[i + 1] = new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f); cols[i + 1] = new Color(1f, 1f, 1f, 0.2f); } int[] tris = new int[segments * 3]; for (int i = 0; i < segments; i++) { tris[i * 3] = 0; tris[i * 3 + 1] = i + 1; tris[i * 3 + 2] = (i + 1) % segments + 1; } mesh.vertices = verts; mesh.colors = cols; mesh.triangles = tris; mesh.RecalculateBounds(); return mesh; }

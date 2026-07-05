@@ -107,7 +107,7 @@ public class PlayerState_Burst : IPlayerState
 
     private void OnCollisionStay(Collision2D collision)
     {
-        if (((1 << collision.gameObject.layer) & p.GetGroundLayerMask()) != 0)
+        if (((1 << collision.gameObject.layer) & p.GetReflectionLayerMask()) != 0)
         {
             SoundManager.Instance.PlaySE(SeType.PlayerWallHit);
 

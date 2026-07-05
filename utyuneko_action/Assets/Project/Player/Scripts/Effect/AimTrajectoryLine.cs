@@ -55,7 +55,7 @@ public class AimTrajectoryLine : MonoBehaviour
         // 司令塔（PlayerController）から重力スケール、反射効率、床のレイヤーを借りてくる
         float gravityScale = (playerController.rb2D != null) ? playerController.rb2D.gravityScale : 1f;
         float reflectEfficiency = playerController.reflectEfficiency; // インスペクターで設定した反射の強さ(0.8など)
-        LayerMask groundLayer = playerController.GetGroundLayerMask(); // 地形のレイヤー
+        LayerMask groundLayer = playerController.GetReflectionLayerMask(); // 地形のレイヤー
 
         int bounceCount = 0;
         float elapsedTime = 0f;

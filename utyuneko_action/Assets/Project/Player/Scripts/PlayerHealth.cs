@@ -199,7 +199,7 @@ public class PlayerHealth : MonoBehaviour
         if (mineBomb != null) if (mineBomb.IsBlownAway) return;
 
 
-        if (source != null)
+        if (source != null && source.enabled)
         {
             if (hitObject.CompareTag("Enemy") && 
                 p.CurrentState == p.StateBurst) return;

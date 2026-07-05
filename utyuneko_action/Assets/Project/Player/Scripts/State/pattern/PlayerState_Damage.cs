@@ -27,8 +27,7 @@ public class PlayerState_Damage : IPlayerState
 
         if (p.anim != null)
         {
-            // アニメーションに被弾トリガー（isDamageなど）があれば発動
-            p.anim.SetTrigger("isDamage");
+            p.anim.SetBool("isBurst", false);
         }
 
         // バースト中の残像やトレイルを消す

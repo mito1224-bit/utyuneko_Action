@@ -4,10 +4,14 @@ using UnityEngine;
 
 public class StageSecondBossBombInstantLineState : StageSecondBossBaseState
 {
+    // 💡 途中で中断されても全消去できるように、リストをメンバ変数に格上げ
+    private List<GameObject> activeWarningVisuals = new List<GameObject>();
+
     public StageSecondBossBombInstantLineState(StageSecondBossController boss) : base(boss) { }
 
     public override void Enter()
     {
+        activeWarningVisuals.Clear();
         Debug.Log("ボス技②：上空中央へ高速ホバー移動 ＆ 巨大化グリッド爆撃");
         boss.StartCoroutine(ExecuteGridAttackWithWarningRoutine());
     }
@@ -40,7 +44,6 @@ public class StageSecondBossBombInstantLineState : StageSecondBossBaseState
         float endY = boss.stageMaxY - 1.0f;
 
         List<Vector3> targetPositions = new List<Vector3>();
-        List<GameObject> warningVisuals = new List<GameObject>();
 
         float explosionRadius = 3.0f;
         if (boss.timedBombPrefab.TryGetComponent<StageSecondBossTimedBomb>(out var bombComp))
@@ -86,23 +89,19 @@ public class StageSecondBossBombInstantLineState : StageSecondBossBaseState
                         warningObj.transform.localScale = new Vector3(explosionRadius * 2f, explosionRadius * 2f, 1f);
                     }
 
-                    warningVisuals.Add(warningObj);
+                    activeWarningVisuals.Add(warningObj); // メンバ変数リストへ蓄積
                 }
             }
         }
 
         yield return new WaitForSeconds(boss.instantLineWarningDuration);
 
-        foreach (var warning in warningVisuals)
-        {
-            if (warning != null) Object.Destroy(warning);
-        }
+        ClearAllWarnings(); // 通常ルートの消去
 
         Transform visual = boss.ultVisualOffsetObject != null ? boss.ultVisualOffsetObject : boss.transform;
         Vector3 originalScale = visual.localScale;
         float pulseDuration = 0.15f;
         float pulseT = 0f;
-        // 💡 インスペクターの設定値を自動で掛け合わせるように修正！
         Vector3 targetScale = originalScale * boss.attackPulseScaleMultiplier;
 
         while (pulseT < pulseDuration * 0.4f)
@@ -133,7 +132,24 @@ public class StageSecondBossBombInstantLineState : StageSecondBossBaseState
         }
         visual.localScale = originalScale;
 
-        yield return new WaitForSeconds(0.8f);
+        yield return new WaitForSeconds(0.8f / boss.attackSpeedMultiplier);
         boss.TransitionToState(boss.StateIdle);
+    }
+
+    private void ClearAllWarnings()
+    {
+        foreach (var warning in activeWarningVisuals)
+        {
+            if (warning != null) Object.Destroy(warning);
+        }
+        activeWarningVisuals.Clear();
+    }
+
+    // ===================================================================
+    // 🧹【新設：大掃除アンカー】中断時に全インジケーターを一斉爆破消去！
+    // ===================================================================
+    public override void Exit()
+    {
+        ClearAllWarnings();
     }
 }

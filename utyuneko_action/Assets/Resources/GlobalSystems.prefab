@@ -117,6 +117,9 @@ MonoBehaviour:
   - bgmType: 6
     clip: {fileID: 8300000, guid: 8338d05d5544707419a25a0431095f90, type: 3}
     volume: 0.5
+  - bgmType: 7
+    clip: {fileID: 8300000, guid: de704193d4ca14d439a18b997aca7974, type: 3}
+    volume: 0.3
   audioBanks:
   - {fileID: 11400000, guid: 57f0c12ceabe99b409a00ad9bc6a4f9c, type: 2}
   - {fileID: 11400000, guid: 348591e3ed73dfb4283f87c5a882a92c, type: 2}
