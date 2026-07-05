@@ -11,7 +11,7 @@ public class DoorController : MonoBehaviour
     void Update()
     {
         // プレイヤーが範囲内にいて、かつPキーが押されたか
-        if (isPlayerInside && Input.GetKeyDown(KeyCode.P))
+        if (InputManager.Instance.Player.Submit.triggered)
         {
             TriggerSceneChange();
         }

@@ -28,6 +28,23 @@ public class GameManager : MonoBehaviour
     // ★追加：最後に通過したチェックポイントのデータ
     public CheckpointCache LastCheckpoint { get; private set; } = new CheckpointCache();
 
+    public int FinalBitCurrent { get; private set; }
+    public int FinalBitMax { get; private set; }
+    public int FinalDataCurrent { get; private set; }
+    public int FinalDataMax { get; private set; }
+    public float FinalCompletionRate { get; private set; }
+
+    // --- 【追加】DataManagerがクリアした瞬間に、リザルト用データを確定させる関数 ---
+    public void SaveFinalResult(int bitCur, int bitMax, int dataCur, int dataMax, float rate)
+    {
+        FinalBitCurrent = bitCur;
+        FinalBitMax = bitMax;
+        FinalDataCurrent = dataCur;
+        FinalDataMax = dataMax;
+        FinalCompletionRate = rate;
+        Debug.Log($"【GameManager】リザルト画面用のデータを保存しました: {rate:F1}%");
+    }
+
     private void Awake()
     {
         if (Instance == null)

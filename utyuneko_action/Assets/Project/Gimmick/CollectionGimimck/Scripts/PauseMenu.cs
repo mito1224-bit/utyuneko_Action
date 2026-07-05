@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.SceneManagement; // シーン遷移に必要
 using TMPro;
+using UnityEngine.InputSystem;
 
 public class PauseMenu : MonoBehaviour
 {
@@ -19,6 +20,7 @@ public class PauseMenu : MonoBehaviour
     private Vector3 playerInitialPosition;
     private GameObject playerObj;
     private PlayerController playerController;
+    
 
     GameInputActions ac;
 
@@ -40,7 +42,7 @@ public class PauseMenu : MonoBehaviour
     void Update()
     {
         // Escキー または Pキーでポーズの開閉切り替え
-        if (Input.GetKeyDown(KeyCode.Escape))
+        if (InputManager.Instance.Player.Pose.triggered)
         {
             if (isPaused) ResumeGame();
             else PauseGame();
@@ -48,6 +50,7 @@ public class PauseMenu : MonoBehaviour
     }
 
     // ─── パネルの開閉処理 ───
+
 
     public void PauseGame()
     {

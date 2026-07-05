@@ -5,5 +5,8 @@ public enum FXType
     Spark,
     Lightning,
     Flash,
+    Smoke,
+    Explosion,
+
     // 将来増えるエフェクトをここに足していく
 }
