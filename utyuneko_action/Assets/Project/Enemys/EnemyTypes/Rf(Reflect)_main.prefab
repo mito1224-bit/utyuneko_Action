@@ -269,6 +269,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyHealth
   maxHp: 1
   isDeadFlg: 0
+  requireBurstToDamage: 1
   damageSpeedThreshold: 5
   baseDamage: 1
   speedDamageMultiplier: 1
@@ -306,7 +307,11 @@ MonoBehaviour:
   maxForce: 25
   upwardBlend: 0.3
   decayPerSecond: 0.4
-  deathGravity: 25
+  decelerateOnDeath: 0
+  deathGravity: 0
+  keepInCameraOnDeath: 1
+  cameraMargin: 0.03
+  cameraBounceFactor: 1
   deathMultiplier: 2.5
   deathDestroyDelay: 1.5
   disableOnDeath: []
@@ -369,6 +374,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4000674184007395767}
+  - component: {fileID: 5959595959595959002}
   m_Layer: 0
   m_Name: Rf
   m_TagString: Untagged
@@ -393,6 +399,28 @@ Transform:
   - {fileID: 2509834448956607187}
   m_Father: {fileID: 8533946610949736375}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!95 &5959595959595959002
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4381702639409591053}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 54a55423a7eaec243a55e905610571cf, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage:
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &4478421456589584396
 GameObject:
   m_ObjectHideFlags: 0

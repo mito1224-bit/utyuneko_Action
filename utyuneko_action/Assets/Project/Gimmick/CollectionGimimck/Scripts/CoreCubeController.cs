@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 public class CoreCubeController : MonoBehaviour
@@ -11,6 +12,7 @@ public class CoreCubeController : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
+        
         if (collision.CompareTag("Player"))
         {
             if (goalPrefab != null)

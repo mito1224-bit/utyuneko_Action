@@ -14,6 +14,11 @@ public class PlayerState_Normal : IPlayerState
         p = player;
         Debug.Log("ステート変更：通常状態（Normal）");
 
+        if (p.anim != null)
+        {
+            p.anim.SetBool("isBurst", false);
+        }
+
         if (p.visualManager != null && p.visualManager.playerVisual != null)
         {
             float currentVelocityX = p.rb2D.linearVelocity.x;
@@ -153,21 +158,21 @@ public class PlayerState_Normal : IPlayerState
         //「前フレームは空中だった」かつ「今フレームは接地している」なら着地した瞬間！
         if (isGroundedNow && !wasGroundedLastFrame)
         {
-            if (!BaseEventManager.IsAnyEventPlaying)
-            {
-                if (SceneManager.GetActiveScene().name != "TitleScene")
-                {
-                    SoundManager.Instance.PlaySE(SeType.PlayerLanding);
-                    SoundManager.Instance.PlaySE(SeType.PlayerLanding2);
-                }
-            }
-
             // 下方向にしっかり落ちている時だけ潰す（床を歩いている時の誤作動防止）
             if (p.rb2D.linearVelocity.y <= 0.1f)
             {
                 if (p.visualManager != null)
                 {
                     p.visualManager.TriggerLandSquash();
+                }
+
+                if (!BaseEventManager.IsAnyEventPlaying)
+                {
+                    if (SceneManager.GetActiveScene().name != "TitleScene")
+                    {
+                        SoundManager.Instance.PlaySE(SeType.PlayerLanding);
+                        SoundManager.Instance.PlaySE(SeType.PlayerLanding2);
+                    }
                 }
             }
         }

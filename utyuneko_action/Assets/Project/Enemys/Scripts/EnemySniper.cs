@@ -97,9 +97,50 @@ public class EnemySniper : MonoBehaviour
     [Tooltip("角度を変える速さ（度/秒）。0以下なら即時に切り替え")]
     public float visualRotationSpeed = 360f;
 
+    [Header("銃のピッチ（照準の上下に合わせてX軸で傾ける／3Dモデル用）")]
+    [Tooltip("照準方向の上下に合わせてローカルX軸で傾ける銃のTransform（Sh_Gun_03 など）。" +
+             "左右の振り向きは visualTransform（Y軸）が担当し、こちらは上下だけを受け持つ。未指定なら何もしない")]
+    public Transform gunPitchTransform;
+
+    [Tooltip("銃モデルの基準向きの補正角（度）。銃身が水平を向く姿勢が0になるように調整する")]
+    public float gunPitchOffset = 0f;
+
+    [Tooltip("ピッチの回転方向が逆になる場合はオンにする")]
+    public bool invertGunPitch = false;
+
+    [Tooltip("ピッチの可動範囲（度）")]
+    public float minGunPitch = -80f;
+    public float maxGunPitch = 80f;
+
+    [Tooltip("ピッチを変える速さ（度/秒）。0以下なら即時")]
+    public float gunPitchSpeed = 360f;
+
+    [Header("体のピッチ（照準の上下に合わせて体全体もX軸で傾ける）")]
+    [Tooltip("visualTransform（rot）を照準の上下に合わせてX軸でも傾けるか")]
+    public bool tiltBodyToAim = true;
+
+    [Tooltip("仰角のうち体が担う割合（0〜1）。残りは銃（gunPitchTransform）が担う。" +
+             "1=体だけで狙う／0.5=体と銃で半分ずつ／0=銃だけ")]
+    [Range(0f, 1f)]
+    public float bodyPitchWeight = 0.5f;
+
+    [Tooltip("体のピッチの回転方向が逆になる場合はオンにする")]
+    public bool invertBodyPitch = false;
+
+    [Tooltip("体のピッチの可動範囲（度）。傾けすぎると不自然になるので狭めに")]
+    public float minBodyPitch = -45f;
+    public float maxBodyPitch = 45f;
+
     public enum RotationAxis { X, Y, Z }
     private float currentVisualAngle;     // 左右の角度間を補間する現在角
     private bool hasVisualAngleInit;      // 初期角を設定済みか
+
+    private float currentGunPitch;        // ピッチの補間用現在角
+    private bool hasGunPitchInit;
+    private Quaternion gunPitchRestLocalRotation = Quaternion.identity; // 銃の初期ローカル回転（階層の姿勢を保つ）
+
+    private float currentBodyPitch;       // 体のピッチの補間用現在角
+    private bool hasBodyPitchInit;
 
     private enum Phase { Idle, Aim, Lock, Fire, Cooldown }
     private Phase phase = Phase.Idle;
@@ -130,6 +171,12 @@ public class EnemySniper : MonoBehaviour
         GameObject p = GameObject.FindGameObjectWithTag(playerTag);
         if (p != null) player = p.transform;
 
+        // 銃の初期ローカル回転を記録（ピッチはこの姿勢に対する差分として掛ける）
+        if (gunPitchTransform != null)
+        {
+            gunPitchRestLocalRotation = gunPitchTransform.localRotation;
+        }
+
         // 銃口の初期配置を記録（この位置を基準に照準方向へオービットさせる）
         if (aimPivot != null)
         {
@@ -147,6 +194,7 @@ public class EnemySniper : MonoBehaviour
         // 銃口とモデルは常に現在の照準方向へ向ける（照準中は lockedDir がプレイヤーを追う）
         UpdateAimPivot();
         UpdateModelFacing();
+        UpdateGunPitch();
 
         // 吹き飛び中／死亡中は攻撃を中断
         if (knockback != null && (knockback.IsActive || knockback.IsDying))
@@ -311,12 +359,81 @@ public class EnemySniper : MonoBehaviour
             currentVisualAngle = target; // 0以下なら即時切り替え
         }
 
+        // 体のピッチ（照準の上下）。仰角のうち bodyPitchWeight 分を体が担う
+        float bodyPitch = 0f;
+        if (tiltBodyToAim)
+        {
+            float elevation = AimElevationDeg() * bodyPitchWeight;
+            float targetPitch = Mathf.Clamp(invertBodyPitch ? elevation : -elevation, minBodyPitch, maxBodyPitch);
+
+            if (!hasBodyPitchInit)
+            {
+                currentBodyPitch = targetPitch;
+                hasBodyPitchInit = true;
+            }
+            else if (visualRotationSpeed > 0f)
+            {
+                currentBodyPitch = Mathf.MoveTowards(currentBodyPitch, targetPitch, visualRotationSpeed * Time.deltaTime);
+            }
+            else
+            {
+                currentBodyPitch = targetPitch;
+            }
+            bodyPitch = currentBodyPitch;
+        }
+
         switch (visualRotationAxis)
         {
-            case RotationAxis.X: visualTransform.localRotation = Quaternion.Euler(currentVisualAngle, 0f, 0f); break;
-            case RotationAxis.Y: visualTransform.localRotation = Quaternion.Euler(0f, currentVisualAngle, 0f); break;
-            default:             visualTransform.localRotation = Quaternion.Euler(0f, 0f, currentVisualAngle); break;
+            case RotationAxis.X:
+                visualTransform.localRotation = Quaternion.Euler(currentVisualAngle, 0f, 0f);
+                break;
+            case RotationAxis.Y:
+                // 先にY軸で左右を向き、その後の「向いた先」に対してX軸で上下に傾ける
+                // （順序が逆だと、左右を向いたとき傾きが横倒れになる）
+                visualTransform.localRotation =
+                    Quaternion.Euler(0f, currentVisualAngle, 0f) * Quaternion.Euler(bodyPitch, 0f, 0f);
+                break;
+            default:
+                visualTransform.localRotation = Quaternion.Euler(0f, 0f, currentVisualAngle);
+                break;
         }
+    }
+
+    // 照準方向 lockedDir の仰角（水平からの上下角・度）。左右どちら向きでも上下量は同じなので x は絶対値
+    private float AimElevationDeg()
+    {
+        return Mathf.Atan2(lockedDir.y, Mathf.Abs(lockedDir.x)) * Mathf.Rad2Deg;
+    }
+
+    // 銃（gunPitchTransform）を照準方向の上下に合わせてローカルX軸で傾ける。
+    // 体（tiltBodyToAim）が仰角の bodyPitchWeight 分を担うので、銃は残りの分だけ傾ける。
+    // 初期ローカル回転 gunPitchRestLocalRotation に差分を掛けるので、階層内での元の姿勢は崩れない。
+    private void UpdateGunPitch()
+    {
+        if (gunPitchTransform == null) return;
+
+        float remainder = tiltBodyToAim ? (1f - bodyPitchWeight) : 1f;
+        float elevation = AimElevationDeg() * remainder;
+
+        // UnityのX軸回転は「＋で下を向く」ため既定は反転。モデルによって逆なら invertGunPitch で切替
+        float target = (invertGunPitch ? elevation : -elevation) + gunPitchOffset;
+        target = Mathf.Clamp(target, minGunPitch, maxGunPitch);
+
+        if (!hasGunPitchInit)
+        {
+            currentGunPitch = target;
+            hasGunPitchInit = true;
+        }
+        else if (gunPitchSpeed > 0f)
+        {
+            currentGunPitch = Mathf.MoveTowards(currentGunPitch, target, gunPitchSpeed * Time.deltaTime);
+        }
+        else
+        {
+            currentGunPitch = target;
+        }
+
+        gunPitchTransform.localRotation = gunPitchRestLocalRotation * Quaternion.Euler(currentGunPitch, 0f, 0f);
     }
 
     // 弾を打つ方向(lockedDir)の左右成分から目標角を決める。真上・真下（x≈0）のときは現在角を維持。
@@ -395,8 +512,12 @@ public class EnemySniper : MonoBehaviour
         line.endWidth = width;
         line.startColor = color;
         line.endColor = color;
-        line.SetPosition(0, origin);
-        line.SetPosition(1, origin + dir * len);
+
+        // モデルが z≠0 にあるため、レーザーも firePoint と同じ z 平面に描く（銃口とレーザーの視差ズレ防止）
+        float z = firePoint != null ? firePoint.position.z : transform.position.z;
+        line.SetPosition(0, new Vector3(origin.x, origin.y, z));
+        Vector2 end = origin + dir * len;
+        line.SetPosition(1, new Vector3(end.x, end.y, z));
     }
 
     private void HideBeam()

@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
+using System.Collections;
 
 [RequireComponent(typeof(Rigidbody2D), typeof(CircleCollider2D))]
 public class PlayerController : MonoBehaviour, IEventActor
@@ -14,6 +15,7 @@ public class PlayerController : MonoBehaviour, IEventActor
     [SerializeField] private float castDistance = 0.2f;
 
     [Header("バースト・反射設定")]
+    [SerializeField] private LayerMask ReflectionLayer;
     public float burstSpeed = 25.0f;
     [Range(0f, 1f)]
     public float reflectEfficiency = 0.8f;
@@ -86,6 +88,8 @@ public class PlayerController : MonoBehaviour, IEventActor
 
     public PlayerDamageEffect damageEffect;
 
+    public PlayerChargeGauge chargeGauge;
+
     public PlayerState_None StateNone { get; private set; }
     public PlayerState_Normal StateNormal { get; private set; }
     public PlayerState_Charge StateCharge { get; private set; }
@@ -136,6 +140,7 @@ public class PlayerController : MonoBehaviour, IEventActor
         }
 
         imageBubble = GetComponentInChildren<ImageBubble>();
+        chargeGauge = GetComponentInChildren<PlayerChargeGauge>();
 
         if (visualManager == null) visualManager = GetComponent<PlayerVisualManager>();
         if (visualManager != null) visualManager.Initialize(this);
@@ -162,6 +167,8 @@ public class PlayerController : MonoBehaviour, IEventActor
             mousePositionInput = inputActions.Player.MousePosition.ReadValue<Vector2>();
         }
 
+        if (Input.GetKeyDown(KeyCode.F1)) SoundManager.Instance.PlayBGM(BgmType.Stage2);
+
         currentState?.UpdateState();
     }
 
@@ -169,7 +176,7 @@ public class PlayerController : MonoBehaviour, IEventActor
     {
         if (Time.timeScale == 0f) return;
 
-        currentState?.FixedUpdateState();
+            currentState?.FixedUpdateState();
     }
 
     public void TransitionToState(IPlayerState newState)
@@ -197,13 +204,17 @@ public class PlayerController : MonoBehaviour, IEventActor
         return groundLayer;
     }
 
+    public LayerMask GetReflectionLayerMask()
+    {
+        return ReflectionLayer;
+    }
+
     /// <summary>
     /// バースト中に敵を撃破した際、バースト回数を回復する関数
     /// </summary>
-    public void OnEnemyKilledInBurst()
+    public void OnEnemyKilledInBurst(int value = 1)
     {
-            currentBurstCount = Mathf.Max(0, currentBurstCount - 1);
-            // currentBurstCount = 0f;
+        if (chargeGauge) chargeGauge.RecoveryGauge(value);
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
@@ -211,37 +222,129 @@ public class PlayerController : MonoBehaviour, IEventActor
         OnCollisionEnterEvent?.Invoke(collision);
     }
 
+    private Coroutine playerReactionCoroutine;
+
+    private IEnumerator PlayerTwitchRoutine(float duration, float magnitude)
+    {
+        if (visualManager == null || visualManager.playerVisual == null) yield break;
+        Transform visual = visualManager.playerVisual;
+        Vector3 origPos = visual.localPosition;
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            // 左右にガタガタ震える計算
+            float offsetX = Random.Range(-magnitude, magnitude);
+            visual.localPosition = origPos + new Vector3(offsetX, 0f, 0f);
+            yield return null;
+        }
+        visual.localPosition = origPos;
+    }
+
+    private IEnumerator PlayerNodRoutine(int nodCount, float height)
+    {
+        if (visualManager == null || visualManager.playerVisual == null) yield break;
+        Transform visual = visualManager.playerVisual;
+        Vector3 origPos = visual.localPosition;
+
+        for (int i = 0; i < nodCount; i++)
+        {
+            // コクッと下がる
+            float t = 0f;
+            while (t < 0.06f) { t += Time.deltaTime; visual.localPosition = origPos + Vector3.down * height; yield return null; }
+            // スッと戻る
+            t = 0f;
+            while (t < 0.06f) { t += Time.deltaTime; visual.localPosition = origPos; yield return null; }
+        }
+        visual.localPosition = origPos;
+    }
+
+    private IEnumerator PlayerTiltRoutine(float angle, float duration)
+    {
+        if (visualManager == null || visualManager.playerVisual == null) yield break;
+        Transform visual = visualManager.playerVisual;
+        Quaternion origRot = visual.localRotation;
+
+        float t = 0f;
+        // 首をかしげる（Z軸回転）
+        while (t < duration * 0.3f) { t += Time.deltaTime; visual.localRotation = origRot * Quaternion.Euler(0f, 0f, angle); yield return null; }
+        yield return new WaitForSeconds(duration * 0.4f);
+        t = 0f;
+        while (t < duration * 0.3f) { t += Time.deltaTime; visual.localRotation = Quaternion.Slerp(visual.localRotation, origRot, t / (duration * 0.3f)); yield return null; }
+        visual.localRotation = origRot;
+    }
+
     /// <summary>
-    /// 外部（イベントマネージャー）から呼ばれるリアクション窓口
+    /// 💡【完全版】スタンプと連動してプレイヤーの体が全自動で演技する窓口
     /// </summary>
     public void PlayReaction(ImageBubble.StampType type, float duration = 2.0f)
     {
-        // 種類に応じて「体（アニメーションや物理）」のリアクションだけを自分が担当する
+        if (playerReactionCoroutine != null) StopCoroutine(playerReactionCoroutine);
+
+        // 念のためビジュアルのローカル位置を綺麗に戻す安全策
+        if (visualManager != null && visualManager.playerVisual != null) visualManager.playerVisual.localPosition = Vector3.zero;
+
         switch (type)
         {
+            // ⭕️ OK / 丸：嬉しそうに「コクコクッ！」と可愛く2回うなずく
             case ImageBubble.StampType.OK:
+            case ImageBubble.StampType.Maru:
+                playerReactionCoroutine = StartCoroutine(PlayerNodRoutine(2, 0.15f));
                 break;
+
+            // ⭕️ 疑問 / はてな：不思議そうに首を「きょとん」と傾げる（Z軸回転チルト）
             case ImageBubble.StampType.Question:
-                break;
-            case ImageBubble.StampType.Surprise:
-                rb2D.linearVelocity = new Vector2(rb2D.linearVelocity.x, 4f); // ぴょこっと上に跳ねる物理リアクション
-                break;
-            case ImageBubble.StampType.Doya:
-                break;
-            case ImageBubble.StampType.Sweat:
-                break;
             case ImageBubble.StampType.Hatena:
+                playerReactionCoroutine = StartCoroutine(PlayerTiltRoutine(15f, 0.6f));
                 break;
-            case ImageBubble.StampType.Joy:
-                rb2D.linearVelocity = new Vector2(rb2D.linearVelocity.x, 3f);
-                break;
-            case ImageBubble.StampType.Gift:
-                break;
-            case ImageBubble.StampType.Star:
-                break;
-            case ImageBubble.StampType.Go:
-                break;
+
+            // ⭕️ 驚き / 危険 / 敵：ビクッ！！っと上に高く飛び跳ねて硬直する（脳汁ポイント！）
+            case ImageBubble.StampType.Surprise:
+            case ImageBubble.StampType.Denger:
             case ImageBubble.StampType.Enemy:
+                if (rb2D != null) rb2D.linearVelocity = new Vector2(rb2D.linearVelocity.x, 5.5f); // 勢いよく跳ねる
+                playerReactionCoroutine = StartCoroutine(PlayerTwitchRoutine(0.25f, 0.08f)); // 体をビクビク震わせる
+                break;
+
+            // ⭕️ どや顔：フンッ！と顎を突き出すように一瞬だけ少し浮き上がってポーズを決める
+            case ImageBubble.StampType.Doya:
+                if (rb2D != null) rb2D.linearVelocity = new Vector2(rb2D.linearVelocity.x, 2.0f);
+                break;
+
+            // ⭕️ 悲しい / 混乱 / どくろ：ガクガクガク…と青ざめたように小刻みに激しく震え出す
+            case ImageBubble.StampType.Sweat:
+            case ImageBubble.StampType.Confusion:
+            case ImageBubble.StampType.Dokuro:
+                playerReactionCoroutine = StartCoroutine(PlayerTwitchRoutine(0.8f, 0.06f));
+                break;
+
+            // ⭕️ 喜ぶ / 星：やったー！と小気味よく「ぴょん！ぴょん！ぴょん！」と3回跳ね踊る！
+            case ImageBubble.StampType.Joy:
+            case ImageBubble.StampType.Star:
+                StartCoroutine(PlayerNodRoutine(3, 0.08f)); // 縦揺れもブレンド
+                if (rb2D != null)
+                {
+                    // 連続小ジャンプを物理で再現
+                    StartCoroutine(FuncJoyJumps());
+                    IEnumerator FuncJoyJumps()
+                    {
+                        rb2D.linearVelocity = new Vector2(rb2D.linearVelocity.x, 3.2f); yield return new WaitForSeconds(0.18f);
+                        rb2D.linearVelocity = new Vector2(rb2D.linearVelocity.x, 3.2f); yield return new WaitForSeconds(0.18f);
+                        rb2D.linearVelocity = new Vector2(rb2D.linearVelocity.x, 3.2f);
+                    }
+                }
+                break;
+
+            // ⭕️ 行こう / 右 / 左：進む方向の地面へ「グッ」と一瞬低く身構える（ダッシュのタメ）
+            case ImageBubble.StampType.Go:
+            case ImageBubble.StampType.Right:
+            case ImageBubble.StampType.Left:
+                playerReactionCoroutine = StartCoroutine(PlayerNodRoutine(1, 0.25f));
+                break;
+
+            // ⭕️ バツ：ガクッ…と膝から崩れ落ちるように一瞬だけ下に沈み込む
+            case ImageBubble.StampType.Batu:
+                playerReactionCoroutine = StartCoroutine(PlayerNodRoutine(1, 0.4f));
                 break;
         }
     }

@@ -64,6 +64,26 @@ public class CameraBoundsTrigger : MonoBehaviour
         }
     }
 
+    void OnTriggerStay2D(Collider2D collision)
+    {
+        if (collision.CompareTag("Player"))
+        {
+            InitializeReferences();
+
+            if (customCameraController != null)
+            {
+                Vector3 lockBasePosition = (cameraTargetPoint != null) ? cameraTargetPoint.position :
+                                           (triggerCollider != null ? triggerCollider.bounds.center : transform.position);
+
+                customCameraController.LockCamera(lockBasePosition, targetZOffset);
+            }
+            else
+            {
+                Debug.LogError($"[CameraBoundsTrigger] {gameObject.name} から 'MainCamera' の親にある 'CameraFollowWithZoom' が見つかりません！タグの設定や構造を確認してください。");
+            }
+        }
+    }
+
     void OnTriggerExit2D(Collider2D collision)
     {
         if (collision.CompareTag("Player"))

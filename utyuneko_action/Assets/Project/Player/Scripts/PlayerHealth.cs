@@ -82,7 +82,10 @@ public class PlayerHealth : MonoBehaviour
         SoundManager.Instance.FadeBGMVolume(0.2f, 0.0f);
         SoundManager.Instance.FadeBGMVolume(1.0f, 2.0f);
 
+        TimeManager.Instance.StopSlowMotion();
         TimeManager.Instance.TriggerGlobalSlowMotion(0.3f,0.2f);
+
+        p.OnEnemyKilledInBurst();
 
         currentHealth -= damageAmount;
         currentHealth = Mathf.Max(-1, currentHealth); // HPが-1以下にならないようにロック
@@ -189,14 +192,16 @@ public class PlayerHealth : MonoBehaviour
     private void HandleDamageCollision(GameObject hitObject)
     {
         // 当たった相手が「DamageSource」スクリプトを持っているか調べる
-        DamageSource source = hitObject.GetComponent<DamageSource>();
-        EventEnemy eventEnemy = hitObject.GetComponent<EventEnemy>();
-        if(eventEnemy)
-        {
-            if (eventEnemy.isDefeated) return;
-        }
+        var source = hitObject.GetComponent<DamageSource>();
+        var eventEnemy = hitObject.GetComponent<EventEnemy>();
+        if(eventEnemy) if (eventEnemy.isDefeated) return;
+        var timedBomb = hitObject.GetComponentInParent<StageSecondBossTimedBomb>();
+        if (timedBomb) if (timedBomb.IsBlownAway) return;
+        var mineBomb = hitObject.GetComponentInParent<StageSecondBossMineBomb>();
+        if (mineBomb != null) if (mineBomb.IsBlownAway) return;
 
-        if (source != null)
+
+        if (source != null && source.enabled)
         {
             if (hitObject.CompareTag("Enemy") && 
                 p.CurrentState == p.StateBurst) return;
