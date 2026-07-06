@@ -63,7 +63,7 @@ public class BossSniperCompanion : MonoBehaviour
                 timer -= Time.deltaTime;
                 if (timer <= 0f)
                 {
-                    teleport.Begin(unit, boss.RandomPatrolPoint(), boss.teleportShrinkTime, boss.teleportExpandTime, onBeforeExpand: () => boss.SelfUnit.SnapVisualToPlayerImmediate());
+                    teleport.Begin(unit, boss.RandomPatrolPointForCompanion(), boss.teleportShrinkTime, boss.teleportExpandTime, onBeforeExpand: () => unit.SnapVisualToPlayerImmediate());
 
                     step = Step.Teleporting;
                 }
@@ -80,7 +80,7 @@ public class BossSniperCompanion : MonoBehaviour
 
             case Step.PreparingAim:
                 unit.AimVisualOnlyTick();
-                if(unit.IsVisualAlignedToAim())
+                if (unit.IsVisualAlignedToAim())
                 {
                     timer = Mathf.Max(0.05f, cs.lockTime);
                     step = Step.Locking;

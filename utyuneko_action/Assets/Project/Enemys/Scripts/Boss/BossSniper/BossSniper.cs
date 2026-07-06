@@ -260,6 +260,9 @@ public class BossSniper : MonoBehaviour
     [Tooltip("巡回テレポート先の埋まり判定の半径。ボスのコライダーより少し大きめにすると地面スレスレ配置を防げる")]
     public float slotCheckRadius = 1.2f;
 
+    [Tooltip("巡回中、本体とお供分身が重ならないための最小距離。互いのテレポート先がこの距離より近くならないように選ぶ")]
+    public float minUnitSeparation = 3f;
+
     // ─── スタン・被弾 ──────────────────────────────
 
     [Header("スタン・被弾")]
@@ -349,6 +352,11 @@ public class BossSniper : MonoBehaviour
     // お供分身（強化時・巡回中のみ常駐する1体）
     private BossSniperCompanion companion;
     private bool companionKilledThisPatrol; // 撃破されたら、その巡回中は再出現しない
+
+    // 巡回中の重なり防止：本体とお供分身の「直近のテレポート先」。
+    // 両者はほぼ同時にテレポートすることがあるので、相手の現在位置だけでなく行き先も避ける
+    private Vector2? bossPatrolDest;
+    private Vector2? companionPatrolDest;
 
     private Vector3 patrolOrigin;
 
@@ -611,7 +619,8 @@ public class BossSniper : MonoBehaviour
 
     private void SpawnCompanion()
     {
-        GameObject go = Instantiate(clonePrefab, RandomPatrolPoint(), Quaternion.identity);
+        // 本体の位置・行き先から離れた点に出現させる（重なり防止）
+        GameObject go = Instantiate(clonePrefab, RandomPatrolPointForCompanion(), Quaternion.identity);
         BossSniperBeamUnit u = go.GetComponent<BossSniperBeamUnit>();
         if (u == null) u = go.AddComponent<BossSniperBeamUnit>();
 
@@ -629,6 +638,7 @@ public class BossSniper : MonoBehaviour
     {
         companionKilledThisPatrol = true; // この巡回中は再出現しない
         companion = null;
+        companionPatrolDest = null; // もう居ないので、本体が避ける必要はない
 
         if (refundPlayerBurstOnCloneDestroyed && pc != null) pc.OnEnemyKilledInBurst();
         onCloneDestroyed?.Invoke();
@@ -641,6 +651,7 @@ public class BossSniper : MonoBehaviour
             Destroy(companion.gameObject);
             companion = null;
         }
+        companionPatrolDest = null;
     }
 
     // ─── 被ダメージ・物理切り替え ─────────────────────
@@ -750,6 +761,45 @@ public class BossSniper : MonoBehaviour
     /// </summary>
     public Vector2 RandomPatrolPoint()
     {
+        return RandomPatrolPointAvoiding(null);
+    }
+
+    /// <summary>
+    /// 本体の巡回テレポート先を選ぶ。お供分身の現在位置と行き先から minUnitSeparation 以上離れた点を優先する。
+    /// Patrol / PatrolShot から呼ぶ。
+    /// </summary>
+    public Vector2 RandomPatrolPointForBoss()
+    {
+        List<Vector2> avoid = null;
+        if (companion != null)
+        {
+            avoid = new List<Vector2> { companion.transform.position };
+            if (companionPatrolDest.HasValue) avoid.Add(companionPatrolDest.Value);
+        }
+
+        Vector2 p = RandomPatrolPointAvoiding(avoid);
+        bossPatrolDest = p;
+        return p;
+    }
+
+    /// <summary>
+    /// お供分身の出現位置・テレポート先を選ぶ。本体の現在位置と行き先から minUnitSeparation 以上離れた点を優先する。
+    /// SpawnCompanion / BossSniperCompanion から呼ぶ。
+    /// </summary>
+    public Vector2 RandomPatrolPointForCompanion()
+    {
+        var avoid = new List<Vector2> { (Vector2)transform.position };
+        if (bossPatrolDest.HasValue) avoid.Add(bossPatrolDest.Value);
+
+        Vector2 p = RandomPatrolPointAvoiding(avoid);
+        companionPatrolDest = p;
+        return p;
+    }
+
+    // 巡回エリア内のランダム点を選ぶ本体。avoid の各点から minUnitSeparation 以上離れた点を優先し、
+    // 見つからなければ回避条件を外して従来どおりの選び方に落とす（進行が詰まらないように）
+    private Vector2 RandomPatrolPointAvoiding(List<Vector2> avoid)
+    {
         var verts = new List<Vector2>();
         if (patrolPoints != null)
         {
@@ -761,11 +811,23 @@ public class BossSniper : MonoBehaviour
 
         if (verts.Count == 0)
         {
+            // 左右幅内：まず回避条件つきで試し、ダメなら従来どおり
+            for (int i = 0; i < 10; i++)
+            {
+                Vector2 p = (Vector2)patrolOrigin + new Vector2(Random.Range(-patrolHalfWidth, patrolHalfWidth), 0f);
+                if (IsFarFromAll(p, avoid)) return p;
+            }
             return (Vector2)patrolOrigin + new Vector2(Random.Range(-patrolHalfWidth, patrolHalfWidth), 0f);
         }
-        if (verts.Count == 1) return verts[0];
+        if (verts.Count == 1) return verts[0]; // 1点しかないなら回避しようがない
         if (verts.Count == 2)
         {
+            for (int i = 0; i < 10; i++)
+            {
+                Vector2 p = Vector2.Lerp(verts[0], verts[1], Random.value);
+                if (IsSlotClear(p) && IsFarFromAll(p, avoid)) return p;
+            }
+            // 回避条件を外して再試行（地形回避は維持）
             for (int i = 0; i < 10; i++)
             {
                 Vector2 p = Vector2.Lerp(verts[0], verts[1], Random.value);
@@ -785,11 +847,58 @@ public class BossSniper : MonoBehaviour
         for (int i = 0; i < 40; i++)
         {
             Vector2 p = new Vector2(Random.Range(min.x, max.x), Random.Range(min.y, max.y));
+            if (PointInPolygon(p, verts) && IsSlotClear(p) && IsFarFromAll(p, avoid)) return p;
+        }
+
+        // 回避条件を外して再試行（従来の挙動）
+        for (int i = 0; i < 40; i++)
+        {
+            Vector2 p = new Vector2(Random.Range(min.x, max.x), Random.Range(min.y, max.y));
             if (PointInPolygon(p, verts) && IsSlotClear(p)) return p;
         }
 
-        // 見つからなければ頂点のどれか（設置ポイント自体は空中にある前提）
-        return verts[Random.Range(0, verts.Count)];
+        // 見つからなければ頂点のどれか（設置ポイント自体は空中にある前提）。
+        // 回避点からいちばん遠い頂点を選んで、せめて重なりにくくする
+        return FarthestVertexFrom(verts, avoid);
+    }
+
+    // p が avoid の全ての点から minUnitSeparation 以上離れているか（avoid が null／空なら常に true）
+    private bool IsFarFromAll(Vector2 p, List<Vector2> avoid)
+    {
+        if (avoid == null) return true;
+
+        float minSqr = minUnitSeparation * minUnitSeparation;
+        foreach (Vector2 a in avoid)
+        {
+            if ((p - a).sqrMagnitude < minSqr) return false;
+        }
+        return true;
+    }
+
+    // 回避点からの最短距離が最大になる頂点を返す（最終フォールバック用）
+    private static Vector2 FarthestVertexFrom(List<Vector2> verts, List<Vector2> avoid)
+    {
+        if (avoid == null || avoid.Count == 0)
+        {
+            return verts[Random.Range(0, verts.Count)];
+        }
+
+        Vector2 best = verts[0];
+        float bestDist = float.MinValue;
+        foreach (Vector2 v in verts)
+        {
+            float nearest = float.MaxValue;
+            foreach (Vector2 a in avoid)
+            {
+                nearest = Mathf.Min(nearest, (v - a).sqrMagnitude);
+            }
+            if (nearest > bestDist)
+            {
+                bestDist = nearest;
+                best = v;
+            }
+        }
+        return best;
     }
 
     // 点が多角形の内側にあるか（レイ交差法）

@@ -36,7 +36,7 @@ public class BossSniperState_PatrolShot : BossSniperStateBase
         shotsRemaining = Mathf.Max(1, boss.Difficulty.patrolShotCount);
 
         step = Step.Teleporting;
-        teleport.Begin(boss.SelfUnit, boss.RandomPatrolPoint(), boss.teleportShrinkTime, boss.teleportExpandTime, onBeforeExpand: () => boss.SelfUnit.SnapVisualToPlayerImmediate());
+        teleport.Begin(boss.SelfUnit, boss.RandomPatrolPointForBoss(), boss.teleportShrinkTime, boss.teleportExpandTime, onBeforeExpand: () => boss.SelfUnit.SnapVisualToPlayerImmediate());
     }
 
     public override void UpdateState()

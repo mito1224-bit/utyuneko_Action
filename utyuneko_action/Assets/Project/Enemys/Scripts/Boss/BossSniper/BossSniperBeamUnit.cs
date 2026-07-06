@@ -77,6 +77,16 @@ public class BossSniperBeamUnit : MonoBehaviour
     [Tooltip("収縮しきったときのXZスケール倍率。0だと描画やスケール復元が壊れることがあるので僅かに残す")]
     public float shrunkenScale = 0.02f;
 
+    [Header("発射の反動")]
+    [Tooltip("レーザーを撃ち始めた瞬間、モデルが射線と逆方向へ下がる距離。0で無効")]
+    public float recoilDistance = 0.35f;
+
+    [Tooltip("反動で下がった位置から元の位置へ戻るまでの時間（秒）")]
+    public float recoilReturnTime = 0.25f;
+
+    [Tooltip("反動で銃口が跳ね上がる角度（度）。反動が戻るのに合わせて水平へ戻る。0で無効")]
+    public float recoilTiltAngle = 12f;
+
     /// <summary>
     /// プレイヤーのバースト体当たりを受けたときの通知。
     /// 引数は (このユニット, 当たってきたプレイヤー)。ボスが購読し、現在のステートへ渡す。
@@ -114,6 +124,15 @@ public class BossSniperBeamUnit : MonoBehaviour
     private bool aimTiltActive;   // このフレームでビームを出したか（各Tickが立てる）
     private float currentTilt;
 
+    // 発射の反動（撃ち始めの瞬間にモデルを射線の逆へ蹴り、滑らかに戻す）。
+    // 「撃ち始め」は FireTick 側で自動検出するので、ステート側の呼び出しは不要。
+    private Vector3 baseLocalPos;      // visualTransform の初期ローカル位置
+    private bool hasBaseLocalPos;
+    private Vector2 recoilDir;         // 反動の方向（射線の逆・ワールド基準）
+    private float recoilAmount;        // 現在の反動量（recoilDistance → 0 へ減衰）
+    private float recoilTiltSign;      // 跳ね上がりの符号（右向き+1／左向き-1）
+    private bool isFiringVisual;       // 前フレームにレーザーを出していたか（撃ち始め検出用）
+
     // 収縮演出（XZのみ縮めて縦線状に消える）
     private Vector3 baseScale = Vector3.one;
     private bool hasBaseScale;
@@ -136,6 +155,9 @@ public class BossSniperBeamUnit : MonoBehaviour
         {
             baseScale = visualTransform.localScale;
             hasBaseScale = true;
+
+            baseLocalPos = visualTransform.localPosition;
+            hasBaseLocalPos = true;
         }
 
         CreateBeamVisual();
@@ -148,6 +170,22 @@ public class BossSniperBeamUnit : MonoBehaviour
         {
             scaleFactor = Mathf.MoveTowards(scaleFactor, scaleTarget, scaleSpeed * Time.deltaTime);
             ApplyScale();
+        }
+    }
+
+    void LateUpdate()
+    {
+        // 反動の戻り。ステート更新（各Tick）の後に走らせたいので LateUpdate で処理する
+        if (recoilAmount > 0f)
+        {
+            float returnSpeed = recoilDistance / Mathf.Max(0.01f, recoilReturnTime);
+            recoilAmount = Mathf.MoveTowards(recoilAmount, 0f, returnSpeed * Time.deltaTime);
+        }
+
+        // モデル位置＝初期位置＋反動オフセット（回転・スケールは既存処理が担当するので触らない）
+        if (visualTransform != null && hasBaseLocalPos)
+        {
+            visualTransform.localPosition = baseLocalPos + (Vector3)(recoilDir * recoilAmount);
         }
     }
 
@@ -175,6 +213,9 @@ public class BossSniperBeamUnit : MonoBehaviour
         visualRotationSpeed = src.visualRotationSpeed;
         tiltRotationSpeed = src.tiltRotationSpeed;
         shrunkenScale = src.shrunkenScale;
+        recoilDistance = src.recoilDistance;
+        recoilReturnTime = src.recoilReturnTime;
+        recoilTiltAngle = src.recoilTiltAngle;
     }
 
     // ─── 瞬間移動の収縮演出 ─────────────────────────
@@ -182,6 +223,7 @@ public class BossSniperBeamUnit : MonoBehaviour
     /// <summary>XZスケールを縮めて縦線状に消えていく。</summary>
     public void BeginShrink(float duration)
     {
+        CancelRecoil(); // 消えながら反動で位置がずれないようにリセット
         SetScaleTarget(shrunkenScale, duration);
     }
 
@@ -194,9 +236,22 @@ public class BossSniperBeamUnit : MonoBehaviour
     /// <summary>収縮しきった状態に即座にする（分身の初期出現用）。当たり判定も無効化する。</summary>
     public void SetShrunkenImmediate()
     {
+        CancelRecoil();
         scaleFactor = scaleTarget = shrunkenScale;
         ApplyScale();
         SetHitboxEnabled(false);
+    }
+
+    /// <summary>反動を即座に打ち切り、モデルを初期位置へ戻す（テレポート前のリセット用）。</summary>
+    public void CancelRecoil()
+    {
+        recoilAmount = 0f;
+        isFiringVisual = false;
+
+        if (visualTransform != null && hasBaseLocalPos)
+        {
+            visualTransform.localPosition = baseLocalPos;
+        }
     }
 
     /// <summary>自分の Collider2D 群をまとめて有効／無効にする（消えている間は殴れない）。</summary>
@@ -236,6 +291,7 @@ public class BossSniperBeamUnit : MonoBehaviour
         if (d.sqrMagnitude > 0.0001f) lockedDir = d;
         DrawBeam(lockedDir, aimColor, sightWidth);
         aimTiltActive = true; // 照準中は銃口を射線方向へ傾ける
+        isFiringVisual = false; // 発射中ではない＝次の FireTick が「撃ち始め」になる
         UpdateModelFacing();
     }
 
@@ -244,12 +300,20 @@ public class BossSniperBeamUnit : MonoBehaviour
     {
         DrawBeam(lockedDir, lockColor, sightWidth);
         aimTiltActive = true; // ロック中も射線方向へ傾ける
+        isFiringVisual = false; // 全体攻撃の連射では ロック→発射 を繰り返すので、1発ごとに反動が入る
         UpdateModelFacing();
     }
 
     /// <summary>発射中：レーザー表示＋毎フレーム当たり判定（無敵時間は PlayerHealth 側）。</summary>
     public void FireTick()
     {
+        // 撃ち始めの瞬間（前フレームは発射していなかった）だけ反動を入れる
+        if (!isFiringVisual)
+        {
+            isFiringVisual = true;
+            StartRecoil();
+        }
+
         DrawBeam(lockedDir, fireColor, beamWidth);
         ApplyBeamDamage();
         aimTiltActive = true; // 発射中も射線方向へ傾ける
@@ -260,6 +324,22 @@ public class BossSniperBeamUnit : MonoBehaviour
     public void HideBeam()
     {
         if (line != null) line.enabled = false;
+        isFiringVisual = false;
+    }
+
+    /// <summary>
+    /// 発射の反動を開始する。モデルを射線と逆方向へ蹴り、銃口を跳ね上げる。
+    /// 通常は FireTick が撃ち始めを検出して自動で呼ぶので、ステート側からの呼び出しは不要。
+    /// </summary>
+    public void StartRecoil()
+    {
+        if (recoilDistance <= 0f && recoilTiltAngle <= 0f) return;
+
+        recoilDir = -lockedDir;
+        recoilAmount = recoilDistance;
+
+        // 跳ね上がり方向：右向きは＋（反時計回り）、左向きは既存の傾き計算の符号系に合わせて－
+        recoilTiltSign = lockedDir.x >= 0f ? 1f : -1f;
     }
 
     /// <summary>ビームを出していない間も、モデルだけプレイヤーの方へ向けたいときに呼ぶ。</summary>
@@ -448,7 +528,10 @@ public class BossSniperBeamUnit : MonoBehaviour
         PlayerController pc = col.GetComponentInParent<PlayerController>();
         if (pc == null) return;
 
-        if (bossHealth.CurrentHP <= 0) return;
+        // 撃破済みなら反応しない。
+        // bossHealth を持つのは本体だけで、分身（お供・偽物）は null なので必ず null チェックを通す
+        // （null のまま参照すると例外で OnBurstHit まで届かず、分身が倒せなくなる）
+        if (bossHealth != null && bossHealth.CurrentHP <= 0) return;
 
         // 破壊不可の設置ユニット：バーストかどうかに関わらず、触れたプレイヤーが接触ダメージを受けるだけ。
         // OnBurstHit は通知しない＝バーストで壊せない
@@ -521,9 +604,16 @@ public class BossSniperBeamUnit : MonoBehaviour
         }
         currentTilt = Mathf.MoveTowardsAngle(currentTilt, targetTilt, tiltRotationSpeed * Time.deltaTime);
 
+        // 発射の反動：銃口の跳ね上がり。反動量（recoilAmount）の減衰に比例して水平へ戻る
+        float recoilTilt = 0f;
+        if (recoilTiltAngle > 0f && recoilDistance > 0f && recoilAmount > 0f)
+        {
+            recoilTilt = recoilTiltSign * recoilTiltAngle * (recoilAmount / recoilDistance);
+        }
+
         // まず左右へ振り向き（Y回転）、その上から射線の角度へ傾ける（画面の回転軸＝Z回転）
         visualTransform.localRotation =
-            Quaternion.AngleAxis(currentTilt, Vector3.forward) * Quaternion.Euler(0f, currentVisualAngle, 0f);
+            Quaternion.AngleAxis(currentTilt + recoilTilt, Vector3.forward) * Quaternion.Euler(0f, currentVisualAngle, 0f);
 
         aimTiltActive = false; // 毎フレームの終わりに倒す。次フレームも攻撃中なら各Tickが立て直す
     }

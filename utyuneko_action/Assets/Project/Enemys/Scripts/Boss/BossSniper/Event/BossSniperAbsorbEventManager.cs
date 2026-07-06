@@ -66,6 +66,8 @@ public class BossSniperAbsorbEventManager : BaseEventManager
 
     private Quaternion originalPlayerVisualRotation;
 
+
+
     protected override void Awake()
     {
         base.Awake();
