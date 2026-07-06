@@ -25697,7 +25697,7 @@ MonoBehaviour:
   requiredSkipHoldTime: 0.8
   fadeInDuration: 0.3
   fadeOutSpeed: 2
-  eventCanvasPrefab: {fileID: 1625316926}
+  eventCanvasPrefab: {fileID: 0}
   currentPhase: 2
   hosa: {fileID: 843362239}
   bossSniper: {fileID: 1336955514}
@@ -25706,7 +25706,7 @@ MonoBehaviour:
   playerBubble: {fileID: 1180067302}
   hosaMoveSpeed: 6
   hosaHeightOffsetFromBoss: 4.2
-  startDelayRealtime: 0.6
+  startDelayRealtime: 2
 --- !u!1001 &580941245
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -36651,13 +36651,13 @@ Transform:
   m_GameObject: {fileID: 843362237}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 41, y: 0, z: 1}
+  m_LocalPosition: {x: 185.77, y: 9.8, z: 1}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1466332038}
   - {fileID: 1829864782}
-  m_Father: {fileID: 1219735325}
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &843362239
 MonoBehaviour:
@@ -55081,7 +55081,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 703167618}
-  - {fileID: 843362238}
   - {fileID: 2037680651}
   - {fileID: 708867417141187585}
   m_Father: {fileID: 1286321153}
@@ -61174,7 +61173,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BossSniperHealth
   maxHP: 400
   enragedThresholdRatio: 0.5
-  basePlayerDamage: 8
+  basePlayerDamage: 80
   playerSpeedDamageMultiplier: 0.4
   damageInterval: 0.5
   refundPlayerBurstOnDamage: 0
@@ -81748,6 +81747,7 @@ MonoBehaviour:
   subFollowSpeed: 3
   shakeStrength: 8
   shakeDuration: 0.15
+  fadeOutDuration: 0.8
 --- !u!225 &1802824594
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -508328,3 +508328,4 @@ SceneRoots:
   - {fileID: 2129037807}
   - {fileID: 662686509}
   - {fileID: 1317072500}
+  - {fileID: 843362238}

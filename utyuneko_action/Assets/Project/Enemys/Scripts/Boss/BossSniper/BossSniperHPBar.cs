@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
+using System.Collections;
 
 /// <summary>
 /// ボススナイパーのHPバーUI。
@@ -48,10 +49,16 @@ public class BossSniperHPBar : MonoBehaviour
     private Vector2 shakeHomePos;
     private float shakeTimer;
 
+    private CanvasGroup canvasGroup;
+    private bool isDying;
+    public float fadeOutDuration = 0.8f;
+
     void Awake()
     {
         shakeTarget = transform as RectTransform;
         if (shakeTarget != null) shakeHomePos = shakeTarget.anchoredPosition;
+
+        canvasGroup = GetComponent<CanvasGroup>();
     }
 
     void OnEnable()
@@ -135,6 +142,13 @@ public class BossSniperHPBar : MonoBehaviour
             // 残像は追従に任せる。ただし増加（フェーズ切替で満タン化）は即反映して白残りを防ぐ
             if (current >= subSlider.value) subSlider.value = current;
         }
+
+
+        if (current <= 0f && !isDying)
+        {
+            StartCoroutine(FadeOutRoutine());
+        }
+
     }
 
     // 被弾：バーを軽く揺らす
@@ -148,4 +162,28 @@ public class BossSniperHPBar : MonoBehaviour
         if (mainSlider != null) { mainSlider.maxValue = max; mainSlider.value = current; }
         if (subSlider != null) { subSlider.maxValue = max; subSlider.value = current; }
     }
+
+
+    private IEnumerator FadeOutRoutine()
+    {
+        isDying = true;
+
+        float t = 0f;
+
+        while (t < fadeOutDuration)
+        {
+            t += Time.unscaledDeltaTime;
+
+            float ratio = Mathf.Clamp01(t / fadeOutDuration);
+
+            if (canvasGroup != null)
+                canvasGroup.alpha = Mathf.Lerp(1f, 0f, ratio);
+
+            yield return null;
+        }
+
+        if (canvasGroup != null)
+            canvasGroup.alpha = 0f;
+    }
+
 }
