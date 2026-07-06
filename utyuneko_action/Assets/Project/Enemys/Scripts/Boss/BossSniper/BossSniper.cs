@@ -266,6 +266,9 @@ public class BossSniper : MonoBehaviour
     [Tooltip("スタン落下時の重力スケール")]
     public float stunGravityScale = 2.5f;
 
+    [Tooltip("撃破後のRigidbody2Dの質量。大きいほどプレイヤーに押されにくくなる")]
+    public float defeatedMass = 1000f;
+
     [Tooltip("着地してからダメージを受け付け始めるまでの猶予時間。落下中〜この間は無敵")]
     public float postLandingGrace = 0.5f;
 
@@ -661,6 +664,21 @@ public class BossSniper : MonoBehaviour
         Rb.gravityScale = stunGravityScale;
         Rb.linearVelocity = Vector2.zero;
         SelfUnit.SetHitboxEnabled(true); // 落下・着地にはコライダーが必要
+    }
+
+    /// <summary>
+    /// 撃破後用：重力で落としつつ、質量を大きくしてプレイヤーに押されにくくする。
+    /// </summary>
+    public void BeginDefeatedBody()
+    {
+        BeginFallBody();
+
+        if (Rb != null)
+        {
+            Rb.mass = Mathf.Max(1f, defeatedMass);
+            Rb.linearVelocity = Vector2.zero;
+            Rb.angularVelocity = 0f;
+        }
     }
 
     /// <summary>飛行用：Kinematic に戻す。</summary>

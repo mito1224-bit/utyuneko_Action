@@ -102,6 +102,8 @@ public class BossSniperBeamUnit : MonoBehaviour
     /// <summary>収縮／復元アニメが進行中か。</summary>
     public bool IsScaleAnimating => !Mathf.Approximately(scaleFactor, scaleTarget);
 
+    private BossSniperHealth bossHealth;
+
     private Transform player;
     private Vector2 lockedDir = Vector2.left; // 現在の照準／固定方向
     private float currentVisualAngle;
@@ -127,6 +129,8 @@ public class BossSniperBeamUnit : MonoBehaviour
     void Awake()
     {
         hitboxes = GetComponentsInChildren<Collider2D>(true);
+
+        bossHealth = GetComponentInParent<BossSniperHealth>();
 
         if (visualTransform != null)
         {
@@ -444,6 +448,8 @@ public class BossSniperBeamUnit : MonoBehaviour
         PlayerController pc = col.GetComponentInParent<PlayerController>();
         if (pc == null) return;
 
+        if (bossHealth.CurrentHP <= 0) return;
+
         // 破壊不可の設置ユニット：バーストかどうかに関わらず、触れたプレイヤーが接触ダメージを受けるだけ。
         // OnBurstHit は通知しない＝バーストで壊せない
         if (IsHazardUnit)
@@ -471,6 +477,11 @@ public class BossSniperBeamUnit : MonoBehaviour
             // スタン中も含めて常に有害。ただし瞬間移動で消えている間は当たり判定自体が無効。
             if (IsReal && contactDamage > 0)
             {
+                if (bossHealth != null && bossHealth.IsInvincible)
+                {
+                    return;
+                }
+
                 PlayerHealth hp = col.GetComponentInParent<PlayerHealth>();
                 if (hp != null) hp.TakeDamage(contactDamage);
             }

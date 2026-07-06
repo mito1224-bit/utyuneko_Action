@@ -68,6 +68,13 @@ public class BossSniperHealth : MonoBehaviour
     /// <summary>強化モード（HPがしきい値以下）か。</summary>
     public bool IsEnraged => CurrentHP <= maxHP * enragedThresholdRatio;
 
+    /// <summary>
+    /// ボスが被ダメージ後の無敵時間中か。
+    /// この間はボスが連続ダメージを受けないだけでなく、
+    /// 本物ボスへの非バースト接触ダメージも無効化する。
+    /// </summary>
+    public bool IsInvincible => invincibilityTimer > 0f;
+
     private BossSniper boss;
     private BossSniperFlash flash;
     private BossSniperHitStop hitStop;
@@ -146,6 +153,12 @@ public class BossSniperHealth : MonoBehaviour
         if (refundPlayerBurstOnDamage && pc != null) pc.OnEnemyKilledInBurst();
 
         CurrentHP -= damage;
+
+        // ダメージが実際に入った直後は、ボスの無敵時間を開始 / 延長する。
+        // 通常ダメージでは TryApplyBurstDamage 側ですでに設定されているが、
+        // スタン中の倍率一撃などでも「被弾直後の接触ダメージ無効」を効かせるため、ここでも保証する。
+        invincibilityTimer = Mathf.Max(invincibilityTimer, damageInterval);
+
         onDamaged?.Invoke(damage);
         if (autoFlashOnDamage && flash != null) flash.Flash(); // 本物だけがここを通る＝本物だけ光る
 
