@@ -33,7 +33,13 @@ public class BossSniperState_Aim : BossSniperStateBase
         {
             // 本物を見破った：通常ダメージを入れたうえでスタン落下へ（スタン中は倍率一撃のボーナス帯）
             boss.HandleNormalBurstHit(unit, pc);
-            boss.TransitionToState(boss.StateStunFall);
+
+            // この一撃でHPを削り切った場合、ダメージ処理の中で既に撃破（Defeated）へ遷移している。
+            // その場合はスタン落下で上書きしない（撃破後の復活バグ防止）
+            if (boss.CurrentState == this)
+            {
+                boss.TransitionToState(boss.StateStunFall);
+            }
         }
         else
         {

@@ -414,6 +414,9 @@ public class BossSniper : MonoBehaviour
 
     public void TransitionToState(IBossSniperState newState)
     {
+        // 撃破後は他の状態へ戻らない（撃破と同フレームの被弾・スタン処理などによる「復活」を防ぐ最終防壁）
+        if (currentState == StateDefeated) return;
+
         if (currentState != null)
         {
             currentState.Exit();

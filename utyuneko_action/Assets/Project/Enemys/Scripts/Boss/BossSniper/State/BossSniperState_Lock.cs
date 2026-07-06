@@ -31,7 +31,13 @@ public class BossSniperState_Lock : BossSniperStateBase
         {
             // 発射直前まで見破りは有効。通常ダメージを入れてスタン落下へ
             boss.HandleNormalBurstHit(unit, pc);
-            boss.TransitionToState(boss.StateStunFall);
+
+            // この一撃でHPを削り切った場合、ダメージ処理の中で既に撃破（Defeated）へ遷移している。
+            // その場合はスタン落下で上書きしない（撃破後の復活バグ防止）
+            if (boss.CurrentState == this)
+            {
+                boss.TransitionToState(boss.StateStunFall);
+            }
         }
         else
         {

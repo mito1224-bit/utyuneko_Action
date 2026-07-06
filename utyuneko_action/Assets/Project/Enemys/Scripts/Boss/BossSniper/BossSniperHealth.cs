@@ -107,6 +107,8 @@ public class BossSniperHealth : MonoBehaviour
     /// </summary>
     public bool TryApplyBurstDamage(BossSniperBeamUnit unit, PlayerController pc, bool isStunned)
     {
+        if (CurrentHP <= 0f) return false; // 既に撃破済み。二重撃破・onDefeated の多重発火を防ぐ
+
         if (isStunned)
         {
             // スタン中：無敵時間は無視するが、そのスタンで1回だけ
@@ -138,6 +140,7 @@ public class BossSniperHealth : MonoBehaviour
     private void ApplyDamage(float damage, BossSniperBeamUnit unit, PlayerController pc, bool fromStun)
     {
         if (damage <= 0f) return;
+        if (CurrentHP <= 0f) return; // 既に撃破済み
 
         // プレイヤーのバースト回数を回復（既存仕様）
         if (refundPlayerBurstOnDamage && pc != null) pc.OnEnemyKilledInBurst();

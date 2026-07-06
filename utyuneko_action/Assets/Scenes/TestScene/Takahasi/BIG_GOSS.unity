@@ -25648,6 +25648,65 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b9d5aeaaf442a9d459fe161e29b10186, type: 3}
+--- !u!1 &580917790
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 580917791}
+  - component: {fileID: 580917792}
+  m_Layer: 0
+  m_Name: BossSniperDefeated
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &580917791
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 580917790}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2129037807}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &580917792
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 580917790}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 75da786618527e24bb7348d8244ddc24, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BossSniperAbsorbEventManager
+  allowSkip: 1
+  defaultDisplayTime: 1.5
+  requiredSkipHoldTime: 0.8
+  fadeInDuration: 0.3
+  fadeOutSpeed: 2
+  eventCanvasPrefab: {fileID: 1625316926}
+  currentPhase: 2
+  hosa: {fileID: 843362239}
+  bossSniper: {fileID: 1336955514}
+  coreCubePrefab: {fileID: 3750657969670665415, guid: 340e4c09bbd01ba448e6528dd2fdbb2a, type: 3}
+  hosaBubble: {fileID: 1829864783}
+  playerBubble: {fileID: 1180067302}
+  hosaMoveSpeed: 6
+  hosaHeightOffsetFromBoss: 4.2
+  startDelayRealtime: 0.6
 --- !u!1001 &580941245
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -55399,6 +55458,9 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   castDistance: 0.2
+  ReflectionLayer:
+    serializedVersion: 2
+    m_Bits: 0
   burstSpeed: 25
   reflectEfficiency: 1
   maxBurstCount: 3
@@ -55439,6 +55501,7 @@ MonoBehaviour:
   anim: {fileID: 0}
   trajectoryLine: {fileID: 414017573}
   damageEffect: {fileID: 0}
+  chargeGauge: {fileID: 0}
 --- !u!58 &1225482505
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -61066,7 +61129,19 @@ MonoBehaviour:
       m_Calls: []
   onDefeated:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 580917792}
+        m_TargetAssemblyTypeName: BossSniperAbsorbEventManager, Assembly-CSharp
+        m_MethodName: OnBossDefeated
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
   onCloneDestroyed:
     m_PersistentCalls:
       m_Calls: []
@@ -505925,6 +506000,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 580917791}
   - {fileID: 1918481655}
   - {fileID: 1336955512}
   - {fileID: 1625316927}
