@@ -88,6 +88,12 @@ public class BossSniperBeamUnit : MonoBehaviour
     public bool IsReal { get; set; }
 
     /// <summary>
+    /// 破壊不可の設置ユニット（横一斉射の左右砲台など）か。BossSniper が生成時に設定する。
+    /// true の間はバーストで壊せず、バーストかどうかに関わらず触れたプレイヤーが接触ダメージを受ける。
+    /// </summary>
+    public bool IsHazardUnit { get; set; }
+
+    /// <summary>
     /// 直近のバースト体当たりの方向（プレイヤー→このユニット、正規化）。
     /// 通常ダメージのシェイクを「殴られた方向の軸」に沿わせるために使う。
     /// </summary>
@@ -437,6 +443,18 @@ public class BossSniperBeamUnit : MonoBehaviour
     {
         PlayerController pc = col.GetComponentInParent<PlayerController>();
         if (pc == null) return;
+
+        // 破壊不可の設置ユニット：バーストかどうかに関わらず、触れたプレイヤーが接触ダメージを受けるだけ。
+        // OnBurstHit は通知しない＝バーストで壊せない
+        if (IsHazardUnit)
+        {
+            if (contactDamage > 0)
+            {
+                PlayerHealth hazardHp = col.GetComponentInParent<PlayerHealth>();
+                if (hazardHp != null) hazardHp.TakeDamage(contactDamage);
+            }
+            return;
+        }
 
         if (pc.CurrentState == pc.StateBurst)
         {

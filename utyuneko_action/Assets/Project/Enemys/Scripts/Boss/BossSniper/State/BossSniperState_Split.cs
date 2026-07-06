@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// 分身展開：本体がその場でXZ収縮して消え、縮んでいる間に配置ポイントを計算。
+/// 分身展開：本体がその場でXZ収縮して消え、縮んでいる間に配置ポイント（巡回エリア中央を囲む円形）を計算。
 /// 本体の移動＋偽物の生成（収縮状態）を行い、全ユニットが同時に「にゅっ」と出現する。
 /// 出現し終えたら照準（Aim）へ。
 /// 収縮〜出現中は全員の当たり判定が無効なので、この間に本物を殴られることはない。
@@ -42,7 +42,7 @@ public class BossSniperState_Split : BossSniperStateBase
                 // 縮み切った → 「この瞬間のプレイヤー位置」を中心に配置ポイントを計算し、
                 // 本体を移動・偽物を収縮状態で生成して、全員同時に出現を始める
                 int count = Mathf.Max(2, boss.Difficulty.totalUnits);
-                List<Vector2> slots = boss.BuildFormationSlots(count, boss.Player.position);
+                List<Vector2> slots = boss.BuildFormationSlots(count);
                 int realIndex = Random.Range(0, slots.Count);
                 boss.DeployFormation(slots, realIndex);
                 foreach (BossSniperBeamUnit u in boss.Units)

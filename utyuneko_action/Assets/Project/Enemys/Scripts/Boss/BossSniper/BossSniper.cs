@@ -7,15 +7,18 @@ using UnityEngine.Events;
 ///
 /// 状態遷移（各ステートは BossState_*.cs に分割。プレイヤーの IPlayerState と同じ流儀）:
 ///
+///   行動ループ：ランダム行動（巡回／全体攻撃／横一斉射・重み付き抽選）を actionsBeforeSplit 回
+///   挟むごとに、本命の分身攻撃（Split）を行う。各行動の終わりは Return（帰還テレポ）を経て
+///   次の行動選択（ChooseNextAction）へつながる。
+///
 ///   Patrol（巡回：多角形エリア内をランダムに瞬間移動）
 ///     ↔ PatrolShot（出現撃ち：瞬間移動が確率で攻撃に化ける。出現直後に狙いを固定して短いレーザー。
 ///                   偏差撃ち／直撃狙いが混ざる牽制。撃ち終えたら Patrol へ戻る）
-///     → RadialAttack（全体攻撃：ステージ中央＝巡回ポイントの重心へテレポートし、
-///                     回転しながら四方八方へ1本ずつ連射。撃ち切ったら分身攻撃へ。
-///                     通常時は毎サイクル必ず挟む。強化時（HP半分以下）のみ挟むかどうかがランダム）
-///     → Split（分身展開：本体が収縮して消え、全ユニットが配置ポイントに同時出現）
-///     → Aim（照準：射線がプレイヤーを追う）→ Lock（固定・最終警告）→ Fire（レーザー発射）
-///     → Return（瞬間移動で巡回エリアへ帰還）→ Patrol …
+///   RadialAttack（全体攻撃：ステージ中央＝巡回ポイントの重心へテレポートし、
+///                 回転しながら四方八方へ1本ずつ連射）
+///   SideBarrage（横一斉射：左右の壁沿いに互い違いの高さで分身を順次配置し、
+///                全員そろったら中央向きの横レーザーを一斉発射。本体は上空から狙い撃ちを重ねる）
+///   Split（分身展開）→ Aim（照準）→ Lock（固定・最終警告）→ Fire（レーザー発射）→ Return …
 ///
 ///   Aim / Lock 中に本物へバースト体当たり
 ///     → StunFall（無敵のまま落下）→ 着地 → StunGrace（着地猶予・まだ無敵）
@@ -87,6 +90,13 @@ public class BossSniper : MonoBehaviour
 
         [Tooltip("全体攻撃の1発ごとのロック時間（短いほど回転が速く難しい）")]
         public float radialLockTime = 0.3f;
+
+        [Header("横一斉射（左右の壁から中央へ）")]
+        [Tooltip("横一斉射で配置する分身の数。左右交互・互い違いの高さに置かれる")]
+        public int sidebarCloneCount = 4;
+
+        [Tooltip("全員配置完了後、一斉発射までのロック時間（赤い射線での最終警告）")]
+        public float sidebarLockTime = 0.6f;
     }
 
     [Header("難易度（通常時：HPが強化しきい値より上）")]
@@ -101,6 +111,8 @@ public class BossSniper : MonoBehaviour
         radialLockTime = 0.35f,
         stunDuration = 4f,
         stunDamageMultiplier = 4f,
+        sidebarCloneCount = 4,
+        sidebarLockTime = 0.65f,
     };
 
     [Header("難易度（強化時：HPが半分以下）")]
@@ -116,6 +128,8 @@ public class BossSniper : MonoBehaviour
         radialLockTime = 0.25f,
         stunDuration = 3f,
         stunDamageMultiplier = 5f,
+        sidebarCloneCount = 6,
+        sidebarLockTime = 0.45f,
     };
 
     // ─── 巡回（多角形エリア内の瞬間移動） ─────────────
@@ -169,8 +183,36 @@ public class BossSniper : MonoBehaviour
     [Tooltip("中央に到着してから初弾までの溜め時間。この間に初弾のロック射線を出してプレイヤーに避ける準備をさせる")]
     public float radialWindupTime = 1.2f;
 
-    [Tooltip("強化時（HP半分以下）で、巡回のあとに全体攻撃を挟む確率（0〜1）。挟まない場合はそのまま分身攻撃へ。通常時は必ず挟む")]
-    [Range(0f, 1f)] public float enragedRadialChance = 0.5f;
+    // ─── 行動ループ（ランダム行動→分身攻撃） ─────────────
+
+    [Header("行動ループ（ランダム行動→分身攻撃）")]
+    [Tooltip("分身攻撃までに挟むランダム行動（巡回／全体攻撃／横一斉射）の回数")]
+    public int actionsBeforeSplit = 3;
+
+    [Tooltip("ランダム行動の重み：巡回（テレポ待機＋出現撃ち）。重みが大きいほど選ばれやすい")]
+    public float actionWeightPatrol = 1f;
+
+    [Tooltip("ランダム行動の重み：全体攻撃（中央での回転連射）")]
+    public float actionWeightRadial = 1f;
+
+    [Tooltip("ランダム行動の重み：横一斉射（左右の壁から中央へ）")]
+    public float actionWeightSidebar = 1f;
+
+    // ─── 横一斉射（左右の壁から中央へ一斉に撃つ） ─────────
+
+    [Header("横一斉射")]
+    [Tooltip("横一斉射のエリアを決める対角の2点（矩形の角）。未設定なら巡回ポイントの外接矩形を使う")]
+    public Transform sidebarAreaA;
+    public Transform sidebarAreaB;
+
+    [Tooltip("左右に配置する設置ユニットのプレハブ（分身とは別モデル）。壊せず、バースト含め触れたプレイヤーが接触ダメージを受ける。未設定なら分身プレハブを流用")]
+    public GameObject sidebarUnitPrefab;
+
+    [Tooltip("設置ユニットを1体置くごとの間隔（秒）。左右交互・互い違いの高さに順次出現する")]
+    public float sidebarPlaceInterval = 0.3f;
+
+    [Tooltip("一斉発射のレーザーが出ている時間")]
+    public float sidebarFireDuration = 0.2f;
 
     // ─── お供分身（強化時・巡回中のみ常駐する1体） ─────────
 
@@ -212,27 +254,11 @@ public class BossSniper : MonoBehaviour
     [Tooltip("偽物の分身プレハブ（Collider2D(IsTrigger)＋BossBeamUnit＋見た目）")]
     public GameObject clonePrefab;
 
-    [Tooltip("分裂した瞬間のプレイヤー位置を中心に、この半径のリング状へ展開する（弧状整列の半径も兼ねる）")]
-    public float formationRadius = 6f;
+    [Tooltip("円形配置の余白。巡回エリアに収まる最大半径からこの分だけ内側に寄せる")]
+    public float splitRingMargin = 1.5f;
 
-    [Tooltip("リング配置ポイントの最低Y座標。地面へのめり込み防止（十分低い値なら実質無効）")]
-    public float formationMinY = -999f;
-
-    [Header("整列フォールバック（リングが地形に埋まる場合）")]
-    [Tooltip("埋まり判定の半径。ボスのコライダーより少し大きめにすると地面スレスレ配置を防げる")]
+    [Tooltip("巡回テレポート先の埋まり判定の半径。ボスのコライダーより少し大きめにすると地面スレスレ配置を防げる")]
     public float slotCheckRadius = 1.2f;
-
-    [Tooltip("整列時の隣同士の間隔")]
-    public float lineSpacing = 2.5f;
-
-    [Tooltip("横一列・弧状の基準高さ（プレイヤーからどれだけ上に置くか）")]
-    public float lineHeight = 5f;
-
-    [Tooltip("縦一列のとき、プレイヤーからどれだけ横に離すか")]
-    public float columnDistance = 5f;
-
-    [Tooltip("弧状整列の全体角度（度）。プレイヤー上空に弧を描く")]
-    public float arcAngleRange = 110f;
 
     // ─── スタン・被弾 ──────────────────────────────
 
@@ -266,6 +292,7 @@ public class BossSniper : MonoBehaviour
     public BossSniperState_Patrol StatePatrol { get; private set; }
     public BossSniperState_PatrolShot StatePatrolShot { get; private set; }
     public BossSniperState_RadialAttack StateRadialAttack { get; private set; }
+    public BossSniperState_SideBarrage StateSideBarrage { get; private set; }
     public BossSniperState_Split StateSplit { get; private set; }
     public BossSniperState_Aim StateAim { get; private set; }
     public BossSniperState_Lock StateLock { get; private set; }
@@ -337,6 +364,7 @@ public class BossSniper : MonoBehaviour
         StatePatrol = new BossSniperState_Patrol();
         StatePatrolShot = new BossSniperState_PatrolShot();
         StateRadialAttack = new BossSniperState_RadialAttack();
+        StateSideBarrage = new BossSniperState_SideBarrage();
         StateSplit = new BossSniperState_Split();
         StateAim = new BossSniperState_Aim();
         StateLock = new BossSniperState_Lock();
@@ -464,6 +492,82 @@ public class BossSniper : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 横一斉射のエリア矩形（min, max）を返す。
+    /// sidebarAreaA/B（対角の2点）が設定されていればそれを、無ければ巡回ポイントの外接矩形を使う。
+    /// </summary>
+    public void GetSidebarArea(out Vector2 min, out Vector2 max)
+    {
+        if (sidebarAreaA != null && sidebarAreaB != null)
+        {
+            Vector2 a = sidebarAreaA.position;
+            Vector2 b = sidebarAreaB.position;
+            min = Vector2.Min(a, b);
+            max = Vector2.Max(a, b);
+            return;
+        }
+
+        // フォールバック：巡回ポイントの外接矩形
+        GetPatrolBounds(out min, out max);
+    }
+
+    /// <summary>巡回ポイントの外接矩形（巡回エリアのおおまかな広さ）を求める。</summary>
+    public void GetPatrolBounds(out Vector2 min, out Vector2 max)
+    {
+        min = max = (Vector2)transform.position;
+        bool first = true;
+        if (patrolPoints != null)
+        {
+            foreach (Transform t in patrolPoints)
+            {
+                if (t == null) continue;
+                Vector2 p = t.position;
+                if (first) { min = max = p; first = false; }
+                else { min = Vector2.Min(min, p); max = Vector2.Max(max, p); }
+            }
+        }
+    }
+
+    /// <summary>
+    /// 偽物の分身を1体、収縮状態で生成して Units に登録する（横一斉射などの配置攻撃用）。
+    /// 被弾はボスのステートへ通知され、バーストで壊せる（DestroyClone 扱い）。出現（Expand）は呼び出し側が行う。
+    /// </summary>
+    public BossSniperBeamUnit SpawnCloneAt(Vector2 pos)
+    {
+        GameObject go = Instantiate(clonePrefab, pos, Quaternion.identity);
+        BossSniperBeamUnit u = go.GetComponent<BossSniperBeamUnit>();
+        if (u == null) u = go.AddComponent<BossSniperBeamUnit>();
+
+        u.CopySettingsFrom(SelfUnit);
+        u.Init(Player);
+        u.IsReal = false;
+        u.OnBurstHit = RouteBurstHit;
+        u.SetShrunkenImmediate();
+        Units.Add(u);
+        return u;
+    }
+
+    /// <summary>
+    /// 横一斉射用の「設置ユニット」を収縮状態で1体生成する（分身とは別モデル・sidebarUnitPrefab）。
+    /// 破壊不可（IsHazardUnit）：バーストで壊せず、バースト含め触れたプレイヤーが接触ダメージを受ける。
+    /// Units に登録するので、後片付けは分身と同じく Return の DespawnClones() が行う。
+    /// </summary>
+    public BossSniperBeamUnit SpawnSidebarUnitAt(Vector2 pos)
+    {
+        GameObject prefab = sidebarUnitPrefab != null ? sidebarUnitPrefab : clonePrefab;
+        GameObject go = Instantiate(prefab, pos, Quaternion.identity);
+        BossSniperBeamUnit u = go.GetComponent<BossSniperBeamUnit>();
+        if (u == null) u = go.AddComponent<BossSniperBeamUnit>();
+
+        u.CopySettingsFrom(SelfUnit); // ビーム見た目・接触ダメージ量なども本体から引き継ぐ
+        u.Init(Player);
+        u.IsReal = false;
+        u.IsHazardUnit = true; // 壊せない設置物。OnBurstHit は通知されないので配線不要
+        u.SetShrunkenImmediate();
+        Units.Add(u);
+        return u;
+    }
+
     /// <summary>偽物を1体破壊する（見破りの外れ）。破壊者が居ればバースト回数を回復させる。</summary>
     public void DestroyClone(BossSniperBeamUnit unit, PlayerController pc = null)
     {
@@ -564,21 +668,43 @@ public class BossSniper : MonoBehaviour
         Rb.linearVelocity = Vector2.zero;
     }
 
-    // ─── 巡回エリア（多角形）内のランダム位置 ─────────────
+    // ─── 行動ループ ─────────────────────────────────
+
+    private int actionCount; // 分身攻撃後に実行したランダム行動の回数
 
     /// <summary>
-    /// 巡回が終わった（AttackTimer が満ちた）ときに向かう先を決める。
-    /// 通常時: 必ず 全体攻撃 → 分身攻撃 の順。
-    /// 強化時（HP半分以下）: 確率（enragedRadialChance）で全体攻撃を挟むか、そのまま分身攻撃かをランダムに（行動を読めなくする）。
+    /// 次の行動を決める（巡回の時間切れ・帰還完了のたびに呼ばれる）。
+    /// 巡回／全体攻撃／横一斉射 を重み付きランダムで選び、
+    /// actionsBeforeSplit 回の行動を挟んだら分身攻撃（Split）へ。
+    /// 巡回が選ばれた場合は AttackTimer（＝その巡回行動の長さ）を補充する。
     /// </summary>
-    public IBossSniperState NextAttackAfterPatrol()
+    public IBossSniperState ChooseNextAction()
     {
-        if (IsEnraged && Random.value >= enragedRadialChance)
+        actionCount++;
+        if (actionCount > actionsBeforeSplit)
         {
+            actionCount = 0; // カウントを仕切り直して本命の分身攻撃へ
             return StateSplit;
         }
-        return StateRadialAttack;
+
+        float wPatrol = Mathf.Max(0f, actionWeightPatrol);
+        float wRadial = Mathf.Max(0f, actionWeightRadial);
+        float wSidebar = Mathf.Max(0f, actionWeightSidebar);
+        float total = wPatrol + wRadial + wSidebar;
+        if (total <= 0f) { AttackTimer = timeBetweenAttacks; return StatePatrol; } // 全部0なら巡回
+
+        float r = Random.value * total;
+        if (r < wPatrol)
+        {
+            AttackTimer = timeBetweenAttacks; // 巡回行動1回ぶんの時間を補充
+            return StatePatrol;
+        }
+        r -= wPatrol;
+        if (r < wRadial) return StateRadialAttack;
+        return StateSideBarrage;
     }
+
+    // ─── 巡回エリア（多角形）内のランダム位置 ─────────────
 
     /// <summary>ステージ中央＝巡回ポイントの重心（未設定なら初期位置）。全体攻撃の立ち位置。</summary>
     public Vector2 StageCenter()
@@ -662,147 +788,44 @@ public class BossSniper : MonoBehaviour
         return inside;
     }
 
-    // ─── 配置ポイントの生成（リング → 整列フォールバック） ───
-
-    private enum FormationType { HorizontalLine, VerticalLine, Arc }
+    // ─── 配置ポイントの生成（巡回エリア中央を囲む円形） ───
 
     /// <summary>
-    /// 分身の配置ポイント一覧を作る。まずプレイヤーを取り囲むリングを試し、
-    /// 1体でも地形（obstacleLayer）に接するならリング全体を諦め、
-    /// 横一列・縦一列・弧状のいずれか（ランダム）の整列に切り替える。
-    /// 整列も全員が埋まらない置き方を探してから確定する。
+    /// 分身の配置ポイント一覧を作る。巡回エリアの中央（StageCenter＝巡回ポイントの重心）を囲む、
+    /// 等間隔のきれいな円形配置。半径はエリア（巡回ポイントの外接矩形）に収まる最大から
+    /// splitRingMargin を引いて自動で決める。円の向き（開始角度）は毎回ランダムに回転させるので、
+    /// 等間隔は保ちつつ、毎回の配置座標から本物の位置を読むことはできない。
     /// </summary>
-    public List<Vector2> BuildFormationSlots(int count, Vector2 center)
+    public List<Vector2> BuildFormationSlots(int count)
     {
-        // 1) まずリング配置を試す
-        List<Vector2> ring = GenerateRing(count, center);
-        if (AllSlotsClear(ring)) return ring;
+        Vector2 center = StageCenter();
+        float radius = ComputeSplitRingRadius(center);
 
-        // 2) 誰かが地形に接する → 整列へ。種類はランダム（その種類で置けなければ他の種類も順に試す）
-        var types = new List<FormationType> { FormationType.HorizontalLine, FormationType.VerticalLine, FormationType.Arc };
-        Shuffle(types);
-
-        // 基準位置を少しずつずらしながら、全員が埋まらない置き方を探す
-        Vector2[] anchorOffsets =
-        {
-            Vector2.zero,
-            Vector2.up * 2f,
-            Vector2.up * 4f,
-            Vector2.right * 3f,
-            Vector2.left * 3f,
-            Vector2.up * 2f + Vector2.right * 3f,
-            Vector2.up * 2f + Vector2.left * 3f,
-        };
-
-        foreach (FormationType type in types)
-        {
-            // 縦一列は左右どちら側に立てるかもランダム（片側がダメならもう片側）
-            float firstSide = Random.value < 0.5f ? 1f : -1f;
-            float[] sides = type == FormationType.VerticalLine ? new[] { firstSide, -firstSide } : new[] { 1f };
-
-            foreach (float side in sides)
-            {
-                foreach (Vector2 offset in anchorOffsets)
-                {
-                    List<Vector2> slots = GenerateFormation(type, center + offset, count, side);
-                    if (AllSlotsClear(slots)) return slots;
-                }
-            }
-        }
-
-        // 3) 最終手段：横一列を作り、埋まるスロットだけ個別に上へ逃がす
-        List<Vector2> fallback = GenerateFormation(FormationType.HorizontalLine, center, count, 1f);
-        for (int i = 0; i < fallback.Count; i++) fallback[i] = FindClearAbove(fallback[i]);
-        return fallback;
-    }
-
-    private List<Vector2> GenerateRing(int count, Vector2 center)
-    {
-        float baseAngle = Random.Range(0f, Mathf.PI * 2f);
+        float baseAngle = Random.Range(0f, Mathf.PI * 2f); // 毎回ランダムに回転
         var slots = new List<Vector2>(count);
         for (int i = 0; i < count; i++)
         {
             float a = baseAngle + (Mathf.PI * 2f / count) * i;
-            Vector2 pos = center + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * formationRadius;
-            pos.y = Mathf.Max(pos.y, formationMinY);
-            slots.Add(pos);
+            slots.Add(center + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * radius);
         }
         return slots;
     }
 
-    private List<Vector2> GenerateFormation(FormationType type, Vector2 center, int count, float side)
+    // 巡回エリア（外接矩形）に収まる最大半径 − 余白。中央から四辺までの最短距離を基準にする
+    private float ComputeSplitRingRadius(Vector2 center)
     {
-        var slots = new List<Vector2>(count);
-        float half = (count - 1) * 0.5f;
-
-        switch (type)
-        {
-            case FormationType.HorizontalLine:
-                // プレイヤー上空に横一列
-                for (int i = 0; i < count; i++)
-                {
-                    slots.Add(center + Vector2.up * lineHeight + Vector2.right * ((i - half) * lineSpacing));
-                }
-                break;
-
-            case FormationType.VerticalLine:
-                // プレイヤーの横に縦一列（side=±1 で左右）。列の中心は少し上げて下端が地面に近づきにくくする
-                for (int i = 0; i < count; i++)
-                {
-                    slots.Add(center
-                        + Vector2.right * (side * columnDistance)
-                        + Vector2.up * ((i - half) * lineSpacing + lineHeight * 0.5f));
-                }
-                break;
-
-            case FormationType.Arc:
-                // プレイヤー上空に弧を描く（真上を中心に arcAngleRange 度の扇）
-                for (int i = 0; i < count; i++)
-                {
-                    float t = count == 1 ? 0.5f : (float)i / (count - 1);
-                    float deg = 90f - arcAngleRange * 0.5f + arcAngleRange * t;
-                    float rad = deg * Mathf.Deg2Rad;
-                    slots.Add(center + new Vector2(Mathf.Cos(rad), Mathf.Sin(rad)) * formationRadius);
-                }
-                break;
-        }
-        return slots;
+        GetPatrolBounds(out Vector2 min, out Vector2 max);
+        float half = Mathf.Min(
+            Mathf.Min(center.x - min.x, max.x - center.x),
+            Mathf.Min(center.y - min.y, max.y - center.y));
+        return Mathf.Max(1f, half - splitRingMargin);
     }
 
-    // その位置にボスを置いたとき地形（obstacleLayer）に接しないか。
+    // その位置にボスを置いたとき地形（obstacleLayer）に接しないか（巡回テレポート先の判定に使用）。
     // TilemapCollider2D / CompositeCollider2D も物理的にはただの Collider2D なので、そのまま拾える
     public bool IsSlotClear(Vector2 pos)
     {
         return Physics2D.OverlapCircle(pos, slotCheckRadius, SelfUnit.obstacleLayer) == null;
-    }
-
-    private bool AllSlotsClear(List<Vector2> slots)
-    {
-        foreach (Vector2 s in slots)
-        {
-            if (!IsSlotClear(s)) return false;
-        }
-        return true;
-    }
-
-    // 埋まっている位置を上方向へ少しずつ逃がす（最終手段用）
-    private Vector2 FindClearAbove(Vector2 pos)
-    {
-        for (int i = 0; i < 40; i++)
-        {
-            if (IsSlotClear(pos)) return pos;
-            pos += Vector2.up * 0.5f;
-        }
-        return pos; // どうしても空きが無ければ諦めてそのまま
-    }
-
-    private static void Shuffle<T>(List<T> list)
-    {
-        for (int i = list.Count - 1; i > 0; i--)
-        {
-            int j = Random.Range(0, i + 1);
-            (list[i], list[j]) = (list[j], list[i]);
-        }
     }
 
     // ─── ギズモ ───────────────────────────────────
@@ -826,8 +849,9 @@ public class BossSniper : MonoBehaviour
             Gizmos.DrawLine(origin + Vector3.left * patrolHalfWidth, origin + Vector3.right * patrolHalfWidth);
         }
 
-        // 分身リングの半径（プレイヤー中心だが、参考として自分の周りに表示）
+        // 分身の円形配置（巡回エリア中央＋自動半径）のプレビュー
         Gizmos.color = new Color(1f, 0.5f, 0f, 0.8f);
-        Gizmos.DrawWireSphere(transform.position, formationRadius);
+        Vector2 ringCenter = StageCenter();
+        Gizmos.DrawWireSphere(ringCenter, ComputeSplitRingRadius(ringCenter));
     }
 }

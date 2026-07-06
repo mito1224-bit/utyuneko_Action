@@ -141,7 +141,7 @@ public class BossSniperState_RadialAttack : BossSniperStateBase
                     }
                     else
                     {
-                        boss.TransitionToState(boss.StateSplit); // 撃ち切ったら本命の分身攻撃へ
+                        boss.TransitionToState(boss.StateReturn); // 撃ち切ったら帰還→次の行動選択へ
                     }
                 }
                 break;

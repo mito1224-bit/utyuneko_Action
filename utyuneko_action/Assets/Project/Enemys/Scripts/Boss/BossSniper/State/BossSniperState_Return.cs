@@ -1,6 +1,6 @@
 /// <summary>
-/// 帰還：分身を解除し、瞬間移動で巡回エリア内のランダム位置へ戻って巡回（Patrol）を再開する。
-/// 発射を撃ち切った後・スタンからの復帰・被ダメージ後の全てで使う共通の「戻り」ステート。
+/// 帰還：分身を解除し、瞬間移動で巡回エリア内のランダム位置へ戻り、次の行動選択（ChooseNextAction）へ渡す。
+/// 各攻撃の撃ち終わり・スタンからの復帰・被ダメージ後の全てで使う共通の「戻り」ステート。
 /// </summary>
 public class BossSniperState_Return : BossSniperStateBase
 {
@@ -24,7 +24,8 @@ public class BossSniperState_Return : BossSniperStateBase
 
         if (!teleport.Running)
         {
-            boss.TransitionToState(boss.StatePatrol);
+            // 帰還完了 → 次の行動を選ぶ（巡回／全体攻撃／横一斉射のランダム。規定回数後は分身攻撃）
+            boss.TransitionToState(boss.ChooseNextAction());
         }
     }
 }
