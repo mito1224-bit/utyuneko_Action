@@ -295,6 +295,8 @@ public class StageSecondBossTimedBomb : MonoBehaviour
 
         SoundManager.Instance.PlaySE(SeType.EnemyExplosion);
 
+        ShakeTarget.Instance.Shake(0.2f, 1.0f);
+
         // ===================================================================
         // 🛠️【エフェクトのサイズ連動機能】
         // 生成した爆発エフェクトのサイズを「爆発の直径×微調整倍率」に自動変更！

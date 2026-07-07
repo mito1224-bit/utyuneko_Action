@@ -111,6 +111,8 @@ public class PlayerState_Burst : IPlayerState
         {
             SoundManager.Instance.PlaySE(SeType.PlayerWallHit);
 
+            ShakeTarget.Instance.Shake(0.2f, 1.0f);
+
             Vector2 incomingVector = lastVelocity;
             if (incomingVector.magnitude < 1f) return;
 

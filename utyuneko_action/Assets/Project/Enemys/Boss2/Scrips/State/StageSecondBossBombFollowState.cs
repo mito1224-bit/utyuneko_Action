@@ -32,7 +32,7 @@ public class StageSecondBossBombFollowState : StageSecondBossBaseState
         }
 
         int totalShots = boss.followAttackCount;
-        float attackHeight = boss.stageMaxY - 2.0f;
+        float attackHeight = boss.stageMaxY - 5.0f;
         float leadAheadTime = 0.25f;
 
         Debug.Log($"<color=red>🎯 ボス：未来予測・偏差連続爆撃を開始！</color>");

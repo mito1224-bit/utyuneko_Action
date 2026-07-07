@@ -258,6 +258,9 @@ public class OpeningEventManager : BaseEventManager
             playerVisualTransform.localRotation = Quaternion.Euler(0f, wakeUpYAngle, 0f);
             playerVisualTransform.localPosition = originalVisualLocalPos;
         }
+
+        //ストーリーを進める
+        GameManager.Instance.AdvanceStoryPhase();
     }
 
     protected override void OnEventFullyCompleted()
@@ -274,6 +277,9 @@ public class OpeningEventManager : BaseEventManager
             playerVisualTransform.localRotation = Quaternion.Euler(0f, wakeUpYAngle, 0f);
             playerVisualTransform.localPosition = originalVisualLocalPos;
         }
+
+        //ストーリーを進める
+        GameManager.Instance.AdvanceStoryPhase();
 
         StartCoroutine(FadeOutAndEndRoutine());
     }

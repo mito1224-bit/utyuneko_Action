@@ -3902,11 +3902,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 289878466439885346, guid: 992b4cbffb5012c42b7f968084b3b48b, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 6.3771553
+      value: -33.7
       objectReference: {fileID: 0}
     - target: {fileID: 289878466439885346, guid: 992b4cbffb5012c42b7f968084b3b48b, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -4.19
+      value: -33.02
       objectReference: {fileID: 0}
     - target: {fileID: 289878466439885346, guid: 992b4cbffb5012c42b7f968084b3b48b, type: 3}
       propertyPath: m_LocalPosition.z
@@ -44308,6 +44308,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: CameraPivot
       objectReference: {fileID: 0}
+    - target: {fileID: 229262625472019341, guid: 22372edce019cdd468ea18abe06d5211, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 709108354898074050, guid: 22372edce019cdd468ea18abe06d5211, type: 3}
+      propertyPath: useZoomCompensation
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 755607411950330355, guid: 22372edce019cdd468ea18abe06d5211, type: 3}
       propertyPath: m_LocalPosition.x
       value: 21.99778
@@ -44360,6 +44368,14 @@ PrefabInstance:
       propertyPath: target
       value: 
       objectReference: {fileID: 1906103881}
+    - target: {fileID: 7323738274929012226, guid: 22372edce019cdd468ea18abe06d5211, type: 3}
+      propertyPath: offset.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7323738274929012226, guid: 22372edce019cdd468ea18abe06d5211, type: 3}
+      propertyPath: offset.y
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 7323738274929012226, guid: 22372edce019cdd468ea18abe06d5211, type: 3}
       propertyPath: offset.z
       value: 0

@@ -273,6 +273,8 @@ public class StageSecondBossUltimateState : StageSecondBossBaseState
         SoundManager.Instance.StopLoopSE(boss.gameObject);
         SoundManager.Instance.PlaySE(SeType.EnemyExplosion);
 
+        ShakeTarget.Instance.Shake(0.8f, 2.0f);
+
         ApplyUltimateFlash(false);
 
         // ===================================================================

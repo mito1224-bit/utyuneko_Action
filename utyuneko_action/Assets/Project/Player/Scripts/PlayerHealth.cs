@@ -85,6 +85,8 @@ public class PlayerHealth : MonoBehaviour
         TimeManager.Instance.StopSlowMotion();
         TimeManager.Instance.TriggerGlobalSlowMotion(0.3f,0.2f);
 
+        ShakeTarget.Instance.Shake(0.5f, 2.0f);
+
         p.OnEnemyKilledInBurst();
 
         currentHealth -= damageAmount;

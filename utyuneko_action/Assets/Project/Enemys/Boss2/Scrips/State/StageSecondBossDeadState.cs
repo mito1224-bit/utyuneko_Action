@@ -32,6 +32,8 @@ public class StageSecondBossDeadState : StageSecondBossBaseState
         isVelocityApplied = false;
         boss.isDeadGrounded = false;
 
+        boss.SetAllDamageSourcesEnabled(false);
+
         // ⏱️ 世界の時間を超スロー（0.2倍速）にする
         TimeManager.Instance.TriggerGlobalSlowMotion(1.0f, 0.2f);
 
@@ -84,6 +86,8 @@ public class StageSecondBossDeadState : StageSecondBossBaseState
             rb.bodyType = RigidbodyType2D.Kinematic;
             rb.linearVelocity = Vector2.zero;
         }
+
+        ShakeTarget.Instance.Shake(3.0f, 2.0f);
     }
 
     public override void Update()

@@ -16,6 +16,8 @@ public class StageSecondBossStunState : StageSecondBossBaseState
         isRecoveryStarted = false;
         airPosition = boss.transform.position;
 
+        SoundManager.Instance.FadeBGMVolume(0.5f, 0.5f);
+
         Debug.Log("<color=yellow>💫 ボス：気絶ダウン。画面上の全ての攻撃予兆を完全クリーンアップします。</color>");
 
         if (boss.TryGetComponent<StageSecondBossHealth>(out var health))
@@ -115,6 +117,7 @@ public class StageSecondBossStunState : StageSecondBossBaseState
 
     public override void Exit()
     {
+        SoundManager.Instance.FadeBGMVolume(0.5f, 1.0f);
         if (rb != null)
         {
             rb.bodyType = RigidbodyType2D.Kinematic;

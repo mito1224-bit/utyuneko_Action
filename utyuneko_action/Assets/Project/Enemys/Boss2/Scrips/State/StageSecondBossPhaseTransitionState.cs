@@ -60,7 +60,7 @@ public class StageSecondBossPhaseTransitionState : StageSecondBossBaseState
         originalScale = bossVisual.localScale;
 
         float centerX = (boss.stageMinX + boss.stageMaxX) / 2f;
-        float topY = boss.stageMaxY - 3.0f;
+        float topY = boss.stageMaxY - 4.0f;
         targetAirCenterPos = new Vector3(centerX, topY, boss.transform.position.z);
 
         // 物理モードを切って移動準備
@@ -102,6 +102,8 @@ public class StageSecondBossPhaseTransitionState : StageSecondBossBaseState
         {
             sequenceStep = 1;
             phaseTimer = 0f;
+
+            ShakeTarget.Instance.Shake(2.5f, 2.5f);
 
             SoundManager.Instance.PlaySE(SeType.EnemyConfusion);
             Debug.Log("<color=red>📢 ボス：目的地に到着、大咆哮！ 巨大化威嚇中！</color>");
