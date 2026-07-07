@@ -103,6 +103,10 @@ public class StageSecondBossBombCrossState : StageSecondBossBaseState
                 sr.sprite = boss.instantLineWarningSprite;
                 sr.color = boss.instantLineWarningColor;
                 sr.sortingOrder = -1;
+                if (boss.instantLineWarningMaterial)
+                {
+                    sr.material = boss.instantLineWarningMaterial;
+                }
 
                 float spriteWidth = sr.sprite.bounds.size.x;
                 float spriteHeight = sr.sprite.bounds.size.y;

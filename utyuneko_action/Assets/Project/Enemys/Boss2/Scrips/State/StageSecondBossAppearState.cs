@@ -89,7 +89,7 @@ public class StageSecondBossAppearState : StageSecondBossBaseState
         // 🛠️【カメラ連動】登場デモが終わったので、カメラをプレイヤーの元へフワッと戻す！
         if (cameraController != null)
         {
-            cameraController.ReturnToPlayerFromEvent(0.5f);
+            cameraController.ReturnToPlayerFromEvent(1.0f);
         }
         if (boss.BossStatgeCamera)
         {
