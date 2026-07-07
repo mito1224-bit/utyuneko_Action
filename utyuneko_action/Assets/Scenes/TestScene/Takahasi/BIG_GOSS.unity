@@ -26255,12 +26255,12 @@ MonoBehaviour:
   enrageZ: -7
   enrageTimeToTarget: 0.5
   enrageFaceFrontTime: 0.3
-  enrageFrontYAngle: 90
-  enrageHoldTime: 0.45
-  enrageFaceBackTime: 0.25
+  enrageFrontYAngle: 0
+  enrageHoldTime: 1
+  enrageFaceBackTime: 0.5
   enrageReturnTime: 0.7
-  enrageShakeDuration: 0.35
-  enrageShakeMagnitude: 0.7
+  enrageShakeDuration: 1
+  enrageShakeMagnitude: 2
   enrageShakeFrequency: 12
   enrageBossShakeStrength: 0.25
   enrageBossShakeDuration: 0.4
@@ -506096,13 +506096,13 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 592555739}
+  - {fileID: 1603960375}
   - {fileID: 580917791}
   - {fileID: 1918481655}
   - {fileID: 1336955512}
   - {fileID: 1625316927}
   - {fileID: 168910426}
-  - {fileID: 592555739}
-  - {fileID: 1603960375}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &2129718440
