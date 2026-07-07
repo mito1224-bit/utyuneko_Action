@@ -1,108 +1,112 @@
-using System.Collections;
+ï»¿using System.Collections;
 using UnityEngine;
 
 /// <summary>
-/// ƒ{ƒXƒXƒiƒCƒp[í‚ÌƒJƒƒ‰‰‰oŒWioŒ»E‹­‰»ƒJƒbƒgƒCƒ“jB
+/// ãƒœã‚¹ã‚¹ãƒŠã‚¤ãƒ‘ãƒ¼æˆ¦ã®ã‚«ãƒ¡ãƒ©æ¼”å‡ºä¿‚ï¼ˆå‡ºç¾ãƒ»å¼·åŒ–ã‚«ãƒƒãƒˆã‚¤ãƒ³ï¼‰ã€‚
 ///
-/// ’S“–:
-///   - oŒ»‰‰o: StageBossSniperTrigger ‚©‚ç PlayIntro() ‚ğŒÄ‚ÔB
-///     ƒ{ƒX‚Í‘¦oŒ»‚µAƒJƒƒ‰‚ª’n–Â‚è‚Æ‚Æ‚à‚Éƒ{ƒX‚ÖŠñ‚é ¨ oŒ»‚ÌÕŒ‚ƒVƒFƒCƒN ¨ ƒvƒŒƒCƒ„[‚Ö‹AŠÒB
-///   - ‹­‰»ƒJƒbƒgƒCƒ“: BossSniper.onEnraged ‚ğƒR[ƒhw“Ç‚µ‚Ä©“®Ä¶B
-///     ‘S‘ÌƒXƒ[–¾‚¯‚ğ‘Ò‚Â ¨ ƒ{ƒX‚ÖŠñ‚é ¨ ƒ{ƒX‚ª³–Ê‚ğŒü‚­ ¨ ƒ{ƒXƒVƒFƒCƒN{ƒJƒƒ‰ƒVƒFƒCƒN ¨ Œü‚«’¼‚µ‚Ä‹AŠÒB
+/// åˆ¥ãƒœã‚¹ã® StageSecondBossPhaseTransitionStateï¼ˆæ­£å¸¸å‹•ä½œã—ã¦ã„ã‚‹å®Ÿè£…ï¼‰ã¨åŒã˜æ‰‹é †ã‚’è¸ã‚€:
+///   1. éƒ¨å±‹ã®ã‚«ãƒ¡ãƒ©å›ºå®šã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆï¼ˆCameraBoundsTrigger ã‚’ä»˜ã‘ãŸã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆï¼‰ã‚’ SetActive(false) ã«ã™ã‚‹
+///   2. å¯„ã‚Šå…ˆã«è¦‹ãˆãªã„ä¸€æ™‚ã‚¿ãƒ¼ã‚²ãƒƒãƒˆã‚’ä½œã‚Šã€cameraFollow.StartTrackTarget ã§ãã“ã‚’ãƒ­ãƒƒã‚¯ã‚ªãƒ³
+///      ï¼ˆä¸€æ™‚ã‚¿ãƒ¼ã‚²ãƒƒãƒˆã® z ãŒãã®ã¾ã¾ã‚«ãƒ¡ãƒ©ã®å¯„ã‚Šè·é›¢ã«ãªã‚‹ï¼‰
+///   3. ã‚·ã‚§ã‚¤ã‚¯ã‚„ã‚¹ã‚±ãƒ¼ãƒ«ç­‰ã®æ¼”å‡ºã‚’æŒŸã‚€
+///   4. cameraFollow.ReturnToPlayerFromEvent ã§ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¸æˆ»ã™
+///   5. ä¸€æ™‚ã‚¿ãƒ¼ã‚²ãƒƒãƒˆã‚’ç ´æ£„ã—ã€å›ºå®šã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’ SetActive(true) ã«æˆ»ã™
 ///
-/// ‚Ç‚¿‚ç‚Ì‰‰o’†‚à BossSniper.SetEventPaused(true) ‚Åƒ{ƒX‚Æ‚¨‹Ÿ•ªg‚Ìs“®‚ğ~‚ß‚é
-/// i‘€ì‚Å‚«‚È‚¢ƒvƒŒƒCƒ„[‚ªŒ‚‚½‚ê‚È‚¢‚æ‚¤‚ÉjBƒvƒŒƒCƒ„[‚Ì‘€ìƒƒbƒN©‘Ì‚Í
-/// CameraFollowWithZoom ‚ÌƒCƒxƒ“ƒgAPIiPlayZoomEvent / StartZoomTrackj‚ª©“®‚Ås‚¤B
+/// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®æ“ä½œãƒ­ãƒƒã‚¯ã¯ StartTrackTarget ã®å†…éƒ¨ï¼ˆSetPlayerActiveState(false)ï¼‰ãŒè¡Œã†ã€‚
+/// ãƒœã‚¹ã¨ãŠä¾›åˆ†èº«ã®è¡Œå‹•åœæ­¢ã¯ bossSniper.SetEventPaused(true/false) ãŒè¡Œã†ã€‚
 ///
-/// Œ‚”jƒCƒxƒ“ƒg‚ÌƒJƒƒ‰‚Í BossSniperAbsorbEventManager ‘¤‚ª’S“–‚·‚éB
-/// Œ‚”j‚Í‚±‚ÌƒRƒ“ƒ|[ƒlƒ“ƒg‚Ì CancelCutscenes() ‚ªŒÄ‚Î‚êionDefeated w“ÇjA
-/// Às’†‚ÌƒJƒbƒgƒCƒ“‚ğ‘Å‚¿Ø‚Á‚Äƒ|[ƒY‚ğ‰ğœ‚·‚éB
+/// æ’ƒç ´ã‚¤ãƒ™ãƒ³ãƒˆã®ã‚«ãƒ¡ãƒ©ã¯ BossSniperAbsorbEventManager å´ãŒæ‹…å½“ã—ã€
+/// å›ºå®šã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã® ON/OFF ã¯ã“ã®ã‚¯ãƒ©ã‚¹ã®é™çš„ SuspendBoundsLock/ResumeBoundsLock ã‚’ä½¿ã†ã€‚
 ///
-/// ƒZƒbƒgƒAƒbƒv:
-///   - ƒV[ƒ“‚É‹ó‚ÌƒIƒuƒWƒFƒNƒg‚ğì‚Á‚Ä‚±‚ÌƒRƒ“ƒ|[ƒlƒ“ƒg‚ğ•t‚¯AbossSniper ‚ğŠ„‚è“–‚Ä‚é
-///     iƒ{ƒX‚ªŠJn‚É”ñƒAƒNƒeƒBƒu‚Å‚àQÆŒo—R‚Ìw“Ç‚Í–â‘è‚È‚­Œø‚­jB
-///   - cameraFollow ‚Í–¢İ’è‚È‚ç MainCamera ƒ^ƒO‚Ìe‚©‚ç©“®æ“¾‚·‚éB
-///   - StageBossSniperTrigger ‚Ì cameraDirector ‚É‚±‚ÌƒIƒuƒWƒFƒNƒg‚ğŠ„‚è“–‚Ä‚éB
+/// ã‚»ãƒƒãƒˆã‚¢ãƒƒãƒ—:
+///   - ç©ºã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã«ã“ã®ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã‚’ä»˜ã‘ã€bossSniper ã¨ boundsTriggerObject ã‚’å‰²ã‚Šå½“ã¦ã‚‹ã€‚
+///     ï¼ˆboundsTriggerObject = ãƒœã‚¹éƒ¨å±‹ã® CameraBoundsTrigger ã‚’ä»˜ã‘ãŸã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆï¼‰
+///   - cameraFollow ã¯æœªè¨­å®šãªã‚‰ MainCamera ã‚¿ã‚°ã®è¦ªã‹ã‚‰è‡ªå‹•å–å¾—ã€‚
+///   - StageBossSniperTrigger ã® cameraDirector ã«ã“ã®ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’å‰²ã‚Šå½“ã¦ã‚‹ã€‚
 /// </summary>
 public class BossSniperCameraDirector : MonoBehaviour
 {
-    /// <summary>
-    /// ƒCƒxƒ“ƒgƒJƒƒ‰ioŒ»E‹­‰»EŒ‚”j‚ÌŠñ‚è^ƒY[ƒ€j‚ªì“®’†‚©‚Ç‚¤‚©B
-    /// BossSniperCameraBoundsTrigger ‚Í‚±‚ê‚ª—§‚Á‚Ä‚¢‚éŠÔA•”‰®‚ÌƒJƒƒ‰ŒÅ’è‚ğT‚¦‚Ä
-    /// ƒCƒxƒ“ƒgƒJƒƒ‰‚É§Œä‚ğ÷‚éBŒ‚”jƒCƒxƒ“ƒgiAbsorbEventManagerj‚à‚±‚Ìƒtƒ‰ƒO‚ğg‚¤B
-    /// </summary>
-    public static bool EventCameraActive { get; set; }
+    // Absorbã‚¤ãƒ™ãƒ³ãƒˆç­‰ã‹ã‚‰å›ºå®šã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’æ“ä½œã™ã‚‹ãŸã‚ã®é™çš„çª“å£
+    private static BossSniperCameraDirector instance;
 
-    [Header("QÆ")]
-    [Tooltip("ƒ{ƒXƒXƒiƒCƒp[–{‘ÌBonEnraged / onDefeated ‚ğƒR[ƒhw“Ç‚·‚é")]
+    /// <summary>éƒ¨å±‹ã®ã‚«ãƒ¡ãƒ©å›ºå®šã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’ä¸€æ™‚åœæ­¢ï¼ˆSetActive(false)ï¼‰ã€‚ã‚¤ãƒ™ãƒ³ãƒˆé–‹å§‹æ™‚ã«å‘¼ã¶ã€‚</summary>
+    public static void SuspendBoundsLock()
+    {
+        if (instance != null) instance.SetBoundsObjectActive(false);
+    }
+
+    /// <summary>éƒ¨å±‹ã®ã‚«ãƒ¡ãƒ©å›ºå®šã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’å†é–‹ï¼ˆSetActive(true)ï¼‰ã€‚ã‚¤ãƒ™ãƒ³ãƒˆçµ‚äº†æ™‚ã«å‘¼ã¶ã€‚</summary>
+    public static void ResumeBoundsLock()
+    {
+        if (instance != null) instance.SetBoundsObjectActive(true);
+    }
+
+    [Header("å‚ç…§")]
+    [Tooltip("ãƒœã‚¹ã‚¹ãƒŠã‚¤ãƒ‘ãƒ¼æœ¬ä½“ã€‚onEnraged / onDefeated ã‚’ã‚³ãƒ¼ãƒ‰è³¼èª­ã™ã‚‹")]
     [SerializeField] private BossSniper bossSniper;
 
-    [Tooltip("ƒJƒƒ‰§ŒäB–¢İ’è‚È‚ç MainCamera ƒ^ƒO‚Ìe‚©‚ç©“®æ“¾‚·‚é")]
+    [Tooltip("ã‚«ãƒ¡ãƒ©åˆ¶å¾¡ã€‚æœªè¨­å®šãªã‚‰ MainCamera ã‚¿ã‚°ã®è¦ªã‹ã‚‰è‡ªå‹•å–å¾—ã™ã‚‹")]
     [SerializeField] private CameraFollowWithZoom cameraFollow;
 
-    [Header("oŒ»‰‰o")]
-    [Tooltip("Šñ‚Á‚½‚Æ‚«‚ÌƒJƒƒ‰‹——£iZÀ•WB’Êí‚Í -10A‹ß‚¢‚Ù‚Ç 0 ‚É‹ß‚Ã‚¯‚éj")]
-    [SerializeField] private float introZ = -7f;
+    [Tooltip("ãƒœã‚¹éƒ¨å±‹ã®ã‚«ãƒ¡ãƒ©å›ºå®šã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆï¼ˆCameraBoundsTrigger ã‚’ä»˜ã‘ãŸã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆï¼‰ã€‚" +
+             "ã‚¤ãƒ™ãƒ³ãƒˆä¸­ã¯ã“ã‚Œã‚’ SetActive(false) ã«ã—ã¦ã€ã‚«ãƒ¡ãƒ©ã®å¯„ã‚Šï¼ã‚ºãƒ¼ãƒ ã‚’é‚ªé­”ã—ãªã„ã‚ˆã†ã«ã™ã‚‹")]
+    [SerializeField] private GameObject boundsTriggerObject;
 
-    [Tooltip("ƒ{ƒX‚ÖŠñ‚é‚Ì‚É‚©‚¯‚éŠÔi•bj")]
-    [SerializeField] private float introTimeToTarget = 1.0f;
-
-    [Tooltip("ƒ{ƒXˆÊ’u‚ÅÃ~‚·‚éŠÔi•bj")]
-    [SerializeField] private float introFreeze = 1.2f;
-
-    [Tooltip("ƒvƒŒƒCƒ„[‚Ö–ß‚é‚Ì‚É‚©‚¯‚éŠÔi•bj")]
-    [SerializeField] private float introReturn = 1.0f;
-
-    [Tooltip("Šñ‚Á‚Ä‚¢‚­ŠÔ‚Ì’n–Â‚èic‚Ì‚İ”÷U“®j‚Ì•b”")]
+    [Header("å‡ºç¾æ¼”å‡º")]
+    [Tooltip("å¯„ã£ãŸã¨ãã®ã‚«ãƒ¡ãƒ©è·é›¢ï¼ˆzåº§æ¨™ã€‚é€šå¸¸ -10ã€è¿‘ã„ã»ã© 0 ã«è¿‘ã¥ã‘ã‚‹ï¼‰")]
+    [SerializeField] private float introCameraZ = -7f;
+    [Tooltip("ã‚«ãƒ¡ãƒ©ãŒå¯„ã‚‹é€Ÿã•ï¼ˆä½ç½®ï¼‰ã€‚å¤§ãã„ã»ã©é€Ÿã„")]
+    [SerializeField] private float introPositionSpeed = 3f;
+    [Tooltip("ã‚«ãƒ¡ãƒ©ãŒå¯„ã‚‹é€Ÿã•ï¼ˆã‚ºãƒ¼ãƒ ï¼‰ã€‚å¤§ãã„ã»ã©é€Ÿã„")]
+    [SerializeField] private float introZoomSpeed = 2f;
+    [Tooltip("å¯„ã‚Šå§‹ã‚ã¦ã‹ã‚‰è¡æ’ƒã‚·ã‚§ã‚¤ã‚¯ã‚’å‡ºã™ã¾ã§ã®å¾…ã¡æ™‚é–“ï¼ˆç§’ï¼‰")]
+    [SerializeField] private float introApproachWait = 0.7f;
+    [Tooltip("å¯„ã£ãŸçŠ¶æ…‹ã§è¦‹ã›ã‚‹æ™‚é–“ï¼ˆç§’ï¼‰")]
+    [SerializeField] private float introHold = 1.2f;
+    [Tooltip("ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¸æˆ»ã‚‹æ™‚é–“ï¼ˆç§’ï¼‰")]
+    [SerializeField] private float introReturnTime = 1.0f;
+    [Tooltip("å¯„ã£ã¦ã„ãé–“ã®åœ°é³´ã‚Šï¼ˆç¸¦ã®ã¿å¾®æŒ¯å‹•ï¼‰ã®ç§’æ•°ãƒ»å¼·ã•")]
     [SerializeField] private float introRumbleDuration = 0.9f;
-
-    [Tooltip("’n–Â‚è‚Ì‹­‚³")]
     [SerializeField] private float introRumbleMagnitude = 0.15f;
-
-    [Tooltip("ƒ{ƒXoŒ»‚ÌÕŒ‚ƒVƒFƒCƒNiƒJƒƒ‰j‚Ì•b”‚Æ‹­‚³")]
-    [SerializeField] private float introImpactDuration = 0.3f;
-    [SerializeField] private float introImpactMagnitude = 0.55f;
-
-    [Tooltip("ƒ{ƒXoŒ»‚ÌÕŒ‚iƒ{ƒXƒ‚ƒfƒ‹‚Ì—h‚êj‚Ì‹­‚³‚Æ•b”")]
+    [Tooltip("å‡ºç¾ã®è¡æ’ƒï¼ˆã‚«ãƒ¡ãƒ©ã‚·ã‚§ã‚¤ã‚¯ï¼‰ã®ç§’æ•°ãƒ»å¼·ã•")]
+    [SerializeField] private float introImpactDuration = 0.35f;
+    [SerializeField] private float introImpactMagnitude = 0.7f;
+    [Tooltip("å‡ºç¾ã®è¡æ’ƒï¼ˆãƒœã‚¹ãƒ¢ãƒ‡ãƒ«ã®æºã‚Œï¼‰ã®å¼·ã•ãƒ»ç§’æ•°")]
     [SerializeField] private float introBossShakeStrength = 0.15f;
     [SerializeField] private float introBossShakeDuration = 0.25f;
 
-    [Header("‹­‰»ƒJƒbƒgƒCƒ“ioŒ»‚æ‚èT‚¦‚ßj")]
-    [Tooltip("Šñ‚Á‚½‚Æ‚«‚ÌƒJƒƒ‰‹——£iZÀ•Wj")]
-    [SerializeField] private float enrageZ = -7f;
-
-    [Tooltip("ƒ{ƒX‚ÖŠñ‚é‚Ì‚É‚©‚¯‚éŠÔi•bj")]
-    [SerializeField] private float enrageTimeToTarget = 0.5f;
-
-    [Tooltip("ƒ{ƒX‚ª³–Ê‚ğŒü‚­‚Ì‚É‚©‚¯‚éŠÔi•bj")]
+    [Header("å¼·åŒ–ã‚«ãƒƒãƒˆã‚¤ãƒ³ï¼ˆå‡ºç¾ã‚ˆã‚Šæ§ãˆã‚ï¼‰")]
+    [Tooltip("å¯„ã£ãŸã¨ãã®ã‚«ãƒ¡ãƒ©è·é›¢ï¼ˆzåº§æ¨™ï¼‰ã€‚å‡ºç¾ã‚ˆã‚Šæ§ãˆã‚ã«ï¼ˆ-8 ãªã©ã€-7 ã‚ˆã‚Šå¼•ãæ°—å‘³ï¼‰")]
+    [SerializeField] private float enrageCameraZ = -8f;
+    [SerializeField] private float enragePositionSpeed = 3.5f;
+    [SerializeField] private float enrageZoomSpeed = 2.5f;
+    [Tooltip("å¯„ã‚Šå§‹ã‚ã¦ã‹ã‚‰ãƒœã‚¹ãŒæ­£é¢ã‚’å‘ãå§‹ã‚ã‚‹ã¾ã§ã®å¾…ã¡æ™‚é–“ï¼ˆç§’ï¼‰")]
+    [SerializeField] private float enrageApproachWait = 0.5f;
+    [Tooltip("ãƒœã‚¹ãŒæ­£é¢ã‚’å‘ãã®ã«ã‹ã‘ã‚‹æ™‚é–“ï¼ˆç§’ï¼‰")]
     [SerializeField] private float enrageFaceFrontTime = 0.3f;
-
-    [Tooltip("ƒ‚ƒfƒ‹‚ª³–ÊiƒJƒƒ‰‘¤j‚ğŒü‚­‚Æ‚«‚Ì Y ‰ñ“]ŠpBƒ‚ƒfƒ‹‚Ìì‚è‚É‚æ‚Á‚Ä 90 / -90 / 0 ‚È‚Ç‚É’²®‚·‚é")]
+    [Tooltip("ãƒ¢ãƒ‡ãƒ«ãŒæ­£é¢ï¼ˆã‚«ãƒ¡ãƒ©å´ï¼‰ã‚’å‘ãã¨ãã® Y å›è»¢è§’ã€‚ãƒ¢ãƒ‡ãƒ«ã®ä½œã‚Šã«ã‚ˆã‚Š 90 / -90 / 0 ãªã©ã«èª¿æ•´")]
     [SerializeField] private float enrageFrontYAngle = 90f;
-
-    [Tooltip("³–Ê‚ğŒü‚¢‚Ä‚©‚ç‚Ìƒ^ƒŠÔi•bjB‚±‚ÌŠÔ‚ÉƒVƒFƒCƒN‚ª‘–‚é")]
+    [Tooltip("æ­£é¢ã‚’å‘ã„ã¦ã‹ã‚‰ã®ã‚¿ãƒ¡æ™‚é–“ï¼ˆç§’ï¼‰ã€‚ã“ã®é–“ã«ã‚·ã‚§ã‚¤ã‚¯ãŒèµ°ã‚‹")]
     [SerializeField] private float enrageHoldTime = 0.45f;
-
-    [Tooltip("Œ³‚ÌŒü‚«‚Ö–ß‚·‚Ì‚É‚©‚¯‚éŠÔi•bj")]
+    [Tooltip("å…ƒã®å‘ãã¸æˆ»ã™æ™‚é–“ï¼ˆç§’ï¼‰")]
     [SerializeField] private float enrageFaceBackTime = 0.25f;
-
-    [Tooltip("ƒJƒƒ‰‚ªƒvƒŒƒCƒ„[‚Ö–ß‚é‚Ì‚É‚©‚¯‚éŠÔi•bj")]
+    [Tooltip("ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¸æˆ»ã‚‹æ™‚é–“ï¼ˆç§’ï¼‰")]
     [SerializeField] private float enrageReturnTime = 0.7f;
-
-    [Tooltip("ŠoÁ‚ÌuŠÔ‚ÌƒJƒƒ‰ƒVƒFƒCƒNi•b”E‹­‚³E×‚©‚³j")]
+    [Tooltip("è¦šé†’ã®ç¬é–“ã®ã‚«ãƒ¡ãƒ©ã‚·ã‚§ã‚¤ã‚¯ï¼ˆç§’æ•°ãƒ»å¼·ã•ï¼‰")]
     [SerializeField] private float enrageShakeDuration = 0.35f;
-    [SerializeField] private float enrageShakeMagnitude = 0.7f;
-    [SerializeField] private float enrageShakeFrequency = 12f;
-
-    [Tooltip("ŠoÁ‚ÌuŠÔ‚Ìƒ{ƒXƒ‚ƒfƒ‹‚Ì—h‚êi‹­‚³E•b”j")]
+    [SerializeField] private float enrageShakeMagnitude = 0.6f;
+    [Tooltip("è¦šé†’ã®ç¬é–“ã®ãƒœã‚¹ãƒ¢ãƒ‡ãƒ«ã®æºã‚Œï¼ˆå¼·ã•ãƒ»ç§’æ•°ï¼‰")]
     [SerializeField] private float enrageBossShakeStrength = 0.25f;
     [SerializeField] private float enrageBossShakeDuration = 0.4f;
 
     private BossSniperShake bossShake;
     private Coroutine playingRoutine;
+    private GameObject tempCameraTarget;
 
     void Awake()
     {
+        instance = this;
+
         if (cameraFollow == null)
         {
             GameObject mainCam = GameObject.FindWithTag("MainCamera");
@@ -111,6 +115,11 @@ public class BossSniperCameraDirector : MonoBehaviour
         }
 
         if (bossSniper != null) bossShake = bossSniper.GetComponent<BossSniperShake>();
+    }
+
+    void OnDestroy()
+    {
+        if (instance == this) instance = null;
     }
 
     void OnEnable()
@@ -122,7 +131,7 @@ public class BossSniperCameraDirector : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("[CameraDirector] bossSniper ‚ª–¢Š„‚è“–‚Ä‚Å‚·BƒCƒ“ƒXƒyƒNƒ^[‚Åƒ{ƒX–{‘Ì‚ğŠ„‚è“–‚Ä‚Ä‚­‚¾‚³‚¢B");
+            Debug.LogWarning("[CameraDirector] bossSniper ãŒæœªå‰²ã‚Šå½“ã¦ã§ã™ã€‚ã‚¤ãƒ³ã‚¹ãƒšã‚¯ã‚¿ãƒ¼ã§ãƒœã‚¹æœ¬ä½“ã‚’å‰²ã‚Šå½“ã¦ã¦ãã ã•ã„ã€‚");
         }
     }
 
@@ -135,114 +144,169 @@ public class BossSniperCameraDirector : MonoBehaviour
         }
     }
 
-    // „Ÿ„Ÿ„Ÿ oŒ»‰‰o „Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ
+    private void SetBoundsObjectActive(bool active)
+    {
+        if (boundsTriggerObject != null) boundsTriggerObject.SetActive(active);
+    }
 
-    /// <summary>
-    /// oŒ»‰‰o‚ğÄ¶‚·‚éiStageBossSniperTrigger ‚©‚çƒ{ƒX—LŒø‰»‚Ì’¼Œã‚ÉŒÄ‚ÔjB
-    /// ƒ{ƒX‚Í‘¦oŒ»‚µA“WŠJƒAƒjƒ‚Í“®‚¢‚½‚Ü‚ÜAUŒ‚s“®‚¾‚¯‚ğ‰‰o‚ÌŠÔ’â~‚·‚éB
-    /// </summary>
+    // ã‚¤ãƒ™ãƒ³ãƒˆå¾Œã«éƒ¨å±‹ã®å›ºå®šç‚¹ã¸ Z ã”ã¨ç¢ºå®Ÿã«æˆ»ã™ã€‚
+    // CameraBoundsTrigger ã®å†ãƒ­ãƒƒã‚¯ã¯ OnTriggerStay2D é ¼ã¿ã ãŒã€ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ãŒé™æ­¢ã—ã¦
+    // Rigidbody2D ãŒã‚¹ãƒªãƒ¼ãƒ—ã—ã¦ã„ã‚‹ã¨ç™ºç«ã›ãšã€å¯„ã›ãŸ Z(-7/-8)ãŒæ®‹ã£ã¦ã—ã¾ã†ã€‚
+    // ãã“ã§ CameraBoundsTrigger ã¨åŒã˜å›ºå®šç‚¹ãƒ»targetZOffset ã‚’èª­ã‚“ã§ã€ã“ã“ã§ä¸€åº¦ã ã‘
+    // LockCamera ã‚’ç›´æ¥å‘¼ã³ã€Z ã‚’éƒ¨å±‹ã®å€¤(-15ç­‰)ã¸æˆ»ã™ã€‚
+    private void RelockToBoundsPoint()
+    {
+        if (cameraFollow == null || boundsTriggerObject == null) return;
+
+        // å›ºå®šç‚¹ï¼šå­ "CameraPoint" ãŒã‚ã‚Œã°ãã®ä½ç½®ã€ç„¡ã‘ã‚Œã°ã‚³ãƒ©ã‚¤ãƒ€ãƒ¼ä¸­å¿ƒã€ãã‚Œã‚‚ç„¡ã‘ã‚Œã°æœ¬ä½“ä½ç½®
+        Vector3 lockPos;
+        Transform camPoint = boundsTriggerObject.transform.Find("CameraPoint");
+        if (camPoint != null)
+        {
+            lockPos = camPoint.position;
+        }
+        else if (boundsTriggerObject.TryGetComponent<Collider2D>(out var col))
+        {
+            lockPos = col.bounds.center;
+        }
+        else
+        {
+            lockPos = boundsTriggerObject.transform.position;
+        }
+
+        // targetZOffsetï¼ˆå¼•ãé‡ï¼‰ã¯ CameraBoundsTrigger ã‹ã‚‰èª­ã‚€
+        float z = -40f;
+        if (boundsTriggerObject.TryGetComponent<CameraBoundsTrigger>(out var bounds))
+        {
+            z = bounds.targetZOffset;
+        }
+
+        cameraFollow.LockCamera(lockPos, z);
+    }
+
+    // å¯„ã‚Šå…ˆã®ä¸€æ™‚ã‚¿ãƒ¼ã‚²ãƒƒãƒˆã‚’ä½œã‚‹ï¼ˆz ãŒå¯„ã‚Šè·é›¢ã«ãªã‚‹ï¼‰
+    private void CreateTempTarget(Vector3 worldPos, float cameraZ)
+    {
+        DestroyTempTarget();
+        tempCameraTarget = new GameObject("TempCameraEventTarget");
+        tempCameraTarget.transform.position = new Vector3(worldPos.x, worldPos.y, cameraZ);
+    }
+
+    private void DestroyTempTarget()
+    {
+        if (tempCameraTarget != null)
+        {
+            Object.Destroy(tempCameraTarget);
+            tempCameraTarget = null;
+        }
+    }
+
+    // â”€â”€â”€ å‡ºç¾æ¼”å‡º â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    /// <summary>å‡ºç¾æ¼”å‡ºã‚’å†ç”Ÿã™ã‚‹ï¼ˆStageBossSniperTrigger ã‹ã‚‰ãƒœã‚¹æœ‰åŠ¹åŒ–ã®ç›´å¾Œã«å‘¼ã¶ï¼‰ã€‚</summary>
     public void PlayIntro()
     {
+        Debug.Log("[CameraDirector] PlayIntro é–‹å§‹");
         if (playingRoutine != null) return;
         if (bossSniper == null || cameraFollow == null) return;
-
         playingRoutine = StartCoroutine(IntroRoutine());
     }
 
     private IEnumerator IntroRoutine()
     {
-        // oŒ»ƒAƒjƒiûk¨“WŠJj‚Í“®‚­‚ªAUŒ‚EƒeƒŒƒ|[ƒg‚Í~‚ß‚é
+        Debug.Log("[CameraDirector] IntroRoutine é–‹å§‹");
+
+        SetBoundsObjectActive(false);
+        // æ”»æ’ƒãƒ»ãƒ†ãƒ¬ãƒãƒ¼ãƒˆã¯æ­¢ã‚ã‚‹ï¼ˆå‡ºç¾ã‚¢ãƒ‹ãƒ¡ã®ã‚¹ã‚±ãƒ¼ãƒ«ã¯åˆ¥ã§å‹•ãç¶šã‘ã‚‹ï¼‰
         bossSniper.SetEventPaused(true);
-        EventCameraActive = true; // •”‰®‚ÌƒJƒƒ‰ŒÅ’èiƒoƒEƒ“ƒhƒgƒŠƒK[j‚É÷‚Á‚Ä‚à‚ç‚¤
 
-        // ’n–Â‚èic‚Ì‚İ‚Ì”÷U“®j‚ğ•~‚«‚È‚ª‚çƒ{ƒX‚ÖŠñ‚éB
-        // ‚±‚ÌŠÔ‚ÌƒvƒŒƒCƒ„[‘€ìƒƒbƒN‚Í PlayZoomEvent ‚ª©“®‚Ås‚¤
+        // â‘  éƒ¨å±‹ã®å›ºå®šã‚«ãƒ¡ãƒ©ã‚’ã‚ªãƒ• â†’ â‘¡ å¯„ã‚Šå…ˆã‚¿ãƒ¼ã‚²ãƒƒãƒˆä½œæˆ â†’ StartTrackTarget ã§å¯„ã‚‹
+        
+        CreateTempTarget(bossSniper.transform.position, introCameraZ);
+        cameraFollow.StartTrackTarget(tempCameraTarget.transform, introPositionSpeed, introZoomSpeed);
+
+        // å¯„ã£ã¦ã„ãé–“ã®åœ°é³´ã‚Šï¼ˆç¸¦ã®ã¿å¾®æŒ¯å‹•ï¼‰
         if (ShakeTarget.Instance != null)
-        {
             ShakeTarget.Instance.Shake(introRumbleDuration, introRumbleMagnitude, 25f, false);
-        }
 
-        cameraFollow.PlayZoomEvent(bossSniper.transform, introZ, introTimeToTarget, introFreeze, introReturn);
+        yield return new WaitForSeconds(introApproachWait);
 
-        // ƒJƒƒ‰“’…ƒ{ƒX‚Ì“WŠJ‚ªŒ©‚¦‚é ‚ÉAoŒ»‚ÌÕŒ‚‚ğ1”­
-        yield return new WaitForSeconds(introTimeToTarget + 0.1f);
-
+        // å‡ºç¾ã®è¡æ’ƒ
         if (ShakeTarget.Instance != null)
-        {
             ShakeTarget.Instance.Shake(introImpactDuration, introImpactMagnitude, 15f);
-        }
         if (bossShake != null)
-        {
             bossShake.ShakeRandom(introBossShakeStrength, introBossShakeDuration);
-        }
 
-        // Ã~‚ªI‚í‚Á‚Ä‹AŠÒ‚ªn‚Ü‚éƒ^ƒCƒ~ƒ“ƒO‚Åƒtƒ‰ƒO‚ğ‰º‚ë‚·B
-        // ƒoƒEƒ“ƒhƒgƒŠƒK[‚ª•”‰®‚ÌŒÅ’è“_‚ÖƒƒbƒN‚µ’¼‚µAƒJƒƒ‰‚ÍŠŠ‚ç‚©‚É‚»‚±‚Ö–ß‚Á‚Ä‚¢‚­
-        yield return new WaitForSeconds(Mathf.Max(0f, introFreeze - 0.1f));
-        EventCameraActive = false;
+        // å¯„ã£ãŸçŠ¶æ…‹ã§è¦‹ã›ã‚‹
+        yield return new WaitForSeconds(introHold);
 
-        yield return new WaitForSeconds(introReturn);
+        // ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¸æˆ»ã™ â†’ æˆ»ã‚Šåˆ‡ã£ã¦ã‹ã‚‰å›ºå®šã‚«ãƒ¡ãƒ©ã‚’å¾©æ´»
+        cameraFollow.ReturnToPlayerFromEvent(introReturnTime);
+        yield return new WaitForSeconds(introReturnTime + 0.05f);
 
+        DestroyTempTarget();
+        
+        //RelockToBoundsPoint(); // ã‚¹ãƒªãƒ¼ãƒ—ã§ OnTriggerStay ãŒç™ºç«ã—ãªãã¦ã‚‚ Z(-15ç­‰)ã¸ç¢ºå®Ÿã«æˆ»ã™
         bossSniper.SetEventPaused(false);
         playingRoutine = null;
+        SetBoundsObjectActive(true);
     }
 
-    // „Ÿ„Ÿ„Ÿ ‹­‰»ƒJƒbƒgƒCƒ“ „Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ
+    // â”€â”€â”€ å¼·åŒ–ã‚«ãƒƒãƒˆã‚¤ãƒ³ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-    /// <summary>‹­‰»ƒJƒbƒgƒCƒ“‚ğÄ¶‚·‚éionEnraged ‚©‚ç©“®‚ÅŒÄ‚Î‚ê‚éjB</summary>
+    /// <summary>å¼·åŒ–ã‚«ãƒƒãƒˆã‚¤ãƒ³ã‚’å†ç”Ÿã™ã‚‹ï¼ˆonEnraged ã‹ã‚‰è‡ªå‹•ã§å‘¼ã°ã‚Œã‚‹ï¼‰ã€‚</summary>
     public void PlayEnrageCutin()
     {
         if (playingRoutine != null) return;
         if (bossSniper == null || cameraFollow == null) return;
-
         playingRoutine = StartCoroutine(EnrageRoutine());
     }
 
     private IEnumerator EnrageRoutine()
     {
-        // ƒXƒ^ƒ“ˆêŒ‚‚È‚Ç‚Ì‘S‘ÌƒXƒ[itimeScale’á‰ºj‚ª–¾‚¯‚é‚Ü‚Å‘Ò‚Á‚Ä‚©‚çn‚ß‚é
+        SetBoundsObjectActive(false);
+        // ã‚¹ã‚¿ãƒ³ä¸€æ’ƒãªã©ã®å…¨ä½“ã‚¹ãƒ­ãƒ¼ï¼ˆtimeScaleä½ä¸‹ï¼‰ãŒæ˜ã‘ã¦ã‹ã‚‰å§‹ã‚ã‚‹
         yield return new WaitUntil(() => Time.timeScale >= 0.99f);
-        yield return new WaitForSecondsRealtime(0.05f);
 
-        // ƒ{ƒX‚Æ‚¨‹Ÿ•ªg‚Ìs“®‚ğ~‚ß‚éi“€‚Á‚½Ëü‚àÁ‚¦‚éj
+        // æ”»æ’ƒãƒ»ãƒ†ãƒ¬ãƒãƒ¼ãƒˆã‚’æ­¢ã‚ã‚‹ï¼ˆå‡ã£ãŸå°„ç·šã‚‚æ¶ˆãˆã‚‹ï¼‰
         bossSniper.SetEventPaused(true);
-        EventCameraActive = true; // •”‰®‚ÌƒJƒƒ‰ŒÅ’èiƒoƒEƒ“ƒhƒgƒŠƒK[j‚É÷‚Á‚Ä‚à‚ç‚¤
 
-        // ƒ{ƒX‚ÖŠñ‚éiƒvƒŒƒCƒ„[‘€ì‚Í StartZoomTrack ‚ª©“®‚ÅƒƒbƒNj
-        cameraFollow.StartZoomTrack(bossSniper.transform, enrageZ, enrageTimeToTarget);
-        yield return new WaitForSeconds(enrageTimeToTarget);
+        // â‘  éƒ¨å±‹ã®å›ºå®šã‚«ãƒ¡ãƒ©ã‚’ã‚ªãƒ• â†’ â‘¡ å¯„ã‚Šå…ˆã‚¿ãƒ¼ã‚²ãƒƒãƒˆ â†’ å¯„ã‚‹
+        
+        CreateTempTarget(bossSniper.transform.position, enrageCameraZ);
+        cameraFollow.StartTrackTarget(tempCameraTarget.transform, enragePositionSpeed, enrageZoomSpeed);
 
-        // ƒ{ƒX‚ª³–Ê‚ğŒü‚­
+        yield return new WaitForSeconds(enrageApproachWait);
+
+        // ãƒœã‚¹ãŒæ­£é¢ã‚’å‘ã
         Transform visual = bossSniper.SelfUnit != null ? bossSniper.SelfUnit.visualTransform : null;
         Quaternion originalRot = visual != null ? visual.localRotation : Quaternion.identity;
         Quaternion frontRot = Quaternion.Euler(0f, enrageFrontYAngle, 0f);
-
         yield return RotateVisual(visual, originalRot, frontRot, enrageFaceFrontTime);
 
-        // ŠoÁ‚ÌuŠÔFƒ{ƒXƒ‚ƒfƒ‹‚Ì—h‚ê{ƒJƒƒ‰ƒVƒFƒCƒN
+        // è¦šé†’ã®ç¬é–“ï¼šãƒœã‚¹ã®æºã‚Œï¼‹ã‚«ãƒ¡ãƒ©ã‚·ã‚§ã‚¤ã‚¯
         if (bossShake != null)
-        {
             bossShake.ShakeRandom(enrageBossShakeStrength, enrageBossShakeDuration);
-        }
         if (ShakeTarget.Instance != null)
-        {
-            ShakeTarget.Instance.Shake(enrageShakeDuration, enrageShakeMagnitude, enrageShakeFrequency);
-        }
+            ShakeTarget.Instance.Shake(enrageShakeDuration, enrageShakeMagnitude, 12f);
 
         yield return new WaitForSeconds(enrageHoldTime);
 
-        // Œü‚«’¼‚µ‚Ä‚©‚ç‹AŠÒBƒtƒ‰ƒO‚ğ‰º‚ë‚·‚Æ•”‰®‚ÌŒÅ’è“_‚ÖŠŠ‚ç‚©‚É–ß‚Á‚Ä‚¢‚­
+        // å‘ãç›´ã—ã¦ã‹ã‚‰å¸°é‚„
         yield return RotateVisual(visual, frontRot, originalRot, enrageFaceBackTime);
 
-        cameraFollow.ReturnFromZoomEvent(enrageReturnTime);
-        EventCameraActive = false;
-        yield return new WaitForSeconds(enrageReturnTime);
+        cameraFollow.ReturnToPlayerFromEvent(enrageReturnTime);
+        yield return new WaitForSeconds(enrageReturnTime + 0.05f);
 
+        DestroyTempTarget();
+        
+        RelockToBoundsPoint(); // ã‚¹ãƒªãƒ¼ãƒ—ã§ OnTriggerStay ãŒç™ºç«ã—ãªãã¦ã‚‚ Z(-15ç­‰)ã¸ç¢ºå®Ÿã«æˆ»ã™
         bossSniper.SetEventPaused(false);
         playingRoutine = null;
+        SetBoundsObjectActive(true);
     }
 
-    // Œ©‚½–Ú‚ğ from ¨ to ‚ÖŠŠ‚ç‚©‚É‰ñ‚·iƒC[ƒWƒ“ƒO•t‚«j
+    // è¦‹ãŸç›®ã‚’ from â†’ to ã¸æ»‘ã‚‰ã‹ã«å›ã™
     private IEnumerator RotateVisual(Transform visual, Quaternion from, Quaternion to, float duration)
     {
         if (visual == null || duration <= 0f)
@@ -261,12 +325,13 @@ public class BossSniperCameraDirector : MonoBehaviour
         visual.localRotation = to;
     }
 
-    // „Ÿ„Ÿ„Ÿ ‘Å‚¿Ø‚è „Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ
+    // â”€â”€â”€ æ‰“ã¡åˆ‡ã‚Š â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /// <summary>
-    /// Às’†‚ÌƒJƒbƒgƒCƒ“‚ğ‘Å‚¿Ø‚èAƒ{ƒX‚Ìƒ|[ƒY‚ğ‰ğœ‚·‚é
-    /// iŒ‚”j‚É onDefeated Œo—R‚Å©“®‚ÅŒÄ‚Î‚ê‚éBŒ‚”jƒCƒxƒ“ƒg‘¤‚©‚ç‚Ì–¾¦ŒÄ‚Ño‚µ‚É‚à‘Î‰jB
-    /// ƒJƒƒ‰©‘Ì‚ÌŒãn––‚ÍAŒ‚”jƒCƒxƒ“ƒg‘¤‚Ì ForceStopEventCameraWork() ‚ªs‚¤B
+    /// å®Ÿè¡Œä¸­ã®ã‚«ãƒƒãƒˆã‚¤ãƒ³ã‚’æ‰“ã¡åˆ‡ã£ã¦å¾Œå§‹æœ«ã™ã‚‹ï¼ˆæ’ƒç ´æ™‚ã« onDefeated çµŒç”±ã§è‡ªå‹•ã§å‘¼ã°ã‚Œã‚‹ï¼‰ã€‚
+    /// ã‚«ãƒ¡ãƒ©æœ¬ä½“ã®å¾Œå§‹æœ«ï¼ˆReturnToPlayerFromEvent / ForceStopï¼‰ã¯æ’ƒç ´ã‚¤ãƒ™ãƒ³ãƒˆå´ãŒè¡Œã†ã®ã§ã€
+    /// ã“ã“ã§ã¯ä¸€æ™‚ã‚¿ãƒ¼ã‚²ãƒƒãƒˆã®ç ´æ£„ãƒ»å›ºå®šã‚«ãƒ¡ãƒ©ã®å¾©æ´»ãƒ»ãƒœã‚¹ã®å†é–‹ã ã‘ã‚’ç¢ºå®Ÿã«æ¸ˆã¾ã›ã‚‹ã€‚
+    /// ï¼ˆæ’ƒç ´ã‚¤ãƒ™ãƒ³ãƒˆå´ã¯ç›´å¾Œã«æ”¹ã‚ã¦ SuspendBoundsLock ã™ã‚‹ã®ã§äºŒé‡ã§ã‚‚å•é¡Œãªã„ï¼‰
     /// </summary>
     public void CancelCutscenes()
     {
@@ -276,7 +341,9 @@ public class BossSniperCameraDirector : MonoBehaviour
             playingRoutine = null;
         }
 
-        EventCameraActive = false; // Œ‚”jƒCƒxƒ“ƒg‘¤‚ªg‚¤ê‡‚ÍAŒü‚±‚¤‚Å‰ü‚ß‚Ä—§‚Ä’¼‚·
+        DestroyTempTarget();
+        
         if (bossSniper != null) bossSniper.SetEventPaused(false);
+        SetBoundsObjectActive(true);
     }
 }

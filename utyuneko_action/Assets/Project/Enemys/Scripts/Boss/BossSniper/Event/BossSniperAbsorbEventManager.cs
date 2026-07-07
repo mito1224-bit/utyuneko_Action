@@ -1,29 +1,29 @@
-using System.Collections;
+ï»¿using System.Collections;
 using UnityEngine;
 
 /// <summary>
-/// ƒ{ƒXƒXƒiƒCƒp[Œ‚”jŒã‚Ìu‹zûƒCƒxƒ“ƒgviBossAbsorbEventManager ‚Ìƒ{ƒXƒXƒiƒCƒp[ê—p”ÅjB
+/// ãƒœã‚¹ã‚¹ãƒŠã‚¤ãƒ‘ãƒ¼æ’ƒç ´å¾Œã®ã€Œå¸åã‚¤ãƒ™ãƒ³ãƒˆã€ï¼ˆBossAbsorbEventManager ã®ãƒœã‚¹ã‚¹ãƒŠã‚¤ãƒ‘ãƒ¼å°‚ç”¨ç‰ˆï¼‰ã€‚
 ///
-/// —¬‚ê:
-///   Œ‚”jiBossSniper.onDefeatedj¨ ­‚µŠÔ‚ğ’u‚­iŒ‚”j‚Ì‘S‘ÌƒXƒ[‚ª–¾‚¯‚é‚Ì‚ğ‘Ò‚Âj
-///   ¨ •â²‚ªã‹ó‚©‚ç“|‚ê‚½ƒ{ƒX‚Ì^ã‚Ö~‚è‚Ä‚­‚éiƒvƒŒƒCƒ„[‚Æ‹ü’Ç]j
-///   ¨ ƒvƒŒƒCƒ„[‚ª‚Ñ‚Á‚­‚èi!j¨ ƒ^ƒ ¨ •â²‚ª¯ƒXƒ^ƒ“ƒv
-///   ¨ •â²‚ªƒ{ƒX‚ğ‹z‚¢‚Şik¬‚µ‚È‚ª‚çˆø‚«Šñ‚¹‚ÄÁ‚·j
-///   ¨ •â²‚ª’n–Ê‚Ö~‚è‚é ¨ ‚Ç‚­‚ëƒXƒ^ƒ“ƒv
-///   ¨ ƒRƒAƒLƒ…[ƒu‚ğƒXƒe[ƒW’†‰›iBossSniper.StageCenterj‚Ö•ú•¨üƒgƒX ¨ ’÷‚ß
+/// æµã‚Œ:
+///   æ’ƒç ´ï¼ˆBossSniper.onDefeatedï¼‰â†’ å°‘ã—é–“ã‚’ç½®ãï¼ˆæ’ƒç ´ã®å…¨ä½“ã‚¹ãƒ­ãƒ¼ãŒæ˜ã‘ã‚‹ã®ã‚’å¾…ã¤ï¼‰
+///   â†’ è£œä½ãŒä¸Šç©ºã‹ã‚‰å€’ã‚ŒãŸãƒœã‚¹ã®çœŸä¸Šã¸é™ã‚Šã¦ãã‚‹ï¼ˆãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¨è¦–ç·šè¿½å¾“ï¼‰
+///   â†’ ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ãŒã³ã£ãã‚Šï¼ˆ!ï¼‰â†’ ã‚¿ãƒ¡ â†’ è£œä½ãŒæ˜Ÿã‚¹ã‚¿ãƒ³ãƒ—
+///   â†’ è£œä½ãŒãƒœã‚¹ã‚’å¸ã„è¾¼ã‚€ï¼ˆç¸®å°ã—ãªãŒã‚‰å¼•ãå¯„ã›ã¦æ¶ˆã™ï¼‰
+///   â†’ è£œä½ãŒåœ°é¢ã¸é™ã‚Šã‚‹ â†’ ã©ãã‚ã‚¹ã‚¿ãƒ³ãƒ—
+///   â†’ ã‚³ã‚¢ã‚­ãƒ¥ãƒ¼ãƒ–ã‚’ã‚¹ãƒ†ãƒ¼ã‚¸ä¸­å¤®ï¼ˆBossSniper.StageCenterï¼‰ã¸æ”¾ç‰©ç·šãƒˆã‚¹ â†’ ç· ã‚
 ///
-/// •Êƒ{ƒX”Å‚Æ‚Ìˆá‚¢:
-///   - ‹N“®‚ÍƒGƒŠƒAN“ü‚Å‚Í‚È‚­ BossSniper.onDefeatedBƒCƒ“ƒXƒyƒNƒ^[‚Å
-///     BossSniper ‚Ì onDefeated ‚ÉA‚±‚ÌƒRƒ“ƒ|[ƒlƒ“ƒg‚Ì OnBossDefeated() ‚ğ”zü‚·‚éB
-///   - ƒXƒe[ƒW’†‰›‚Í stageMinX/MaxX ‚Å‚Í‚È‚­ BossSniper.StageCenter()i„‰ñƒ|ƒCƒ“ƒg‚ÌdSjB
-///   - ‹z‚¢‚İ‘O‚Éƒ{ƒX‚ğ Kinematic ‚É–ß‚µiRestoreFlightBodyjA“–‚½‚è”»’è‚ğØ‚é
-///     i“|‚ê‚Ä‚¢‚éƒ{ƒX‚Í Dynamic ‚È‚Ì‚ÅA•¨—‚Æ‰‰o‚ÌˆÊ’u‘€ì‚ªŒ–‰Ü‚µ‚È‚¢‚æ‚¤‚ÉjB
+/// åˆ¥ãƒœã‚¹ç‰ˆã¨ã®é•ã„:
+///   - èµ·å‹•ã¯ã‚¨ãƒªã‚¢ä¾µå…¥ã§ã¯ãªã BossSniper.onDefeatedã€‚ã‚¤ãƒ³ã‚¹ãƒšã‚¯ã‚¿ãƒ¼ã§
+///     BossSniper ã® onDefeated ã«ã€ã“ã®ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã® OnBossDefeated() ã‚’é…ç·šã™ã‚‹ã€‚
+///   - ã‚¹ãƒ†ãƒ¼ã‚¸ä¸­å¤®ã¯ stageMinX/MaxX ã§ã¯ãªã BossSniper.StageCenter()ï¼ˆå·¡å›ãƒã‚¤ãƒ³ãƒˆã®é‡å¿ƒï¼‰ã€‚
+///   - å¸ã„è¾¼ã¿å‰ã«ãƒœã‚¹ã‚’ Kinematic ã«æˆ»ã—ï¼ˆRestoreFlightBodyï¼‰ã€å½“ãŸã‚Šåˆ¤å®šã‚’åˆ‡ã‚‹
+///     ï¼ˆå€’ã‚Œã¦ã„ã‚‹ãƒœã‚¹ã¯ Dynamic ãªã®ã§ã€ç‰©ç†ã¨æ¼”å‡ºã®ä½ç½®æ“ä½œãŒå–§å˜©ã—ãªã„ã‚ˆã†ã«ï¼‰ã€‚
 ///
-/// ƒZƒbƒgƒAƒbƒv‚Ì’ˆÓ:
-///   - BossSniper ‚Ì destroyDelayOnDefeat ‚Í 0i©“®Destroy‚µ‚È‚¢j‚É‚µ‚Ä‚¨‚­B
-///     ƒ{ƒX‚ÌÁ‹‚Í‚±‚ÌƒCƒxƒ“ƒgi‹z‚¢‚İ ¨ SetActive(false)j‚ª’S“–‚·‚éB
-///   - startDelayRealtime ‚Í BossSniperHitStop.defeatSlowDuration ‚æ‚è­‚µ’·‚ß‚É‚·‚é‚ÆA
-///     ‘S‘ÌƒXƒ[‚Ì—]‰C‚ªI‚í‚Á‚Ä‚©‚çƒCƒxƒ“ƒg‚ªn‚Ü‚éB
+/// ã‚»ãƒƒãƒˆã‚¢ãƒƒãƒ—ã®æ³¨æ„:
+///   - BossSniper ã® destroyDelayOnDefeat ã¯ 0ï¼ˆè‡ªå‹•Destroyã—ãªã„ï¼‰ã«ã—ã¦ãŠãã€‚
+///     ãƒœã‚¹ã®æ¶ˆå»ã¯ã“ã®ã‚¤ãƒ™ãƒ³ãƒˆï¼ˆå¸ã„è¾¼ã¿ â†’ SetActive(false)ï¼‰ãŒæ‹…å½“ã™ã‚‹ã€‚
+///   - startDelayRealtime ã¯ BossSniperHitStop.defeatSlowDuration ã‚ˆã‚Šå°‘ã—é•·ã‚ã«ã™ã‚‹ã¨ã€
+///     å…¨ä½“ã‚¹ãƒ­ãƒ¼ã®ä½™éŸ»ãŒçµ‚ã‚ã£ã¦ã‹ã‚‰ã‚¤ãƒ™ãƒ³ãƒˆãŒå§‹ã¾ã‚‹ã€‚
 /// </summary>
 public class BossSniperAbsorbEventManager : BaseEventManager
 {
@@ -36,44 +36,47 @@ public class BossSniperAbsorbEventManager : BaseEventManager
         Finished
     }
 
-    [Header("Œ»İ‚ÌƒCƒxƒ“ƒgisó‘Ô")]
+    [Header("ç¾åœ¨ã®ã‚¤ãƒ™ãƒ³ãƒˆé€²è¡ŒçŠ¶æ…‹")]
     [SerializeField] private EventPhase currentPhase = EventPhase.BeforeEvent;
 
-    [Header("“oêƒIƒuƒWƒFƒNƒg‚Ìİ’è")]
+    [Header("ç™»å ´ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã®è¨­å®š")]
     [SerializeField] private HosaController hosa;
 
-    [Tooltip("ƒ{ƒXƒXƒiƒCƒp[–{‘ÌB‹z‚¢‚İ‘ÎÛ•ƒXƒe[ƒW’†‰›‚Ìæ“¾‚Ég‚¤")]
+    [Tooltip("ãƒœã‚¹ã‚¹ãƒŠã‚¤ãƒ‘ãƒ¼æœ¬ä½“ã€‚å¸ã„è¾¼ã¿å¯¾è±¡ï¼†ã‚¹ãƒ†ãƒ¼ã‚¸ä¸­å¤®ã®å–å¾—ã«ä½¿ã†")]
     [SerializeField] private BossSniper bossSniper;
 
     [SerializeField] private GameObject coreCubePrefab;
 
-    [Header("“ªã‚ÌƒXƒ^ƒ“ƒv‚«o‚µiImageBubblej‚ÌQÆ")]
+    [Header("é ­ä¸Šã®ã‚¹ã‚¿ãƒ³ãƒ—å¹ãå‡ºã—ï¼ˆImageBubbleï¼‰ã®å‚ç…§")]
     [SerializeField] private ImageBubble hosaBubble;
     [SerializeField] private ImageBubble playerBubble;
 
-    [Header("•â²‚Ìİ’è")]
+    [Header("è£œä½ã®è¨­å®š")]
     [SerializeField] private float hosaMoveSpeed = 6f;
-    [Tooltip("•â²‚ªƒ{ƒX‚Ì‚Ç‚ê‚­‚ç‚¢yãz‚ÅÃ~‚·‚é‚©")]
+    [Tooltip("è£œä½ãŒãƒœã‚¹ã®ã©ã‚Œãã‚‰ã„ã€ä¸Šã€‘ã§é™æ­¢ã™ã‚‹ã‹")]
     [SerializeField] private float hosaHeightOffsetFromBoss = 4.2f;
 
-    [Header("ŠJn‚ÌŠÔ")]
-    [Tooltip("Œ‚”j‚©‚çƒCƒxƒ“ƒgŠJn‚Ü‚Å‚ÌŠÔiÀŠÔjBŒ‚”j‚Ì‘S‘ÌƒXƒ[iBossSniperHitStop.defeatSlowDurationj‚æ‚è­‚µ’·‚ß‚É")]
+    [Header("é–‹å§‹ã®é–“")]
+    [Tooltip("æ’ƒç ´ã‹ã‚‰ã‚¤ãƒ™ãƒ³ãƒˆé–‹å§‹ã¾ã§ã®é–“ï¼ˆå®Ÿæ™‚é–“ï¼‰ã€‚æ’ƒç ´ã®å…¨ä½“ã‚¹ãƒ­ãƒ¼ï¼ˆBossSniperHitStop.defeatSlowDurationï¼‰ã‚ˆã‚Šå°‘ã—é•·ã‚ã«")]
     [SerializeField] private float startDelayRealtime = 0.6f;
 
-    [Header("ƒJƒƒ‰EƒVƒFƒCƒN‰‰o")]
-    [Tooltip("ƒJƒƒ‰‰‰oŒWB‹­‰»ƒJƒbƒgƒCƒ““™‚ª–œˆêÀs’†‚¾‚Á‚½ê‡‚Ì‘Å‚¿Ø‚è‚Ég‚¤i–¢İ’è‚Å‚à‰Âj")]
+    [Header("ã‚«ãƒ¡ãƒ©ãƒ»ã‚·ã‚§ã‚¤ã‚¯æ¼”å‡º")]
+    [Tooltip("ã‚«ãƒ¡ãƒ©æ¼”å‡ºä¿‚ã€‚å¼·åŒ–ã‚«ãƒƒãƒˆã‚¤ãƒ³ç­‰ãŒä¸‡ä¸€å®Ÿè¡Œä¸­ã ã£ãŸå ´åˆã®æ‰“ã¡åˆ‡ã‚Šã«ä½¿ã†ï¼ˆæœªè¨­å®šã§ã‚‚å¯ï¼‰")]
     [SerializeField] private BossSniperCameraDirector cameraDirector;
 
-    [Tooltip("ƒCƒxƒ“ƒg’†AƒJƒƒ‰‚ªƒ{ƒXˆÊ’u‚ÖŠñ‚éÛ‚Ì‚È‚ß‚ç‚©‚³iˆÊ’uj")]
+    [Tooltip("ã‚¤ãƒ™ãƒ³ãƒˆä¸­ã€ã‚«ãƒ¡ãƒ©ãŒãƒœã‚¹ä½ç½®ã¸å¯„ã‚‹éš›ã®ãªã‚ã‚‰ã‹ã•ï¼ˆä½ç½®ï¼‰")]
     [SerializeField] private float trackPositionSpeed = 3f;
 
-    [Tooltip("ƒCƒxƒ“ƒg’†AƒJƒƒ‰‚ªƒ{ƒXˆÊ’u‚ÖŠñ‚éÛ‚Ì‚È‚ß‚ç‚©‚³iƒY[ƒ€j")]
+    [Tooltip("ã‚¤ãƒ™ãƒ³ãƒˆä¸­ã€ã‚«ãƒ¡ãƒ©ãŒãƒœã‚¹ä½ç½®ã¸å¯„ã‚‹éš›ã®ãªã‚ã‚‰ã‹ã•ï¼ˆã‚ºãƒ¼ãƒ ï¼‰")]
     [SerializeField] private float trackZoomSpeed = 2f;
 
-    [Tooltip("ƒCƒxƒ“ƒgI—¹‚ÉƒJƒƒ‰‚ªƒvƒŒƒCƒ„[‚Ö–ß‚éŠÔi•bj")]
+    [Tooltip("æ’ƒç ´ã‚¤ãƒ™ãƒ³ãƒˆä¸­ã®ã‚«ãƒ¡ãƒ©ã®å¯„ã‚Šè·é›¢ï¼ˆzåº§æ¨™ã€‚é€šå¸¸ -10ã€è¿‘ã„ã»ã© 0ï¼‰ã€‚å€’ã‚ŒãŸãƒœã‚¹ã¸ã®å¯„ã‚Šå…·åˆ")]
+    [SerializeField] private float trackCameraZ = -8f;
+
+    [Tooltip("ã‚¤ãƒ™ãƒ³ãƒˆçµ‚äº†æ™‚ã«ã‚«ãƒ¡ãƒ©ãŒãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¸æˆ»ã‚‹æ™‚é–“ï¼ˆç§’ï¼‰")]
     [SerializeField] private float cameraReturnTime = 1.0f;
 
-    [Tooltip("ƒCƒxƒ“ƒgŠJniƒXƒ[–¾‚¯’¼Œãj‚ÌŒ‚”jƒVƒFƒCƒN‚Ì•b”E‹­‚³E×‚©‚³")]
+    [Tooltip("ã‚¤ãƒ™ãƒ³ãƒˆé–‹å§‹æ™‚ï¼ˆã‚¹ãƒ­ãƒ¼æ˜ã‘ç›´å¾Œï¼‰ã®æ’ƒç ´ã‚·ã‚§ã‚¤ã‚¯ã®ç§’æ•°ãƒ»å¼·ã•ãƒ»ç´°ã‹ã•")]
     [SerializeField] private float defeatShakeDuration = 0.5f;
     [SerializeField] private float defeatShakeMagnitude = 1.1f;
     [SerializeField] private float defeatShakeFrequency = 12f;
@@ -101,21 +104,21 @@ public class BossSniperAbsorbEventManager : BaseEventManager
         isLookingActive = false;
     }
 
-    // „Ÿ„Ÿ„Ÿ Œ‚”jƒCƒxƒ“ƒg‚Ìw“ÇiƒCƒ“ƒXƒyƒNƒ^[”zü‚Í•s—vj „Ÿ„Ÿ„Ÿ
-    // bossSniper QÆ‚³‚¦Š„‚è“–‚Ä‚Ä‚ ‚ê‚ÎAƒR[ƒh‘¤‚©‚ç onDefeated ‚ğ©“®w“Ç‚·‚éB
-    // ƒ{ƒX‚ÌƒIƒuƒWƒFƒNƒg‚ªƒV[ƒ“ŠJn‚É”ñƒAƒNƒeƒBƒu‚Å‚àAQÆŒo—R‚Ì AddListener ‚Í–â‘è‚È‚­Œø‚­B
-    // iƒCƒ“ƒXƒyƒNƒ^[‚Å onDefeated ‚Éè“®”zü‚µ‚Ä‚ ‚Á‚Ä‚àAOnBossDefeated ‘¤‚Ì
-    //   currentPhase ƒK[ƒh‚Å“ñd‹N“®‚Í‚µ‚È‚¢‚Ì‚ÅˆÀ‘Sj
+    // â”€â”€â”€ æ’ƒç ´ã‚¤ãƒ™ãƒ³ãƒˆã®è³¼èª­ï¼ˆã‚¤ãƒ³ã‚¹ãƒšã‚¯ã‚¿ãƒ¼é…ç·šã¯ä¸è¦ï¼‰ â”€â”€â”€
+    // bossSniper å‚ç…§ã•ãˆå‰²ã‚Šå½“ã¦ã¦ã‚ã‚Œã°ã€ã‚³ãƒ¼ãƒ‰å´ã‹ã‚‰ onDefeated ã‚’è‡ªå‹•è³¼èª­ã™ã‚‹ã€‚
+    // ãƒœã‚¹ã®ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆãŒã‚·ãƒ¼ãƒ³é–‹å§‹æ™‚ã«éã‚¢ã‚¯ãƒ†ã‚£ãƒ–ã§ã‚‚ã€å‚ç…§çµŒç”±ã® AddListener ã¯å•é¡ŒãªãåŠ¹ãã€‚
+    // ï¼ˆã‚¤ãƒ³ã‚¹ãƒšã‚¯ã‚¿ãƒ¼ã§ onDefeated ã«æ‰‹å‹•é…ç·šã—ã¦ã‚ã£ã¦ã‚‚ã€OnBossDefeated å´ã®
+    //   currentPhase ã‚¬ãƒ¼ãƒ‰ã§äºŒé‡èµ·å‹•ã¯ã—ãªã„ã®ã§å®‰å…¨ï¼‰
     void OnEnable()
     {
         if (bossSniper != null)
         {
             bossSniper.onDefeated.AddListener(OnBossDefeated);
-            Debug.Log("<color=cyan>[AbsorbEvent] onDefeated ‚ğƒR[ƒhw“Ç‚µ‚Ü‚µ‚½ / bossID=" + bossSniper.GetInstanceID() + "</color>");
+            Debug.Log("<color=cyan>[AbsorbEvent] onDefeated ã‚’ã‚³ãƒ¼ãƒ‰è³¼èª­ã—ã¾ã—ãŸ / bossID=" + bossSniper.GetInstanceID() + "</color>");
         }
         else
         {
-            Debug.LogWarning("[AbsorbEvent] bossSniper ‚ª–¢Š„‚è“–‚Ä‚Å‚·BƒCƒ“ƒXƒyƒNƒ^[‚Åƒ{ƒX–{‘Ì‚ğŠ„‚è“–‚Ä‚Ä‚­‚¾‚³‚¢B");
+            Debug.LogWarning("[AbsorbEvent] bossSniper ãŒæœªå‰²ã‚Šå½“ã¦ã§ã™ã€‚ã‚¤ãƒ³ã‚¹ãƒšã‚¯ã‚¿ãƒ¼ã§ãƒœã‚¹æœ¬ä½“ã‚’å‰²ã‚Šå½“ã¦ã¦ãã ã•ã„ã€‚");
         }
     }
 
@@ -129,69 +132,98 @@ public class BossSniperAbsorbEventManager : BaseEventManager
 
     void LateUpdate()
     {
-        // ƒCƒxƒ“ƒg’†‚ÌƒŠƒAƒ‹ƒ^ƒCƒ€‹ü’Ç]
+        // ã‚¤ãƒ™ãƒ³ãƒˆä¸­ã®ãƒªã‚¢ãƒ«ã‚¿ã‚¤ãƒ è¦–ç·šè¿½å¾“
         if (isLookingActive)
         {
             KeepLookingAtEachOther();
         }
     }
 
-    // Œ‚”jƒCƒxƒ“ƒg‚È‚Ì‚ÅAƒGƒŠƒAN“ü‚Å‚Í‹N“®‚µ‚È‚¢iBaseEventManager ‚ÌŒû‚¾‚¯Ç‚¢‚Å‚¨‚­j
+    // æ’ƒç ´ã‚¤ãƒ™ãƒ³ãƒˆãªã®ã§ã€ã‚¨ãƒªã‚¢ä¾µå…¥ã§ã¯èµ·å‹•ã—ãªã„ï¼ˆBaseEventManager ã®å£ã ã‘å¡ã„ã§ãŠãï¼‰
     public override void OnAreaEntered() { }
 
     /// <summary>
-    /// ƒCƒxƒ“ƒgŠJn‚Ì“üŒûBBossSniper ‚Ì onDefeatediUnityEventj‚ÉƒCƒ“ƒXƒyƒNƒ^[‚©‚ç”zü‚·‚éB
+    /// ã‚¤ãƒ™ãƒ³ãƒˆé–‹å§‹ã®å…¥å£ã€‚BossSniper ã® onDefeatedï¼ˆUnityEventï¼‰ã«ã‚¤ãƒ³ã‚¹ãƒšã‚¯ã‚¿ãƒ¼ã‹ã‚‰é…ç·šã™ã‚‹ã€‚
     /// </summary>
     public void OnBossDefeated()
     {
-        Debug.Log("<color=cyan>OnBossDefeated ŒÄ‚Î‚ê‚½ / phase=" + currentPhase + "</color>");
+        Debug.Log("<color=cyan>OnBossDefeated å‘¼ã°ã‚ŒãŸ / phase=" + currentPhase + "</color>");
         if (currentPhase != EventPhase.BeforeEvent) return;
 
         currentPhase = EventPhase.InTimeline;
 
-        // ƒvƒŒƒCƒ„[‚Ì‰Šú‰ñ“]‚ğŠm•Û‚µA‹­§“I‚É‘Ò‹@ó‘Ô‚Öi“ü—ÍƒuƒƒbƒN‚Í StartEvent ‚ªs‚¤j
-        if (playerController != null && playerController.visualManager != null && playerController.visualManager.playerVisual != null)
+        // æ’ƒç ´ã®ç¬é–“ã«å³åº§ã«ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã‚’æ­¢ã‚ã‚‹ã€‚
+        // ã‚«ãƒ¡ãƒ©ã®å¯„ã‚Šï¼ˆï¼æ“ä½œç„¡åŠ¹åŒ–ã‚’è¡Œã† StartTrackTargetï¼‰ã¯ã‚¹ãƒ­ãƒ¼æ˜ã‘å¾Œã¾ã§å¾…ã¤ãŸã‚ã€
+        // ã“ã“ã§æ­¢ã‚ã¦ãŠã‹ãªã„ã¨ã€ãã‚Œã¾ã§ã®é–“ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ãŒå‹•ã‘ã¦ã—ã¾ã†
+        // ï¼ˆå€’ã—ãŸç¬é–“ã®å…¥åŠ›ã®é€Ÿåº¦ãŒæ®‹ã£ã¦æ»‘ã‚Šç¶šã‘ã‚‹ãƒ»ç§»å‹•ã—ã£ã±ãªã—ã«ãªã‚‹ï¼‰
+        if (playerController != null)
         {
-            originalPlayerVisualRotation = playerController.visualManager.playerVisual.localRotation;
+            if (playerController.visualManager != null && playerController.visualManager.playerVisual != null)
+            {
+                originalPlayerVisualRotation = playerController.visualManager.playerVisual.localRotation;
+            }
 
             playerController.TransitionToState(playerController.StateNormal);
+            if (playerController.inputActions != null) playerController.inputActions.Player.Disable();
+            playerController.enabled = false;
+
+            // ç‰©ç†é€Ÿåº¦ã‚’ã‚¼ãƒ­ã«ã—ã¦ã€æ®‹ã£ãŸæ…£æ€§ã§ã®æ»‘ã‚Šã‚’æ­¢ã‚ã‚‹
+            Rigidbody2D prb = playerController.GetComponent<Rigidbody2D>();
+            if (prb == null && playerTransform != null) prb = playerTransform.GetComponent<Rigidbody2D>();
+            if (prb != null)
+            {
+                prb.linearVelocity = Vector2.zero;
+                prb.angularVelocity = 0f;
+            }
         }
 
+        // æ’ƒç ´ã¨åŒã˜åŒæœŸã‚¿ã‚¤ãƒŸãƒ³ã‚°ã§ã€å…ˆè¡Œã‚¤ãƒ™ãƒ³ãƒˆã‚’ç¢ºå®Ÿã«æ­¢ã‚ã‚‹ã€‚
+        //   - å¼·åŒ–ã‚«ãƒƒãƒˆã‚¤ãƒ³ç­‰ã®ã‚³ãƒ«ãƒ¼ãƒãƒ³ã‚’æ‰“ã¡åˆ‡ã‚‹ï¼ˆCancelCutscenesï¼‰
+        //   - ã‚«ãƒ¡ãƒ©å´ã® isEventWorking ã‚’ç¢ºå®Ÿã« false ã¸è½ã¨ã™ï¼ˆForceStopEventCameraWorkï¼‰
+        // ã“ã‚Œã‚’ã‚¹ãƒ­ãƒ¼æ˜ã‘ã¾ã§é…ã‚‰ã›ã‚‹ã¨ã€ãã®é–“ã« isEventWorking ãŒæ®‹ã£ãŸã¾ã¾ã«ãªã‚Šã€
+        // å¾Œæ®µã® StartTrackTarget ãŒã€ŒäºŒé‡ç™ºå‹•é˜²æ­¢ã€ã§ä¸¸ã”ã¨ã‚¹ã‚­ãƒƒãƒ—ã•ã‚Œã¦ã‚«ãƒ¡ãƒ©ãŒå±…åº§ã‚‹ã€‚
+        // CancelCutscenes ã¯å†…éƒ¨ã§ ResumeBoundsLock ã™ã‚‹ã®ã§ã€Suspend ã‚ˆã‚Šå…ˆã«å‘¼ã¶
+        if (cameraDirector != null) cameraDirector.CancelCutscenes();
+
+        cameraController = Object.FindFirstObjectByType<CameraFollowWithZoom>();
+        if (cameraController != null) cameraController.ForceStopEventCameraWork();
+
+        // éƒ¨å±‹ã®ã‚«ãƒ¡ãƒ©å›ºå®šãƒˆãƒªã‚¬ãƒ¼ï¼ˆCameraBoundsTriggerï¼‰ã‚’ä¸€æ™‚åœæ­¢ã—ã¦ã€æ’ƒç ´ã‚«ãƒ¡ãƒ©ã«é“ã‚’è­²ã‚‹ã€‚
+        // ã‚¹ãƒ­ãƒ¼æ˜ã‘ã‚’å¾…ã¤é–“ã‚‚ãƒˆãƒªã‚¬ãƒ¼ãŒç„¡åŠ¹ãªã®ã§ã€éƒ¨å±‹ã®å›ºå®šç‚¹ã¸å¼•ãæˆ»ã•ã‚Œãªã„
+        BossSniperCameraDirector.SuspendBoundsLock();
+
         StartEvent();
-        Debug.Log("<color=cyan>StartEvent ’Ê‰ßAƒ^ƒCƒ€ƒ‰ƒCƒ“ŠJn</color>");
+        Debug.Log("<color=cyan>StartEvent é€šéã€ã‚¿ã‚¤ãƒ ãƒ©ã‚¤ãƒ³é–‹å§‹</color>");
         activeTimelineCoroutine = StartCoroutine(BossSniperAbsorbTimelineRoutine());
     }
 
     private IEnumerator BossSniperAbsorbTimelineRoutine()
     {
-        // yƒXƒeƒbƒv0zŒ‚”j‚Ì‘S‘ÌƒXƒ[itimeScale’á‰ºj‚ª–¾‚¯‚é‚Ì‚ğ‘Ò‚Á‚Ä‚©‚çn‚ß‚éB
-        // ÀŠÔ‚ÌŠÔ‚ğ’u‚¢‚½‚¤‚¦‚ÅAtimeScale ‚ªŠmÀ‚É 1 ‚Ö–ß‚é‚Ü‚Å‘Ò‚Â
+        // ã€ã‚¹ãƒ†ãƒƒãƒ—0ã€‘æ’ƒç ´ã®å…¨ä½“ã‚¹ãƒ­ãƒ¼ï¼ˆtimeScaleä½ä¸‹ï¼‰ãŒæ˜ã‘ã‚‹ã®ã‚’å¾…ã£ã¦ã‹ã‚‰å§‹ã‚ã‚‹ã€‚
+        // å®Ÿæ™‚é–“ã®é–“ã‚’ç½®ã„ãŸã†ãˆã§ã€timeScale ãŒç¢ºå®Ÿã« 1 ã¸æˆ»ã‚‹ã¾ã§å¾…ã¤
         yield return new WaitForSecondsRealtime(Mathf.Max(0f, startDelayRealtime));
         yield return new WaitUntil(() => Time.timeScale >= 0.99f);
 
-        // yƒXƒeƒbƒv0.5zƒJƒƒ‰‚ğ“|‚ê‚½ƒ{ƒX‚ÖŠñ‚¹‚éB
-        // StartTrackTarget “à‚Ì SetPlayerActiveState(false) ‚ªƒvƒŒƒCƒ„[‚Ì‘€ì‚ğ–³Œø‰»‚·‚é
-        // iŒ‚”jƒCƒxƒ“ƒg’†‚É‘€ì‚Å‚«‚Ä‚µ‚Ü‚¤–â‘è‚ÍA‚±‚ê‚ªŒÄ‚Î‚ê‚Ä‚¢‚È‚©‚Á‚½‚Ì‚ªŒ´ˆöj
-        if (cameraDirector != null) cameraDirector.CancelCutscenes(); // ‹­‰»ƒJƒbƒgƒCƒ““™‚ªÀs’†‚È‚ç‘Å‚¿Ø‚è
-
-        cameraController = Object.FindFirstObjectByType<CameraFollowWithZoom>();
+        // ã€ã‚¹ãƒ†ãƒƒãƒ—0.5ã€‘ã‚«ãƒ¡ãƒ©ã‚’å€’ã‚ŒãŸãƒœã‚¹ã¸å¯„ã›ã‚‹ã€‚
+        // å…ˆè¡Œã‚¤ãƒ™ãƒ³ãƒˆã®æ‰“ã¡åˆ‡ã‚Šï¼ˆCancelCutscenes / ForceStopEventCameraWorkï¼‰ã¯
+        // OnBossDefeated ã®åŒæœŸã‚¿ã‚¤ãƒŸãƒ³ã‚°ã§æ¸ˆã¾ã›ã¦ã‚ã‚‹ã®ã§ã€ã“ã“ã§ã¯ isEventWorking==false ãŒä¿è¨¼ã•ã‚Œã€
+        // StartTrackTarget ãŒã€ŒäºŒé‡ç™ºå‹•é˜²æ­¢ã€ã§å¼¾ã‹ã‚Œãªã„ã€‚
+        // StartTrackTarget å†…ã® SetPlayerActiveState(false) ãŒãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼æ“ä½œã‚’ç„¡åŠ¹åŒ–ã™ã‚‹
+        if (cameraController == null) cameraController = Object.FindFirstObjectByType<CameraFollowWithZoom>();
         if (cameraController != null)
         {
-            // isEventWorking ’†‚Ì“ñdƒCƒxƒ“ƒg–³‹‚É‚æ‚éæ‚è‚±‚Ú‚µ‚ğ–h‚®‚½‚ßAæsƒCƒxƒ“ƒg‚ğ‹­§‘Å‚¿Ø‚è
-            cameraController.ForceStopEventCameraWork();
-
-            // •”‰®‚ÌƒJƒƒ‰ŒÅ’èiBossSniperCameraBoundsTriggerj‚É÷‚Á‚Ä‚à‚ç‚¤
-            BossSniperCameraDirector.EventCameraActive = true;
-
-            tempCameraTarget = new GameObject("TempCameraEventTarget");
-            tempCameraTarget.transform.position = bossSniper != null
+            // å¯„ã‚Šå…ˆã®è¦‹ãˆãªã„ä¸€æ™‚ã‚¿ãƒ¼ã‚²ãƒƒãƒˆã€‚z ãŒå¯„ã‚Šè·é›¢ã«ãªã‚‹ï¼ˆStartTrackTarget ã®ä»•æ§˜ï¼‰
+            Vector3 basePos = bossSniper != null
                 ? bossSniper.transform.position
                 : (playerTransform != null ? playerTransform.position : Vector3.zero);
+
+            tempCameraTarget = new GameObject("TempCameraEventTarget");
+            tempCameraTarget.transform.position = new Vector3(basePos.x, basePos.y, trackCameraZ);
 
             cameraController.StartTrackTarget(tempCameraTarget.transform, trackPositionSpeed, trackZoomSpeed);
         }
 
-        // Œ‚”j‚ÌÕŒ‚iƒJƒƒ‰ƒVƒFƒCƒNE‘åj
+        // æ’ƒç ´ã®è¡æ’ƒï¼ˆã‚«ãƒ¡ãƒ©ã‚·ã‚§ã‚¤ã‚¯ãƒ»å¤§ï¼‰
         if (ShakeTarget.Instance != null)
         {
             ShakeTarget.Instance.Shake(defeatShakeDuration, defeatShakeMagnitude, defeatShakeFrequency);
@@ -199,7 +231,7 @@ public class BossSniperAbsorbEventManager : BaseEventManager
 
         SoundManager.Instance.FadeBGMVolume(0.3f, 1.0f);
 
-        // yƒXƒeƒbƒv1z•â²‚ªã‚©‚ç~‚è‚Ä‚­‚éi“|‚ê‚Ä‚¢‚éƒ{ƒX‚Ì^ã‚Öj
+        // ã€ã‚¹ãƒ†ãƒƒãƒ—1ã€‘è£œä½ãŒä¸Šã‹ã‚‰é™ã‚Šã¦ãã‚‹ï¼ˆå€’ã‚Œã¦ã„ã‚‹ãƒœã‚¹ã®çœŸä¸Šã¸ï¼‰
         Vector3 originalBossPos = bossSniper != null ? bossSniper.transform.position : Vector3.zero;
         Vector3 bossAirTopPos = originalBossPos + Vector3.up * hosaHeightOffsetFromBoss;
         Vector3 hosaSpawnAirPos = bossAirTopPos + Vector3.up * 8f;
@@ -210,7 +242,7 @@ public class BossSniperAbsorbEventManager : BaseEventManager
             hosa.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
             hosa.TransitionToState(hosa.StateEvent);
 
-            // yƒXƒeƒbƒv2zƒvƒŒƒCƒ„[‚ª•â²‚ğŒü‚­iŒ©‚Â‚ß‡‚¢ŠJnj
+            // ã€ã‚¹ãƒ†ãƒƒãƒ—2ã€‘ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ãŒè£œä½ã‚’å‘ãï¼ˆè¦‹ã¤ã‚åˆã„é–‹å§‹ï¼‰
             isLookingActive = true;
 
             while (Vector3.Distance(hosa.transform.position, bossAirTopPos) > 0.05f)
@@ -221,30 +253,30 @@ public class BossSniperAbsorbEventManager : BaseEventManager
             hosa.transform.position = bossAirTopPos;
         }
 
-        // yƒXƒeƒbƒv3zƒvƒŒƒCƒ„[‚ª‚Ñ‚Á‚­‚è‚·‚é
+        // ã€ã‚¹ãƒ†ãƒƒãƒ—3ã€‘ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ãŒã³ã£ãã‚Šã™ã‚‹
         yield return StartCoroutine(Speak(playerBubble, ImageBubble.StampType.Surprise));
         yield return StartCoroutine(Wait(0.4f));
 
-        // yƒXƒeƒbƒv4z•â²‚ªƒ{ƒX‚Ìã‚Å~‚Ü‚éƒ^ƒ
+        // ã€ã‚¹ãƒ†ãƒƒãƒ—4ã€‘è£œä½ãŒãƒœã‚¹ã®ä¸Šã§æ­¢ã¾ã‚‹ã‚¿ãƒ¡
         yield return StartCoroutine(Wait(0.5f));
 
-        // yƒXƒeƒbƒv5z•â²‚ª¯ƒ}[ƒN‚ğo‚·
+        // ã€ã‚¹ãƒ†ãƒƒãƒ—5ã€‘è£œä½ãŒæ˜Ÿãƒãƒ¼ã‚¯ã‚’å‡ºã™
         yield return StartCoroutine(Speak(hosaBubble, ImageBubble.StampType.Star));
         yield return StartCoroutine(Wait(0.3f));
 
-        // yƒXƒeƒbƒv6z•â²‚ªƒ{ƒX‚ğ100%‹z‚¢‚Ş
+        // ã€ã‚¹ãƒ†ãƒƒãƒ—6ã€‘è£œä½ãŒãƒœã‚¹ã‚’100%å¸ã„è¾¼ã‚€
         if (bossSniper != null && hosa != null)
         {
             SoundManager.Instance.PlaySE(SeType.EnemySuction);
 
-            // ‹z‚¢‚İ‚ÌuŠÔiƒJƒƒ‰ƒVƒFƒCƒNE¬j
+            // å¸ã„è¾¼ã¿ã®ç¬é–“ï¼ˆã‚«ãƒ¡ãƒ©ã‚·ã‚§ã‚¤ã‚¯ãƒ»å°ï¼‰
             if (ShakeTarget.Instance != null)
             {
                 ShakeTarget.Instance.Shake(ShakeTarget.ShakeStyle.Small);
             }
 
-            // •¨—‚Æ‰‰o‚ªŒ–‰Ü‚µ‚È‚¢‚æ‚¤AKinematic ‚É–ß‚µ‚Ä“–‚½‚è”»’è‚àØ‚é
-            // i“|‚ê‚Ä‚¢‚éƒ{ƒX‚Í Dynamic  d—Í‚ÆƒRƒ‰ƒCƒ_[‚ª¶‚«‚Ä‚¢‚é‚½‚ßj
+            // ç‰©ç†ã¨æ¼”å‡ºãŒå–§å˜©ã—ãªã„ã‚ˆã†ã€Kinematic ã«æˆ»ã—ã¦å½“ãŸã‚Šåˆ¤å®šã‚‚åˆ‡ã‚‹
+            // ï¼ˆå€’ã‚Œã¦ã„ã‚‹ãƒœã‚¹ã¯ Dynamic ï¼ é‡åŠ›ã¨ã‚³ãƒ©ã‚¤ãƒ€ãƒ¼ãŒç”Ÿãã¦ã„ã‚‹ãŸã‚ï¼‰
             bossSniper.RestoreFlightBody();
             bossSniper.SelfUnit.SetHitboxEnabled(false);
 
@@ -270,11 +302,11 @@ public class BossSniperAbsorbEventManager : BaseEventManager
         }
         yield return StartCoroutine(Wait(0.3f));
 
-        // yƒXƒeƒbƒv6.5z•â²‚ªƒ{ƒX‚ğ‹z‚¢‚ñ‚¾ŒãA’n–Ê‚É~‚è‚Ä‚­‚é
+        // ã€ã‚¹ãƒ†ãƒƒãƒ—6.5ã€‘è£œä½ãŒãƒœã‚¹ã‚’å¸ã„è¾¼ã‚“ã å¾Œã€åœ°é¢ã«é™ã‚Šã¦ãã‚‹
         if (hosa != null)
         {
             float groundY = playerTransform != null ? playerTransform.position.y : originalBossPos.y - 3f;
-            Vector3 hosaLandingPos = new Vector3(hosa.transform.position.x, groundY + 0.5f, hosa.transform.position.z); // ­‚µ•‚‚©‚¹‚é‚Æ_X‚µ‚¢
+            Vector3 hosaLandingPos = new Vector3(hosa.transform.position.x, groundY + 0.5f, hosa.transform.position.z); // å°‘ã—æµ®ã‹ã›ã‚‹ã¨ç¥ã€…ã—ã„
 
             while (Vector3.Distance(hosa.transform.position, hosaLandingPos) > 0.05f)
             {
@@ -285,16 +317,16 @@ public class BossSniperAbsorbEventManager : BaseEventManager
         }
         yield return StartCoroutine(Wait(0.4f));
 
-        // yƒXƒeƒbƒv7z•â²‚ª‚Ç‚­‚ëƒ}[ƒN‚ğo‚·
+        // ã€ã‚¹ãƒ†ãƒƒãƒ—7ã€‘è£œä½ãŒã©ãã‚ãƒãƒ¼ã‚¯ã‚’å‡ºã™
         yield return StartCoroutine(Speak(hosaBubble, ImageBubble.StampType.Dokuro));
         yield return StartCoroutine(Wait(0.4f));
 
-        // yƒXƒeƒbƒv8zƒXƒe[ƒW’†‰›‚Ö•ú•¨üƒgƒXiƒRƒAƒLƒ…[ƒuj
+        // ã€ã‚¹ãƒ†ãƒƒãƒ—8ã€‘ã‚¹ãƒ†ãƒ¼ã‚¸ä¸­å¤®ã¸æ”¾ç‰©ç·šãƒˆã‚¹ï¼ˆã‚³ã‚¢ã‚­ãƒ¥ãƒ¼ãƒ–ï¼‰
         if (coreCubePrefab != null && hosa != null)
         {
-            SoundManager.Instance.PlaySE(SeType.EnemyRangeAttack); // “ŠË‰¹
+            SoundManager.Instance.PlaySE(SeType.EnemyRangeAttack); // æŠ•å°„éŸ³
 
-            // ƒXƒe[ƒW’†‰›‚Í„‰ñƒ|ƒCƒ“ƒg‚ÌdSiBossSniper.StageCenterj‚©‚çBX ‚¾‚¯g‚¢A’…’n‚Í’n–Ê‚Ì‚‚³‚Ö
+            // ã‚¹ãƒ†ãƒ¼ã‚¸ä¸­å¤®ã¯å·¡å›ãƒã‚¤ãƒ³ãƒˆã®é‡å¿ƒï¼ˆBossSniper.StageCenterï¼‰ã‹ã‚‰ã€‚X ã ã‘ä½¿ã„ã€ç€åœ°ã¯åœ°é¢ã®é«˜ã•ã¸
             float stageCenterX = bossSniper != null ? bossSniper.StageCenter().x : hosa.transform.position.x;
             float targetGroundY = playerTransform != null ? playerTransform.position.y : hosa.transform.position.y - 0.5f;
             Vector3 cubeTarget = new Vector3(stageCenterX, targetGroundY, 0f);
@@ -303,7 +335,7 @@ public class BossSniperAbsorbEventManager : BaseEventManager
 
             yield return StartCoroutine(TossCubeLinearRoutine(spawnedCube, hosa.transform.position, cubeTarget, 0.65f, 3.5f));
 
-            // ƒLƒ…[ƒu’…’n‚ÌÕŒ‚iƒJƒƒ‰ƒVƒFƒCƒNE”÷j
+            // ã‚­ãƒ¥ãƒ¼ãƒ–ç€åœ°ã®è¡æ’ƒï¼ˆã‚«ãƒ¡ãƒ©ã‚·ã‚§ã‚¤ã‚¯ãƒ»å¾®ï¼‰
             if (ShakeTarget.Instance != null)
             {
                 ShakeTarget.Instance.Shake(ShakeTarget.ShakeStyle.Tiny);
@@ -311,11 +343,11 @@ public class BossSniperAbsorbEventManager : BaseEventManager
         }
         yield return StartCoroutine(Wait(0.5f));
 
-        // ‚·‚×‚Ä‚Ì‰‰o‚ªŠ®—¹‚µ‚½‚Ì‚ÅA’÷‚ß‚­‚­‚è‚ÖˆÚs
+        // ã™ã¹ã¦ã®æ¼”å‡ºãŒå®Œäº†ã—ãŸã®ã§ã€ç· ã‚ããã‚Šã¸ç§»è¡Œ
         CompleteEvent();
     }
 
-    /// <summary>ƒRƒAƒLƒ…[ƒu‚ğãY—í‚È•ú•¨üiTossj‚ÅˆÚ“®‚³‚¹‚é”Ä—pƒ‹[ƒ`ƒ“i•Êƒ{ƒX”Å‚Æ“¯‚¶jB</summary>
+    /// <summary>ã‚³ã‚¢ã‚­ãƒ¥ãƒ¼ãƒ–ã‚’ç¶ºéº—ãªæ”¾ç‰©ç·šï¼ˆTossï¼‰ã§ç§»å‹•ã•ã›ã‚‹æ±ç”¨ãƒ«ãƒ¼ãƒãƒ³ï¼ˆåˆ¥ãƒœã‚¹ç‰ˆã¨åŒã˜ï¼‰ã€‚</summary>
     private IEnumerator TossCubeLinearRoutine(GameObject cube, Vector3 start, Vector3 end, float duration, float height)
     {
         float t = 0f;
@@ -326,18 +358,18 @@ public class BossSniperAbsorbEventManager : BaseEventManager
             t += Time.deltaTime;
             float linearT = Mathf.Clamp01(t / duration);
 
-            // X‚ÆZ‚Í’¼ü•âŠÔ
+            // Xã¨Zã¯ç›´ç·šè£œé–“
             float currentX = Mathf.Lerp(start.x, end.x, linearT);
             float currentZ = Mathf.Lerp(start.z, end.z, linearT);
 
-            // Y‚Í•ú•¨üƒA[ƒN‚ğ‡¬iMathf.Sin‚ÅR‚ğì‚éj
+            // Yã¯æ”¾ç‰©ç·šã‚¢ãƒ¼ã‚¯ã‚’åˆæˆï¼ˆMathf.Sinã§å±±ã‚’ä½œã‚‹ï¼‰
             float arcY = Mathf.Sin(linearT * Mathf.PI) * height;
             float currentY = Mathf.Lerp(start.y, end.y, linearT) + arcY;
 
             cube.transform.position = new Vector3(currentX, currentY, currentZ);
             yield return null;
         }
-        if (cube != null) cube.transform.position = end; // ÅIÀ•W‚Éƒsƒbƒ^ƒŠŒÅ’è
+        if (cube != null) cube.transform.position = end; // æœ€çµ‚åº§æ¨™ã«ãƒ”ãƒƒã‚¿ãƒªå›ºå®š
     }
 
     private void KeepLookingAtEachOther()
@@ -377,7 +409,7 @@ public class BossSniperAbsorbEventManager : BaseEventManager
         }
     }
 
-    // ƒXƒLƒbƒv‚Ìˆ’uF‰‰o‚ğ”ò‚Î‚µ‚Äuƒ{ƒXÁ‹{ƒLƒ…[ƒuİ’uv‚Æ‚¢‚¤ÅIó‘Ô‚Ö’ K‚ğ‡‚í‚¹‚é
+    // ã‚¹ã‚­ãƒƒãƒ—æ™‚ã®å‡¦ç½®ï¼šæ¼”å‡ºã‚’é£›ã°ã—ã¦ã€Œãƒœã‚¹æ¶ˆå»ï¼‹ã‚­ãƒ¥ãƒ¼ãƒ–è¨­ç½®ã€ã¨ã„ã†æœ€çµ‚çŠ¶æ…‹ã¸å¸³å°»ã‚’åˆã‚ã›ã‚‹
     protected override void OnSkipWarp()
     {
         SoundManager.Instance.FadeBGMVolume(1.0f, 1.0f);
@@ -388,12 +420,14 @@ public class BossSniperAbsorbEventManager : BaseEventManager
         isLookingActive = false;
         ResetPlayerVisualRotation();
 
-        // ƒJƒƒ‰‚ğ‘¦‚ÉƒvƒŒƒCƒ„[‚Ö–ß‚·iƒXƒLƒbƒv‚ÌŒãn––j
-        BossSniperCameraDirector.EventCameraActive = false;
+        // ã‚«ãƒ¡ãƒ©ã‚’å³æ™‚ã«ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¸æˆ»ã™ï¼ˆã‚¹ã‚­ãƒƒãƒ—æ™‚ã®å¾Œå§‹æœ«ï¼‰ã€‚
+        // å…ˆã«æˆ»ã—ã‚’å‘¼ã‚“ã§ isEventWorking ã®å¾Œå§‹æœ«ã‚’ä»»ã›ã€ãã®å¾Œãƒ•ãƒ©ã‚°ã‚’ä¸‹ã‚ã™
+        if (cameraController == null) cameraController = Object.FindFirstObjectByType<CameraFollowWithZoom>();
         if (cameraController != null)
         {
             cameraController.ReturnToPlayerFromEvent(0.1f);
         }
+        BossSniperCameraDirector.ResumeBoundsLock();
         if (tempCameraTarget != null)
         {
             Object.Destroy(tempCameraTarget);
@@ -414,7 +448,7 @@ public class BossSniperAbsorbEventManager : BaseEventManager
         currentPhase = EventPhase.Finished;
     }
 
-    // ’ÊíI—¹‚ÌŠŠ‚ç‚©‚ÈŒü‚«’¼‚è‰‰o
+    // é€šå¸¸çµ‚äº†æ™‚ã®æ»‘ã‚‰ã‹ãªå‘ãç›´ã‚Šæ¼”å‡º
     private void CompleteEvent()
     {
         StartCoroutine(SmoothEndSequenceRoutine());
@@ -422,24 +456,27 @@ public class BossSniperAbsorbEventManager : BaseEventManager
 
     private IEnumerator SmoothEndSequenceRoutine()
     {
-        // 1. Œ©‚Â‚ß‡‚¢‚ÌƒŠƒAƒ‹ƒ^ƒCƒ€ƒƒbƒN‚ğ‰ğœ
+        // 1. è¦‹ã¤ã‚åˆã„ã®ãƒªã‚¢ãƒ«ã‚¿ã‚¤ãƒ ãƒ­ãƒƒã‚¯ã‚’è§£é™¤
         isLookingActive = false;
         ResetPlayerVisualRotation();
 
-        // ƒJƒƒ‰‚ğƒvƒŒƒCƒ„[‚Ö–ß‚·iReturnToPlayerFromEvent ‚Ì“à•”‚Å‘€ìƒƒbƒN‚à‰ğ•ú‚³‚ê‚éjB
-        // ƒtƒ‰ƒO‚ğ‰º‚ë‚·‚ÆA•”‰®‚ÌƒJƒƒ‰ŒÅ’èiƒoƒEƒ“ƒhƒgƒŠƒK[j‚ª§Œä‚ğæ‚è–ß‚·
-        BossSniperCameraDirector.EventCameraActive = false;
+        // ã‚«ãƒ¡ãƒ©ã‚’ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¸æˆ»ã™ï¼ˆReturnToPlayerFromEvent ã®å†…éƒ¨ã§æ“ä½œãƒ­ãƒƒã‚¯ã‚‚è§£æ”¾ã•ã‚Œã‚‹ï¼‰ã€‚
+        // éƒ¨å±‹ã®å›ºå®šãƒˆãƒªã‚¬ãƒ¼ã®å†é–‹ã¯æˆ»ã‚ŠãŒçµ‚ã‚ã£ã¦ã‹ã‚‰ã€‚æ—©ãæˆ»ã™ã¨ã€æˆ»ã‚Šé€”ä¸­ã§
+        // ãƒˆãƒªã‚¬ãƒ¼ãŒ LockCamera ã‚’å‘¼ã³ã€éƒ¨å±‹ã®å›ºå®šç‚¹ã¸å¼•ã£å¼µã‚‰ã‚Œã¦æˆ»ã‚ŠãŒä¹±ã‚Œã‚‹
         if (cameraController != null)
         {
             cameraController.ReturnToPlayerFromEvent(cameraReturnTime);
         }
+        yield return new WaitForSeconds(cameraReturnTime + 0.05f);
+        BossSniperCameraDirector.ResumeBoundsLock();
+
         if (tempCameraTarget != null)
         {
             Object.Destroy(tempCameraTarget);
             tempCameraTarget = null;
         }
 
-        // 2. 0.4•b‚Ù‚Ç‚©‚¯‚ÄA•â²‚ÌŠç‚ğŠŠ‚ç‚©‚É³–ÊiQuaternion.identityj‚Ö–ß‚·
+        // 2. 0.4ç§’ã»ã©ã‹ã‘ã¦ã€è£œä½ã®é¡”ã‚’æ»‘ã‚‰ã‹ã«æ­£é¢ï¼ˆQuaternion.identityï¼‰ã¸æˆ»ã™
         if (hosa != null)
         {
             Quaternion startRot = hosa.transform.localRotation;
@@ -455,7 +492,7 @@ public class BossSniperAbsorbEventManager : BaseEventManager
 
         currentPhase = EventPhase.Finished;
 
-        // “ü—ÍƒuƒƒbƒN‚ğ‰ğœ‚µ‚ÄƒCƒxƒ“ƒgI—¹
+        // å…¥åŠ›ãƒ–ãƒ­ãƒƒã‚¯ã‚’è§£é™¤ã—ã¦ã‚¤ãƒ™ãƒ³ãƒˆçµ‚äº†
         EndEvent();
     }
 
