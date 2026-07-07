@@ -320,6 +320,9 @@ public class BossSniper : MonoBehaviour
     /// </summary>
     public bool HitStopActive { get; set; }
 
+    /// <summary>カメラ演出（出現・強化カットイン）中の一時停止。SetEventPaused() で切り替える。</summary>
+    public bool EventPaused { get; private set; }
+
     // ─── ステートから使う共有参照 ─────────────────────
 
     public Transform Player { get; private set; }
@@ -411,6 +414,8 @@ public class BossSniper : MonoBehaviour
 
     void Update()
     {
+        if (EventPaused) return; // カメラ演出中は完全停止（お供分身の出現管理も含めて止める）
+
         UpdateCompanionPresence(); // お供分身の出現管理（強化時・巡回中のみ）
 
         if (HitStopActive) return; // ボスだけフリーズ中は内部時間を止める
@@ -419,8 +424,26 @@ public class BossSniper : MonoBehaviour
 
     void FixedUpdate()
     {
+        if (EventPaused) return;
         if (HitStopActive) return;
         currentState?.FixedUpdateState();
+    }
+
+    /// <summary>
+    /// カメラ演出用の一時停止を切り替える（BossSniperCameraDirector などから呼ぶ）。
+    /// 停止中はボスのステート更新・お供分身の行動・お供の出現管理がすべて止まる。
+    /// 停止開始時にはビームを消して、「凍った射線」が画面に残らないようにする。
+    /// 出現演出の展開アニメ（BossSniperBeamUnit.Update のスケール）は独立して動き続ける。
+    /// </summary>
+    public void SetEventPaused(bool paused)
+    {
+        EventPaused = paused;
+
+        if (paused)
+        {
+            if (SelfUnit != null) SelfUnit.HideBeam();
+            if (companion != null) companion.NotifyEventPaused();
+        }
     }
 
     public void TransitionToState(IBossSniperState newState)

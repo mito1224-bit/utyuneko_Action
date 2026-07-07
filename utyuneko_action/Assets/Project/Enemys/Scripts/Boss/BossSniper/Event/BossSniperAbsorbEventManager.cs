@@ -60,6 +60,27 @@ public class BossSniperAbsorbEventManager : BaseEventManager
     [Tooltip("撃破からイベント開始までの間（実時間）。撃破の全体スロー（BossSniperHitStop.defeatSlowDuration）より少し長めに")]
     [SerializeField] private float startDelayRealtime = 0.6f;
 
+    [Header("カメラ・シェイク演出")]
+    [Tooltip("カメラ演出係。強化カットイン等が万一実行中だった場合の打ち切りに使う（未設定でも可）")]
+    [SerializeField] private BossSniperCameraDirector cameraDirector;
+
+    [Tooltip("イベント中、カメラがボス位置へ寄る際のなめらかさ（位置）")]
+    [SerializeField] private float trackPositionSpeed = 3f;
+
+    [Tooltip("イベント中、カメラがボス位置へ寄る際のなめらかさ（ズーム）")]
+    [SerializeField] private float trackZoomSpeed = 2f;
+
+    [Tooltip("イベント終了時にカメラがプレイヤーへ戻る時間（秒）")]
+    [SerializeField] private float cameraReturnTime = 1.0f;
+
+    [Tooltip("イベント開始時（スロー明け直後）の撃破シェイクの秒数・強さ・細かさ")]
+    [SerializeField] private float defeatShakeDuration = 0.5f;
+    [SerializeField] private float defeatShakeMagnitude = 1.1f;
+    [SerializeField] private float defeatShakeFrequency = 12f;
+
+    private CameraFollowWithZoom cameraController;
+    private GameObject tempCameraTarget;
+
     private float maxLookAngle = 30f;
     private float lookSmoothing = 12.0f;
     private bool isLookingActive = false;
@@ -143,8 +164,38 @@ public class BossSniperAbsorbEventManager : BaseEventManager
 
     private IEnumerator BossSniperAbsorbTimelineRoutine()
     {
-        // 【ステップ0】撃破の全体スロー（timeScale低下）が明けるのを実時間で待ってから始める
+        // 【ステップ0】撃破の全体スロー（timeScale低下）が明けるのを待ってから始める。
+        // 実時間の間を置いたうえで、timeScale が確実に 1 へ戻るまで待つ
         yield return new WaitForSecondsRealtime(Mathf.Max(0f, startDelayRealtime));
+        yield return new WaitUntil(() => Time.timeScale >= 0.99f);
+
+        // 【ステップ0.5】カメラを倒れたボスへ寄せる。
+        // StartTrackTarget 内の SetPlayerActiveState(false) がプレイヤーの操作を無効化する
+        // （撃破イベント中に操作できてしまう問題は、これが呼ばれていなかったのが原因）
+        if (cameraDirector != null) cameraDirector.CancelCutscenes(); // 強化カットイン等が実行中なら打ち切り
+
+        cameraController = Object.FindFirstObjectByType<CameraFollowWithZoom>();
+        if (cameraController != null)
+        {
+            // isEventWorking 中の二重イベント無視による取りこぼしを防ぐため、先行イベントを強制打ち切り
+            cameraController.ForceStopEventCameraWork();
+
+            // 部屋のカメラ固定（BossSniperCameraBoundsTrigger）に譲ってもらう
+            BossSniperCameraDirector.EventCameraActive = true;
+
+            tempCameraTarget = new GameObject("TempCameraEventTarget");
+            tempCameraTarget.transform.position = bossSniper != null
+                ? bossSniper.transform.position
+                : (playerTransform != null ? playerTransform.position : Vector3.zero);
+
+            cameraController.StartTrackTarget(tempCameraTarget.transform, trackPositionSpeed, trackZoomSpeed);
+        }
+
+        // 撃破の衝撃（カメラシェイク・大）
+        if (ShakeTarget.Instance != null)
+        {
+            ShakeTarget.Instance.Shake(defeatShakeDuration, defeatShakeMagnitude, defeatShakeFrequency);
+        }
 
         SoundManager.Instance.FadeBGMVolume(0.3f, 1.0f);
 
@@ -185,6 +236,12 @@ public class BossSniperAbsorbEventManager : BaseEventManager
         if (bossSniper != null && hosa != null)
         {
             SoundManager.Instance.PlaySE(SeType.EnemySuction);
+
+            // 吸い込みの瞬間（カメラシェイク・小）
+            if (ShakeTarget.Instance != null)
+            {
+                ShakeTarget.Instance.Shake(ShakeTarget.ShakeStyle.Small);
+            }
 
             // 物理と演出が喧嘩しないよう、Kinematic に戻して当たり判定も切る
             // （倒れているボスは Dynamic ＝ 重力とコライダーが生きているため）
@@ -245,6 +302,12 @@ public class BossSniperAbsorbEventManager : BaseEventManager
             GameObject spawnedCube = Instantiate(coreCubePrefab, hosa.transform.position, Quaternion.identity);
 
             yield return StartCoroutine(TossCubeLinearRoutine(spawnedCube, hosa.transform.position, cubeTarget, 0.65f, 3.5f));
+
+            // キューブ着地の衝撃（カメラシェイク・微）
+            if (ShakeTarget.Instance != null)
+            {
+                ShakeTarget.Instance.Shake(ShakeTarget.ShakeStyle.Tiny);
+            }
         }
         yield return StartCoroutine(Wait(0.5f));
 
@@ -325,6 +388,18 @@ public class BossSniperAbsorbEventManager : BaseEventManager
         isLookingActive = false;
         ResetPlayerVisualRotation();
 
+        // カメラを即時にプレイヤーへ戻す（スキップ時の後始末）
+        BossSniperCameraDirector.EventCameraActive = false;
+        if (cameraController != null)
+        {
+            cameraController.ReturnToPlayerFromEvent(0.1f);
+        }
+        if (tempCameraTarget != null)
+        {
+            Object.Destroy(tempCameraTarget);
+            tempCameraTarget = null;
+        }
+
         if (coreCubePrefab != null && hosa != null)
         {
             float stageCenterX = bossSniper != null ? bossSniper.StageCenter().x : hosa.transform.position.x;
@@ -350,6 +425,19 @@ public class BossSniperAbsorbEventManager : BaseEventManager
         // 1. 見つめ合いのリアルタイムロックを解除
         isLookingActive = false;
         ResetPlayerVisualRotation();
+
+        // カメラをプレイヤーへ戻す（ReturnToPlayerFromEvent の内部で操作ロックも解放される）。
+        // フラグを下ろすと、部屋のカメラ固定（バウンドトリガー）が制御を取り戻す
+        BossSniperCameraDirector.EventCameraActive = false;
+        if (cameraController != null)
+        {
+            cameraController.ReturnToPlayerFromEvent(cameraReturnTime);
+        }
+        if (tempCameraTarget != null)
+        {
+            Object.Destroy(tempCameraTarget);
+            tempCameraTarget = null;
+        }
 
         // 2. 0.4秒ほどかけて、補佐の顔を滑らかに正面（Quaternion.identity）へ戻す
         if (hosa != null)

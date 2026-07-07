@@ -175,17 +175,19 @@ public class BossSniperBeamUnit : MonoBehaviour
 
     void LateUpdate()
     {
-        // 反動の戻り。ステート更新（各Tick）の後に走らせたいので LateUpdate で処理する
+        // 反動の戻り。ステート更新（各Tick）の後に走らせたいので LateUpdate で処理する。
+        // 位置の書き込みは「反動中だけ」に限定する（毎フレーム書くと、同じ localPosition を
+        // 揺らす BossSniperShake の演出を上書きして消してしまうため）。
+        // 反動量が 0 になったフレームで基準位置へ戻して、以降は触らない
         if (recoilAmount > 0f)
         {
             float returnSpeed = recoilDistance / Mathf.Max(0.01f, recoilReturnTime);
             recoilAmount = Mathf.MoveTowards(recoilAmount, 0f, returnSpeed * Time.deltaTime);
-        }
 
-        // モデル位置＝初期位置＋反動オフセット（回転・スケールは既存処理が担当するので触らない）
-        if (visualTransform != null && hasBaseLocalPos)
-        {
-            visualTransform.localPosition = baseLocalPos + (Vector3)(recoilDir * recoilAmount);
+            if (visualTransform != null && hasBaseLocalPos)
+            {
+                visualTransform.localPosition = baseLocalPos + (Vector3)(recoilDir * recoilAmount);
+            }
         }
     }
 

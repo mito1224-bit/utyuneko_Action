@@ -34,6 +34,10 @@ public class StageBossSniperTrigger : MonoBehaviour
     [Tooltip("BGM停止のフェード時間")]
     public float bgmFadeTime = 0.5f;
 
+    [Header("カメラ演出")]
+    [Tooltip("出現カットインを再生するカメラ演出係。未設定なら演出なしで従来どおり開始する")]
+    public BossSniperCameraDirector cameraDirector;
+
     [Header("発動条件")]
     [Tooltip("プレイヤー判定に使うタグ")]
     public string playerTag = "Player";
@@ -58,6 +62,13 @@ public class StageBossSniperTrigger : MonoBehaviour
         }
 
         StartBossBattle();
+
+        // 出現演出（カメラがボスへ寄る・地鳴り・衝撃シェイク）。
+        // このトリガーは直後に自壊するので、演出係は別オブジェクトであること
+        if (cameraDirector != null)
+        {
+            cameraDirector.PlayIntro();
+        }
 
         if (destroyAfterTriggered)
         {

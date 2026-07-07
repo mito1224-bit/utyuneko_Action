@@ -7669,7 +7669,7 @@ Transform:
   m_GameObject: {fileID: 168910425}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -23.79, y: -7.54, z: 0}
+  m_LocalPosition: {x: 10.2, y: -3.56, z: 0}
   m_LocalScale: {x: 1, y: 3, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -25707,6 +25707,13 @@ MonoBehaviour:
   hosaMoveSpeed: 6
   hosaHeightOffsetFromBoss: 4.2
   startDelayRealtime: 2
+  cameraDirector: {fileID: 0}
+  trackPositionSpeed: 3
+  trackZoomSpeed: 2
+  cameraReturnTime: 1
+  defeatShakeDuration: 0.5
+  defeatShakeMagnitude: 1.1
+  defeatShakeFrequency: 12
 --- !u!1001 &580941245
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -26189,6 +26196,74 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b9d5aeaaf442a9d459fe161e29b10186, type: 3}
+--- !u!1 &592555738
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 592555739}
+  - component: {fileID: 592555740}
+  m_Layer: 0
+  m_Name: BossSniperCamera
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &592555739
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 592555738}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2129037807}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &592555740
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 592555738}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46d72a713de15e54fb0a2bd8a647e08c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BossSniperCameraDirector
+  bossSniper: {fileID: 1336955514}
+  cameraFollow: {fileID: 987437465}
+  introZ: -7
+  introTimeToTarget: 1
+  introFreeze: 1.2
+  introReturn: 1
+  introRumbleDuration: 1.5
+  introRumbleMagnitude: 1
+  introImpactDuration: 0.3
+  introImpactMagnitude: 0.55
+  introBossShakeStrength: 0.15
+  introBossShakeDuration: 0.25
+  enrageZ: -7
+  enrageTimeToTarget: 0.5
+  enrageFaceFrontTime: 0.3
+  enrageFrontYAngle: 90
+  enrageHoldTime: 0.45
+  enrageFaceBackTime: 0.25
+  enrageReturnTime: 0.7
+  enrageShakeDuration: 0.35
+  enrageShakeMagnitude: 0.7
+  enrageShakeFrequency: 12
+  enrageBossShakeStrength: 0.25
+  enrageBossShakeDuration: 0.4
 --- !u!1001 &592630785
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -51982,83 +52057,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b9d5aeaaf442a9d459fe161e29b10186, type: 3}
---- !u!1001 &1161725588
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 1500773141346197932, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
-      propertyPath: m_Name
-      value: CameraBoundsTrigger 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 5780997924959028606, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
-      propertyPath: targetZOffset
-      value: -160
-      objectReference: {fileID: 0}
-    - target: {fileID: 6673551563764602749, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
-      propertyPath: m_LocalScale.x
-      value: 10
-      objectReference: {fileID: 0}
-    - target: {fileID: 6673551563764602749, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
-      propertyPath: m_LocalScale.y
-      value: 10
-      objectReference: {fileID: 0}
-    - target: {fileID: 6673551563764602749, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
-      propertyPath: m_LocalScale.z
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6673551563764602749, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 45
-      objectReference: {fileID: 0}
-    - target: {fileID: 6673551563764602749, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 2.92
-      objectReference: {fileID: 0}
-    - target: {fileID: 6673551563764602749, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6673551563764602749, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6673551563764602749, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6673551563764602749, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6673551563764602749, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6673551563764602749, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6673551563764602749, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6673551563764602749, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6673551563764602749, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
-      propertyPath: m_ConstrainProportionsScale
-      value: 1
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
 --- !u!1001 &1162491823
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -60994,7 +60992,7 @@ Transform:
   m_GameObject: {fileID: 1336955507}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -1, y: 4, z: 0}
+  m_LocalPosition: {x: 34.94, y: 5.01, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children:
@@ -61115,6 +61113,7 @@ MonoBehaviour:
   clonePrefab: {fileID: 3508370510583888243, guid: 9a3890c412f463941a7ff7cd1f3d3a65, type: 3}
   splitRingMargin: 3
   slotCheckRadius: 4
+  minUnitSeparation: 3
   stunGravityScale: 5
   defeatedMass: 1000
   postLandingGrace: 0.5
@@ -72834,6 +72833,98 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4961322469112901509, guid: b9d5aeaaf442a9d459fe161e29b10186, type: 3}
   m_PrefabInstance: {fileID: 1603927118}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1603960374
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1603960375}
+  - component: {fileID: 1603960377}
+  - component: {fileID: 1603960376}
+  m_Layer: 0
+  m_Name: BossSniperCameraBoundsTrigger
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1603960375
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1603960374}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 35.1, y: 4.15, z: 0}
+  m_LocalScale: {x: 42.39, y: 42.39, z: 42.39}
+  m_ConstrainProportionsScale: 1
+  m_Children: []
+  m_Father: {fileID: 2129037807}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1603960376
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1603960374}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d8a72cd1b3fff14e9b2f2b70a202c88, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BossSniperCameraBoundsTrigger
+  targetZOffset: -40
+--- !u!61 &1603960377
+BoxCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1603960374}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 1
+  m_UsedByEffector: 0
+  m_CompositeOperation: 0
+  m_CompositeOrder: 0
+  m_Offset: {x: 0, y: 0}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0, y: 0}
+    oldSize: {x: 0, y: 0}
+    newSize: {x: 0, y: 0}
+    adaptiveTilingThreshold: 0
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  m_Size: {x: 1, y: 1}
+  m_EdgeRadius: 0
 --- !u!1001 &1603985494
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -85628,7 +85719,7 @@ Transform:
   m_GameObject: {fileID: 1918481654}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -21.03, y: 1.01, z: 0}
+  m_LocalPosition: {x: 12.61, y: 0.78, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -85697,6 +85788,7 @@ MonoBehaviour:
   bossWallObject: {fileID: 168910425}
   stopBGMOnTrigger: 1
   bgmFadeTime: 0.5
+  cameraDirector: {fileID: 0}
   playerTag: Player
   destroyAfterTriggered: 1
 --- !u!1001 &1919421484
@@ -506000,7 +506092,7 @@ Transform:
   m_GameObject: {fileID: 2129037806}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 36.16175, y: 4.00443, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -506009,6 +506101,8 @@ Transform:
   - {fileID: 1336955512}
   - {fileID: 1625316927}
   - {fileID: 168910426}
+  - {fileID: 592555739}
+  - {fileID: 1603960375}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &2129718440
@@ -508328,7 +508422,6 @@ SceneRoots:
   - {fileID: 1286321153}
   - {fileID: 771466706}
   - {fileID: 599048509}
-  - {fileID: 1161725588}
   - {fileID: 2129037807}
   - {fileID: 662686509}
   - {fileID: 1317072500}
