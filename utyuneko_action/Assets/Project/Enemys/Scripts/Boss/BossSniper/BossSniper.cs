@@ -760,6 +760,7 @@ public class BossSniper : MonoBehaviour
         {
             Rb.mass = Mathf.Max(1f, defeatedMass);
             Rb.linearVelocity = Vector2.zero;
+            Rb.linearVelocityY = 30f;
             Rb.angularVelocity = 0f;
         }
     }

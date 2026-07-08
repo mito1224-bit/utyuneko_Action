@@ -16,150 +16,77 @@ using UnityEngine;
 ///   5. 一時ターゲットを破棄し、固定オブジェクトを SetActive(true) に戻す
 ///
 /// プレイヤーの操作ロックは StartTrackTarget の内部（SetPlayerActiveState(false)）が行う。
-
 /// ボスとお供分身の行動停止は bossSniper.SetEventPaused(true/false) が行う。
-
 ///
-
 /// 撃破イベントのカメラは BossSniperAbsorbEventManager 側が担当し、
-
 /// 固定オブジェクトの ON/OFF はこのクラスの静的 SuspendBoundsLock/ResumeBoundsLock を使う。
-
 ///
-
 /// セットアップ:
-
 ///   - 空オブジェクトにこのコンポーネントを付け、bossSniper と boundsTriggerObject を割り当てる。
-
 ///     （boundsTriggerObject = ボス部屋の CameraBoundsTrigger を付けたオブジェクト）
-
 ///   - cameraFollow は未設定なら MainCamera タグの親から自動取得。
-
 ///   - StageBossSniperTrigger の cameraDirector にこのオブジェクトを割り当てる。
-
 /// </summary>
-
 public class BossSniperCameraDirector : MonoBehaviour
-
 {
-
     // Absorbイベント等から固定オブジェクトを操作するための静的窓口
-
     private static BossSniperCameraDirector instance;
 
-
-
     /// <summary>部屋のカメラ固定オブジェクトを一時停止（SetActive(false)）。イベント開始時に呼ぶ。</summary>
-
     public static void SuspendBoundsLock()
-
     {
-
         if (instance != null) instance.SetBoundsObjectActive(false);
-
     }
-
-
 
     /// <summary>部屋のカメラ固定オブジェクトを再開（SetActive(true)）。イベント終了時に呼ぶ。</summary>
-
     public static void ResumeBoundsLock()
-
     {
-
         if (instance != null) instance.SetBoundsObjectActive(true);
-
     }
-
-
 
     /// <summary>
-
     /// 部屋の固定点（CameraPoint / targetZOffset）へカメラのロックを直接掛け直す静的窓口。
-
     /// トリガーの再発火（Enter/Stay）に依存せず確実に部屋の構図へ戻せる。
-
     /// 撃破イベント（BossSniperAbsorbEventManager）の終了処理からも呼ぶ。
-
     /// </summary>
-
     public static void RelockRoomCamera()
-
     {
-
         if (instance != null) instance.RelockToBoundsPoint();
-
     }
 
-
-
     [Header("参照")]
-
     [Tooltip("ボススナイパー本体。onEnraged / onDefeated をコード購読する")]
-
     [SerializeField] private BossSniper bossSniper;
 
-
-
     [Tooltip("カメラ制御。未設定なら MainCamera タグの親から自動取得する")]
-
     [SerializeField] private CameraFollowWithZoom cameraFollow;
 
-
-
     [Tooltip("ボス部屋のカメラ固定オブジェクト（CameraBoundsTrigger を付けたオブジェクト）。" +
-
              "イベント中はこれを SetActive(false) にして、カメラの寄り／ズームを邪魔しないようにする")]
-
     [SerializeField] private GameObject boundsTriggerObject;
 
-
-
     [Header("出現演出")]
-
     [Tooltip("寄ったときのカメラ距離（z座標。通常 -10、近いほど 0 に近づける）")]
-
     [SerializeField] private float introCameraZ = -7f;
-
     [Tooltip("カメラが寄る速さ（位置）。大きいほど速い")]
-
     [SerializeField] private float introPositionSpeed = 3f;
-
     [Tooltip("カメラが寄る速さ（ズーム）。大きいほど速い")]
-
     [SerializeField] private float introZoomSpeed = 2f;
-
     [Tooltip("寄り始めてから衝撃シェイクを出すまでの待ち時間（秒）")]
-
     [SerializeField] private float introApproachWait = 0.7f;
-
     [Tooltip("寄った状態で見せる時間（秒）")]
-
     [SerializeField] private float introHold = 1.2f;
-
     [Tooltip("プレイヤーへ戻る時間（秒）")]
-
     [SerializeField] private float introReturnTime = 1.0f;
-
     [Tooltip("寄っていく間の地鳴り（縦のみ微振動）の秒数・強さ")]
-
     [SerializeField] private float introRumbleDuration = 0.9f;
-
     [SerializeField] private float introRumbleMagnitude = 0.15f;
-
     [Tooltip("出現の衝撃（カメラシェイク）の秒数・強さ")]
-
     [SerializeField] private float introImpactDuration = 0.35f;
-
     [SerializeField] private float introImpactMagnitude = 0.7f;
-
     [Tooltip("出現の衝撃（ボスモデルの揺れ）の強さ・秒数")]
-
     [SerializeField] private float introBossShakeStrength = 0.15f;
-
     [SerializeField] private float introBossShakeDuration = 0.25f;
-
-
 
     [Header("強化カットイン（出現より控えめ）")]
 
@@ -458,87 +385,48 @@ public class BossSniperCameraDirector : MonoBehaviour
 
 
     private IEnumerator IntroRoutine()
-
     {
+        //yield return new WaitForSeconds(1.0f);
 
         // 部屋のカメラ固定をオフにして、イベントカメラに道を譲る
-
         SetBoundsObjectActive(false);
-
         // 攻撃・テレポートは止める（出現アニメのスケールは別で動き続ける）
-
         bossSniper.SetEventPaused(true);
 
-
-
         // 寄り先ターゲットを作成 → StartTrackTarget で寄る
-
         CreateTempTarget(bossSniper.transform.position, introCameraZ);
-
         cameraFollow.StartTrackTarget(tempCameraTarget.transform, introPositionSpeed, introZoomSpeed);
 
-
-
         // 寄っていく間の地鳴り（縦のみ微振動）
-
         if (ShakeTarget.Instance != null)
-
             ShakeTarget.Instance.Shake(introRumbleDuration, introRumbleMagnitude, 25f, false);
-
-
 
         yield return new WaitForSeconds(introApproachWait);
 
-
-
         // 出現の衝撃
-
         if (ShakeTarget.Instance != null)
-
             ShakeTarget.Instance.Shake(introImpactDuration, introImpactMagnitude, 15f);
-
         if (bossShake != null)
-
             bossShake.ShakeRandom(introBossShakeStrength, introBossShakeDuration);
 
-
-
         // 寄った状態で見せる
-
         yield return new WaitForSeconds(introHold);
 
-
-
         // ── 終了（アンロックを一切挟まない最小構成）──
-
         // ① まず部屋トリガーを復活（内部の Enter/Stay ロックは無視されても構わない。決定打は③）
-
         SetBoundsObjectActive(true);
 
-
-
         // ② イベント状態だけを畳む（プレイヤー解放・速度復元・isEventWorking=false）。
-
         //    ForceStop はアンロック＆プレイヤー位置へのワープを伴うが、
-
         //    "同じフレーム内で" 直後に③のロックへ差し替えるので追従計算は 1 フレームも走らない
-
         cameraFollow.ForceStopEventCameraWork();
 
-
-
         // ③ 部屋の固定点（XY）＋引き量（z）へロックし直す。これで z が確実に戻る
-
         RelockToBoundsPoint();
 
-
-
         DestroyTempTarget();
-
         bossSniper.SetEventPaused(false);
-
         playingRoutine = null;
-
     }
 
 
@@ -566,48 +454,25 @@ public class BossSniperCameraDirector : MonoBehaviour
     private IEnumerator EnrageRoutine()
 
     {
-
-        SetBoundsObjectActive(false);
-
         // スタン一撃などの全体スロー（timeScale低下）が明けてから始める
-
         yield return new WaitUntil(() => Time.timeScale >= 0.99f);
 
-
-
         // 攻撃・テレポート（通常）を止める（凍った射線も消える）
-
         bossSniper.SetEventPaused(true);
 
-
-
         // 分身は「止める」のではなく消す（お供分身・分身攻撃の複製をまとめて即消去）。
-
-        // EventPaused 中は再出現しないので、演出が終わって巡回へ戻ってから自然に湧き直す
-
+        // EventPaused 中は再出現しないので、演出後に巡回へ戻ってから自然に湧き直す
         bossSniper.DespawnAllMinions();
 
-
-
         BossSniperBeamUnit unit = bossSniper.SelfUnit;
-
         Transform visual = unit != null ? unit.visualTransform : null;
-
-
-
         // ① 中央（StageCenter）へテレポート。展開直前に正面を向かせるので、出現時にはもう正面向き
-
         yield return TeleportWithFacing(bossSniper.StageCenter(), faceFront: true, visual);
 
-
-
         // ② 出現後、正面向きのままカメラが寄る
-
+        SetBoundsObjectActive(false);
         CreateTempTarget(bossSniper.transform.position, enrageCameraZ);
-
         cameraFollow.StartTrackTarget(tempCameraTarget.transform, enragePositionSpeed, enrageZoomSpeed);
-
-
 
         yield return new WaitForSeconds(enrageApproachWait);
 
@@ -653,10 +518,8 @@ public class BossSniperCameraDirector : MonoBehaviour
 
         yield return TeleportWithFacing(bossSniper.RandomPatrolPoint(), faceFront: false, visual);
 
-
-
         // ⑦ 行動再開
-        yield return new WaitForSeconds(0.5f);
+
         bossSniper.SetEventPaused(false);
 
         playingRoutine = null;

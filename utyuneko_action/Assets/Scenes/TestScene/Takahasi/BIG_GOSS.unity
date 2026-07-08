@@ -61218,7 +61218,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BossSniperHealth
   maxHP: 400
   enragedThresholdRatio: 0.5
-  basePlayerDamage: 320
+  basePlayerDamage: 4
   playerSpeedDamageMultiplier: 0.4
   damageInterval: 0.3
   refundPlayerBurstOnDamage: 0
