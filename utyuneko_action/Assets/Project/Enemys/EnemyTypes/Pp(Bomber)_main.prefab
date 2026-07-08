@@ -28,7 +28,8 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 716065299575244310}
   m_Father: {fileID: 8553896586031997133}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &6049757783643329802
@@ -81,6 +82,7 @@ GameObject:
   - component: {fileID: 8252683285245272037}
   - component: {fileID: 3539279244660466912}
   - component: {fileID: 2182378406006850682}
+  - component: {fileID: -3356377187696902858}
   m_Layer: 0
   m_Name: Pp(Bomber)_main
   m_TagString: Enemy
@@ -102,7 +104,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8553896586031997133}
-  - {fileID: 716065299575244310}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!50 &1647122366922186915
@@ -290,7 +291,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2b660973e08c8ce458a40cca14ee2fe1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyMovement
-  moveSpeed: 2
+  moveSpeed: 0
   moveDirection: {x: -1, y: 0, z: 0}
   useTimedReversal: 1
   changeInterval: 3
@@ -363,13 +364,28 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DamageSource
   damageAmount: 1
+--- !u!114 &-3356377187696902858
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8410058989622946852}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6e82f1416c9f4e499ee4fb975d8d0ba6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HitFlash
+  visualRoot: {fileID: 8144132104019003738}
+  flashDuration: 0.08
+  customFlashMaterial: {fileID: 0}
 --- !u!1001 &1037306645355946493
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 506182882493795834}
+    m_TransformParent: {fileID: 8144132104019003738}
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: 8b8447d7845807b49b76aecfcb009d1f, type: 3}
       propertyPath: m_LocalPosition.x
@@ -389,7 +405,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 8b8447d7845807b49b76aecfcb009d1f, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 8b8447d7845807b49b76aecfcb009d1f, type: 3}
       propertyPath: m_LocalRotation.y

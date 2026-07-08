@@ -33,11 +33,13 @@ public class EnemyHealth : MonoBehaviour
 
     private EnemyKnockback knockback;
     private EnemyShield shield;
+    private HitFlash hitFlash;
 
     void Awake()
     {
         knockback = GetComponent<EnemyKnockback>();
         shield = GetComponent<EnemyShield>(); // 盾を持つ敵のみ。無ければ null
+        hitFlash = GetComponent<HitFlash>();   // 白フラッシュ演出。付いていなければ null（任意）
     }
 
     void Start()
@@ -62,6 +64,7 @@ public class EnemyHealth : MonoBehaviour
         // 反射・ノックバックは EnemyCollision（Reflect）が担当するので、ここではダメージだけ無効化する。
         if (shield != null && shield.Blocks(hitFromPosition))
         {
+            shield.PlayBlockEffect(); // 盾で防いだので盾だけを白フラッシュ（本体は光らせない）
             Debug.Log($"{gameObject.name}: 盾で防御！ ダメージ無効（盾の反対側から当てる必要あり）");
             return;
         }
@@ -86,6 +89,8 @@ public class EnemyHealth : MonoBehaviour
         if (currentHp <= 0) return;
 
         currentHp -= damage;
+
+        hitFlash?.Flash(); // 被弾の白フラッシュ（撃破の一撃でも光らせる。演出は HitFlash 側に委譲）
 
         if (currentHp <= 0)
         {

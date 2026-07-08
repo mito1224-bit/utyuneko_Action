@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 /// <summary>
 /// エネミーの吹き飛び挙動。
@@ -130,7 +131,22 @@ public class EnemyKnockback : MonoBehaviour
 
     void Awake()
     {
-        renderers = GetComponentsInChildren<Renderer>(true);
+        renderers = CollectModelRenderers();
+    }
+
+    // 点滅対象のモデル用レンダラーを集める（Mesh/Skinned/Sprite）。
+    // 視線ライン（LineRenderer）や軌跡（TrailRenderer）は点滅で復活すると困るので除外する。
+    private Renderer[] CollectModelRenderers()
+    {
+        var all = GetComponentsInChildren<Renderer>(true);
+        var list = new List<Renderer>(all.Length);
+        foreach (var r in all)
+        {
+            if (r == null) continue;
+            if (r is LineRenderer || r is TrailRenderer) continue;
+            list.Add(r);
+        }
+        return list.ToArray();
     }
 
     /// <summary>
@@ -152,12 +168,23 @@ public class EnemyKnockback : MonoBehaviour
         if (isDying) return;
         isDying = true;
 
+        // 死亡時点の最新モデルを点滅対象に取り直す（実行時に組み替え／生成されたモデル部位も確実に含める）。
+        // これで「モデルの一部が点滅しないまま」になるのを防ぐ。
+        renderers = CollectModelRenderers();
+
         if (disableOnDeath != null)
         {
             foreach (var mb in disableOnDeath)
             {
                 if (mb != null) mb.enabled = false;
             }
+        }
+
+        // 死亡吹き飛び中に触れてもダメージを受けないよう、接触ダメージを自動で無効化する。
+        // PlayerHealth 側が source.enabled を見ているので、disableOnDeath への手動登録漏れがあっても効く。
+        foreach (var ds in GetComponentsInChildren<DamageSource>(true))
+        {
+            ds.enabled = false;
         }
 
         currentVelocity = ComputeLaunchVelocity(fromPosition, damage, true);
