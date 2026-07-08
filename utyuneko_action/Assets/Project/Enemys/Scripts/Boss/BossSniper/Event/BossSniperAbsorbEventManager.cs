@@ -81,6 +81,9 @@ public class BossSniperAbsorbEventManager : BaseEventManager
     [SerializeField] private float defeatShakeMagnitude = 1.1f;
     [SerializeField] private float defeatShakeFrequency = 12f;
 
+    [Tooltip("コアキューブの設置位置Y")]
+    [SerializeField] private float positionCoreCubeY = 0.5f;
+
     private CameraFollowWithZoom cameraController;
     private GameObject tempCameraTarget;
 
@@ -329,7 +332,7 @@ public class BossSniperAbsorbEventManager : BaseEventManager
             // ステージ中央は巡回ポイントの重心（BossSniper.StageCenter）から。X だけ使い、着地は地面の高さへ
             float stageCenterX = bossSniper != null ? bossSniper.StageCenter().x : hosa.transform.position.x;
             float targetGroundY = playerTransform != null ? playerTransform.position.y : hosa.transform.position.y - 0.5f;
-            Vector3 cubeTarget = new Vector3(stageCenterX, targetGroundY - 5.0f, 0f);
+            Vector3 cubeTarget = new Vector3(stageCenterX, targetGroundY + positionCoreCubeY, 0f);
 
             GameObject spawnedCube = Instantiate(coreCubePrefab, hosa.transform.position, Quaternion.identity);
 

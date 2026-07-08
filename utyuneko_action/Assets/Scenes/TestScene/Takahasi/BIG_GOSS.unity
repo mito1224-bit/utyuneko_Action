@@ -25720,6 +25720,7 @@ MonoBehaviour:
   defeatShakeDuration: 0.5
   defeatShakeMagnitude: 1.1
   defeatShakeFrequency: 12
+  positionCoreCubeY: 10
 --- !u!1001 &580941245
 PrefabInstance:
   m_ObjectHideFlags: 0
