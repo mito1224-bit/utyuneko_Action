@@ -71,8 +71,20 @@ public class ShakeTarget : MonoBehaviour
         }
     }
 
+    private float nextLogTime = 0f;
+    public float logInterval = 2f;
+
     void Update()
     {
+        if (Time.time >= nextLogTime)
+        {
+            nextLogTime = Time.time + logInterval;
+            Debug.Log("<color=red><b>うちはここでーす！！！</b></color> Z=" + transform.position.z);
+            Debug.Log("<color=cyan><b>うちはここでーす！！！</b></color> X=" + transform.position.x);
+            Debug.Log("<color=cyan><b>うちはここでーす！！！</b></color> Y=" + transform.position.y);
+        }
+        
+
         if (shakeTimer > 0)
         {
             shakeTimer -= Time.deltaTime;
