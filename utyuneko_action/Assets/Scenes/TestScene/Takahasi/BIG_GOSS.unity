@@ -26266,7 +26266,7 @@ MonoBehaviour:
   enragePositionSpeed: 5
   enrageZoomSpeed: 5
   enrageApproachWait: 0
-  enrageFaceFrontTime: 1
+  enrageFaceFrontTime: 0
   enrageFrontYAngle: 0
   enrageHoldTime: 0
   enrageFaceBackTime: 2
@@ -26275,6 +26275,9 @@ MonoBehaviour:
   enrageShakeMagnitude: 5
   enrageBossShakeStrength: 0.2
   enrageBossShakeDuration: 1
+  enrageTeleportShrinkTime: 0.15
+  enrageTeleportExpandTime: 0.15
+  enrageResumeDelay: 2
 --- !u!1001 &592630785
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -61024,7 +61027,7 @@ Transform:
   m_GameObject: {fileID: 1336955507}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 34.94, y: 5.01, z: 0}
+  m_LocalPosition: {x: 34.94, y: 13.4, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children:
@@ -77176,6 +77179,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: CameraBoundsTrigger 1
       objectReference: {fileID: 0}
+    - target: {fileID: 1500773141346197932, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5580268541439665533, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
       propertyPath: m_LocalPosition.x
       value: -1
@@ -85741,7 +85748,7 @@ Transform:
   m_GameObject: {fileID: 1918481654}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 11.65, y: 0.78, z: 0}
+  m_LocalPosition: {x: 25.4, y: 4.7, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -85808,6 +85815,7 @@ MonoBehaviour:
   bossObject: {fileID: 1336955507}
   hpBarObject: {fileID: 1625316926}
   bossWallObject: {fileID: 168910425}
+  cameraBoundsObject: {fileID: 846474854}
   stopBGMOnTrigger: 1
   bgmFadeTime: 0.5
   cameraDirector: {fileID: 592555740}

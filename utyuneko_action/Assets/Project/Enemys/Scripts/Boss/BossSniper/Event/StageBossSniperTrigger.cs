@@ -27,6 +27,9 @@ public class StageBossSniperTrigger : MonoBehaviour
     [Tooltip("ボス戦開始時に閉じる壁・封鎖オブジェクト")]
     public GameObject bossWallObject;
 
+    [Tooltip("ボス戦開始時に有効になるカメラポジション")]
+    public GameObject cameraBoundsObject;
+
     [Header("BGM")]
     [Tooltip("ボス戦開始時に現在のBGMを止める")]
     public bool stopBGMOnTrigger = true;
@@ -96,6 +99,16 @@ public class StageBossSniperTrigger : MonoBehaviour
         if (bossObject != null)
         {
             bossObject.SetActive(true);
+        }
+        else
+        {
+            Debug.LogWarning("[StageBossSniperTrigger] bossObject が設定されていません。");
+        }
+
+        // ステージカメラを有効にする
+        if (cameraBoundsObject != null)
+        {
+            cameraBoundsObject.SetActive(true);
         }
         else
         {
