@@ -7669,7 +7669,7 @@ Transform:
   m_GameObject: {fileID: 168910425}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 10.2, y: 8.06, z: 0}
+  m_LocalPosition: {x: 9.08, y: -3.94, z: 0}
   m_LocalScale: {x: 1, y: 3, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -26250,30 +26250,30 @@ MonoBehaviour:
   cameraFollow: {fileID: 987437465}
   boundsTriggerObject: {fileID: 846474854}
   introCameraZ: -7
-  introPositionSpeed: 3
-  introZoomSpeed: 2
-  introApproachWait: 1
-  introHold: 1.2
-  introReturnTime: 0.5
-  introRumbleDuration: 1.5
-  introRumbleMagnitude: 1
-  introImpactDuration: 0.3
-  introImpactMagnitude: 2
-  introBossShakeStrength: 0.15
-  introBossShakeDuration: 0.25
-  enrageCameraZ: -8
-  enragePositionSpeed: 3.5
-  enrageZoomSpeed: 2.5
-  enrageApproachWait: 0.5
-  enrageFaceFrontTime: 0.3
-  enrageFrontYAngle: 1
-  enrageHoldTime: 1
-  enrageFaceBackTime: 0.5
-  enrageReturnTime: 0.5
+  introPositionSpeed: 5
+  introZoomSpeed: 5
+  introApproachWait: 0
+  introHold: 1.5
+  introReturnTime: 0
+  introRumbleDuration: 0
+  introRumbleMagnitude: 2
+  introImpactDuration: 1
+  introImpactMagnitude: 0.5
+  introBossShakeStrength: 0.2
+  introBossShakeDuration: 1
+  enrageCameraZ: -7
+  enragePositionSpeed: 5
+  enrageZoomSpeed: 5
+  enrageApproachWait: 0
+  enrageFaceFrontTime: 1
+  enrageFrontYAngle: 0
+  enrageHoldTime: 0
+  enrageFaceBackTime: 2
+  enrageReturnTime: 1
   enrageShakeDuration: 1
-  enrageShakeMagnitude: 2
-  enrageBossShakeStrength: 0.25
-  enrageBossShakeDuration: 0.4
+  enrageShakeMagnitude: 0.5
+  enrageBossShakeStrength: 0.2
+  enrageBossShakeDuration: 1
 --- !u!1001 &592630785
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -77171,8 +77171,12 @@ PrefabInstance:
       value: CameraBoundsTrigger 1
       objectReference: {fileID: 0}
     - target: {fileID: 5580268541439665533, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5580268541439665533, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.491
+      value: 0.5
       objectReference: {fileID: 0}
     - target: {fileID: 5780997924959028606, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
       propertyPath: targetZOffset
@@ -77187,12 +77191,20 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6673551563764602749, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 9.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6673551563764602749, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 11
+      objectReference: {fileID: 0}
+    - target: {fileID: 6673551563764602749, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
       propertyPath: m_LocalPosition.x
       value: 46.12
       objectReference: {fileID: 0}
     - target: {fileID: 6673551563764602749, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 2.05
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 6673551563764602749, guid: 90fc0011fe220744387d38e23f676cd7, type: 3}
       propertyPath: m_LocalPosition.z
@@ -85723,7 +85735,7 @@ Transform:
   m_GameObject: {fileID: 1918481654}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 29.75, y: 0.78, z: 0}
+  m_LocalPosition: {x: 11.65, y: 0.78, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
