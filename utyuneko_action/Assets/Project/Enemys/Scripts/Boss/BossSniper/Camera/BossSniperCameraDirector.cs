@@ -2,100 +2,110 @@
 using UnityEngine;
 
 /// <summary>
-/// ボススナイパー戦のカメラ演出係（出現・強化カットイン）。
+/// �{�X�X�i�C�p�[��̃J�������o�W�i�o���E�����J�b�g�C���j�B
 ///
-/// 別ボスの StageSecondBossPhaseTransitionState（正常動作している実装）と同じ手順を踏む:
-///   1. 部屋のカメラ固定オブジェクト（CameraBoundsTrigger を付けたオブジェクト）を SetActive(false) にする
-///   2. 寄り先に見えない一時ターゲットを作り、cameraFollow.StartTrackTarget でそこをロックオン
-///      （一時ターゲットの z がそのままカメラの寄り距離になる）
-///   3. シェイクやスケール等の演出を挟む
-///   4. cameraFollow.ReturnToPlayerFromEvent でプレイヤーへ戻す
-///   5. 一時ターゲットを破棄し、固定オブジェクトを SetActive(true) に戻す
+/// �ʃ{�X�� StageSecondBossPhaseTransitionState�i���퓮�삵�Ă�������j�Ɠ����菇�𓥂�:
+///   1. �����̃J�����Œ�I�u�W�F�N�g�iCameraBoundsTrigger ��t�����I�u�W�F�N�g�j�� SetActive(false) �ɂ���
+///   2. ����Ɍ����Ȃ��ꎞ�^�[�Q�b�g�����AcameraFollow.StartTrackTarget �ł��������b�N�I��
+///      �i�ꎞ�^�[�Q�b�g�� z �����̂܂܃J�����̊�苗���ɂȂ�j
+///   3. �V�F�C�N��X�P�[�����̉��o������
+///   4. ForceStopEventCameraWork �ŃC�x���g��Ԃ���݁A�����̌Œ�_�փ��b�N������
+///   5. �ꎞ�^�[�Q�b�g��j�����A�Œ�I�u�W�F�N�g�� SetActive(true) �ɖ߂�
 ///
-/// プレイヤーの操作ロックは StartTrackTarget の内部（SetPlayerActiveState(false)）が行う。
-/// ボスとお供分身の行動停止は bossSniper.SetEventPaused(true/false) が行う。
+/// �v���C���[�̑��샍�b�N�� StartTrackTarget �̓����iSetPlayerActiveState(false)�j���s���B
+/// �{�X�Ƃ������g�̍s����~�� bossSniper.SetEventPaused(true/false) ���s���B
 ///
-/// 撃破イベントのカメラは BossSniperAbsorbEventManager 側が担当し、
-/// 固定オブジェクトの ON/OFF はこのクラスの静的 SuspendBoundsLock/ResumeBoundsLock を使う。
+/// ���j�C�x���g�̃J������ BossSniperAbsorbEventManager �����S�����A
+/// �Œ�I�u�W�F�N�g�� ON/OFF �͂��̃N���X�̐ÓI SuspendBoundsLock/ResumeBoundsLock ���g���B
 ///
-/// セットアップ:
-///   - 空オブジェクトにこのコンポーネントを付け、bossSniper と boundsTriggerObject を割り当てる。
-///     （boundsTriggerObject = ボス部屋の CameraBoundsTrigger を付けたオブジェクト）
-///   - cameraFollow は未設定なら MainCamera タグの親から自動取得。
-///   - StageBossSniperTrigger の cameraDirector にこのオブジェクトを割り当てる。
+/// �Z�b�g�A�b�v:
+///   - ��I�u�W�F�N�g�ɂ��̃R���|�[�l���g��t���AbossSniper �� boundsTriggerObject �����蓖�Ă�B
+///     �iboundsTriggerObject = �{�X������ CameraBoundsTrigger ��t�����I�u�W�F�N�g�j
+///   - cameraFollow �͖��ݒ�Ȃ� MainCamera �^�O�̐e���玩���擾�B
+///   - StageBossSniperTrigger �� cameraDirector �ɂ��̃I�u�W�F�N�g�����蓖�Ă�B
 /// </summary>
 public class BossSniperCameraDirector : MonoBehaviour
 {
-    // Absorbイベント等から固定オブジェクトを操作するための静的窓口
+    // Absorb�C�x���g������Œ�I�u�W�F�N�g�𑀍삷�邽�߂̐ÓI����
     private static BossSniperCameraDirector instance;
 
-    /// <summary>部屋のカメラ固定オブジェクトを一時停止（SetActive(false)）。イベント開始時に呼ぶ。</summary>
+    /// <summary>�����̃J�����Œ�I�u�W�F�N�g���ꎞ��~�iSetActive(false)�j�B�C�x���g�J�n���ɌĂԁB</summary>
     public static void SuspendBoundsLock()
     {
         if (instance != null) instance.SetBoundsObjectActive(false);
     }
 
-    /// <summary>部屋のカメラ固定オブジェクトを再開（SetActive(true)）。イベント終了時に呼ぶ。</summary>
+    /// <summary>�����̃J�����Œ�I�u�W�F�N�g���ĊJ�iSetActive(true)�j�B�C�x���g�I�����ɌĂԁB</summary>
     public static void ResumeBoundsLock()
     {
         if (instance != null) instance.SetBoundsObjectActive(true);
     }
 
-    [Header("参照")]
-    [Tooltip("ボススナイパー本体。onEnraged / onDefeated をコード購読する")]
+    /// <summary>
+    /// �����̌Œ�_�iCameraPoint / targetZOffset�j�փJ�����̃��b�N�𒼐ڊ|�������ÓI�����B
+    /// �g���K�[�̍Ĕ��΁iEnter/Stay�j�Ɉˑ������m���ɕ����̍\�}�֖߂���B
+    /// ���j�C�x���g�iBossSniperAbsorbEventManager�j�̏I������������ĂԁB
+    /// </summary>
+    public static void RelockRoomCamera()
+    {
+        if (instance != null) instance.RelockToBoundsPoint();
+    }
+
+    [Header("�Q��")]
+    [Tooltip("�{�X�X�i�C�p�[�{�́BonEnraged / onDefeated ���R�[�h�w�ǂ���")]
     [SerializeField] private BossSniper bossSniper;
 
-    [Tooltip("カメラ制御。未設定なら MainCamera タグの親から自動取得する")]
+    [Tooltip("�J��������B���ݒ�Ȃ� MainCamera �^�O�̐e���玩���擾����")]
     [SerializeField] private CameraFollowWithZoom cameraFollow;
 
-    [Tooltip("ボス部屋のカメラ固定オブジェクト（CameraBoundsTrigger を付けたオブジェクト）。" +
-             "イベント中はこれを SetActive(false) にして、カメラの寄り／ズームを邪魔しないようにする")]
+    [Tooltip("�{�X�����̃J�����Œ�I�u�W�F�N�g�iCameraBoundsTrigger ��t�����I�u�W�F�N�g�j�B" +
+             "�C�x���g���͂���� SetActive(false) �ɂ��āA�J�����̊��^�Y�[�����ז����Ȃ��悤�ɂ���")]
     [SerializeField] private GameObject boundsTriggerObject;
 
-    [Header("出現演出")]
-    [Tooltip("寄ったときのカメラ距離（z座標。通常 -10、近いほど 0 に近づける）")]
+    [Header("�o�����o")]
+    [Tooltip("������Ƃ��̃J���������iz���W�B�ʏ� -10�A�߂��ق� 0 �ɋ߂Â���j")]
     [SerializeField] private float introCameraZ = -7f;
-    [Tooltip("カメラが寄る速さ（位置）。大きいほど速い")]
+    [Tooltip("�J��������鑬���i�ʒu�j�B�傫���قǑ���")]
     [SerializeField] private float introPositionSpeed = 3f;
-    [Tooltip("カメラが寄る速さ（ズーム）。大きいほど速い")]
+    [Tooltip("�J��������鑬���i�Y�[���j�B�傫���قǑ���")]
     [SerializeField] private float introZoomSpeed = 2f;
-    [Tooltip("寄り始めてから衝撃シェイクを出すまでの待ち時間（秒）")]
+    [Tooltip("���n�߂Ă���Ռ��V�F�C�N���o���܂ł̑҂����ԁi�b�j")]
     [SerializeField] private float introApproachWait = 0.7f;
-    [Tooltip("寄った状態で見せる時間（秒）")]
+    [Tooltip("�������ԂŌ����鎞�ԁi�b�j")]
     [SerializeField] private float introHold = 1.2f;
-    [Tooltip("プレイヤーへ戻る時間（秒）")]
+    [Tooltip("�v���C���[�֖߂鎞�ԁi�b�j")]
     [SerializeField] private float introReturnTime = 1.0f;
-    [Tooltip("寄っていく間の地鳴り（縦のみ微振動）の秒数・強さ")]
+    [Tooltip("����Ă����Ԃ̒n��i�c�̂ݔ��U���j�̕b���E����")]
     [SerializeField] private float introRumbleDuration = 0.9f;
     [SerializeField] private float introRumbleMagnitude = 0.15f;
-    [Tooltip("出現の衝撃（カメラシェイク）の秒数・強さ")]
+    [Tooltip("�o���̏Ռ��i�J�����V�F�C�N�j�̕b���E����")]
     [SerializeField] private float introImpactDuration = 0.35f;
     [SerializeField] private float introImpactMagnitude = 0.7f;
-    [Tooltip("出現の衝撃（ボスモデルの揺れ）の強さ・秒数")]
+    [Tooltip("�o���̏Ռ��i�{�X���f���̗h��j�̋����E�b��")]
     [SerializeField] private float introBossShakeStrength = 0.15f;
     [SerializeField] private float introBossShakeDuration = 0.25f;
 
-    [Header("強化カットイン（出現より控えめ）")]
-    [Tooltip("寄ったときのカメラ距離（z座標）。出現より控えめに（-8 など、-7 より引き気味）")]
+    [Header("�����J�b�g�C���i�o�����T���߁j")]
+    [Tooltip("������Ƃ��̃J���������iz���W�j�B�o�����T���߂Ɂi-8 �ȂǁA-7 �������C���j")]
     [SerializeField] private float enrageCameraZ = -8f;
     [SerializeField] private float enragePositionSpeed = 3.5f;
     [SerializeField] private float enrageZoomSpeed = 2.5f;
-    [Tooltip("寄り始めてからボスが正面を向き始めるまでの待ち時間（秒）")]
+    [Tooltip("���n�߂Ă���{�X�����ʂ������n�߂�܂ł̑҂����ԁi�b�j")]
     [SerializeField] private float enrageApproachWait = 0.5f;
-    [Tooltip("ボスが正面を向くのにかける時間（秒）")]
+    [Tooltip("�{�X�����ʂ������̂ɂ����鎞�ԁi�b�j")]
     [SerializeField] private float enrageFaceFrontTime = 0.3f;
-    [Tooltip("モデルが正面（カメラ側）を向くときの Y 回転角。モデルの作りにより 90 / -90 / 0 などに調整")]
+    [Tooltip("���f�������ʁi�J�������j�������Ƃ��� Y ��]�p�B���f���̍��ɂ�� 90 / -90 / 0 �Ȃǂɒ���")]
     [SerializeField] private float enrageFrontYAngle = 90f;
-    [Tooltip("正面を向いてからのタメ時間（秒）。この間にシェイクが走る")]
+    [Tooltip("���ʂ������Ă���̃^�����ԁi�b�j�B���̊ԂɃV�F�C�N������")]
     [SerializeField] private float enrageHoldTime = 0.45f;
-    [Tooltip("元の向きへ戻す時間（秒）")]
+    [Tooltip("���̌����֖߂����ԁi�b�j")]
     [SerializeField] private float enrageFaceBackTime = 0.25f;
-    [Tooltip("プレイヤーへ戻る時間（秒）")]
+    [Tooltip("�v���C���[�֖߂鎞�ԁi�b�j")]
     [SerializeField] private float enrageReturnTime = 0.7f;
-    [Tooltip("覚醒の瞬間のカメラシェイク（秒数・強さ）")]
+    [Tooltip("�o���̏u�Ԃ̃J�����V�F�C�N�i�b���E�����j")]
     [SerializeField] private float enrageShakeDuration = 0.35f;
     [SerializeField] private float enrageShakeMagnitude = 0.6f;
-    [Tooltip("覚醒の瞬間のボスモデルの揺れ（強さ・秒数）")]
+    [Tooltip("�o���̏u�Ԃ̃{�X���f���̗h��i�����E�b���j")]
     [SerializeField] private float enrageBossShakeStrength = 0.25f;
     [SerializeField] private float enrageBossShakeDuration = 0.4f;
 
@@ -131,7 +141,7 @@ public class BossSniperCameraDirector : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("[CameraDirector] bossSniper が未割り当てです。インスペクターでボス本体を割り当ててください。");
+            Debug.LogWarning("[CameraDirector] bossSniper �������蓖�Ăł��B�C���X�y�N�^�[�Ń{�X�{�̂����蓖�ĂĂ��������B");
         }
     }
 
@@ -149,16 +159,16 @@ public class BossSniperCameraDirector : MonoBehaviour
         if (boundsTriggerObject != null) boundsTriggerObject.SetActive(active);
     }
 
-    // イベント後に部屋の固定点へ Z ごと確実に戻す。
-    // CameraBoundsTrigger の再ロックは OnTriggerStay2D 頼みだが、プレイヤーが静止して
-    // Rigidbody2D がスリープしていると発火せず、寄せた Z(-7/-8)が残ってしまう。
-    // そこで CameraBoundsTrigger と同じ固定点・targetZOffset を読んで、ここで一度だけ
-    // LockCamera を直接呼び、Z を部屋の値(-15等)へ戻す。
+    // �C�x���g��ɕ����̌Œ�_�� Z ���Ɗm���ɖ߂��B
+    // CameraBoundsTrigger �̍ă��b�N�� OnTriggerStay2D ���݂����A�v���C���[���Î~����
+    // Rigidbody2D ���X���[�v���Ă���Ɣ��΂����A�񂹂� Z(-7/-8)���c���Ă��܂��B
+    // ������ CameraBoundsTrigger �Ɠ����Œ�_�EtargetZOffset ��ǂ�ŁA�����ň�x����
+    // LockCamera �𒼐ڌĂсAZ �𕔉��̒l(-15��)�֖߂��B
     private void RelockToBoundsPoint()
     {
         if (cameraFollow == null || boundsTriggerObject == null) return;
 
-        // 固定点：子 "CameraPoint" があればその位置、無ければコライダー中心、それも無ければ本体位置
+        // �Œ�_�F�q "CameraPoint" ������΂��̈ʒu�A������΃R���C�_�[���S�A�����������Ζ{�̈ʒu
         Vector3 lockPos;
         Transform camPoint = boundsTriggerObject.transform.Find("CameraPoint");
         if (camPoint != null)
@@ -174,17 +184,21 @@ public class BossSniperCameraDirector : MonoBehaviour
             lockPos = boundsTriggerObject.transform.position;
         }
 
-        // targetZOffset（引き量）は CameraBoundsTrigger から読む
+        // targetZOffset�i�����ʁj�� CameraBoundsTrigger ����ǂ�
         float z = -40f;
         if (boundsTriggerObject.TryGetComponent<CameraBoundsTrigger>(out var bounds))
         {
             z = bounds.targetZOffset;
         }
 
+        // ���b�N�ʒu�ɕ��ꍞ�� z�iCameraBoundsTrigger �I�u�W�F�N�g���g�� z�j�͎g��Ȃ��B
+        // ���s���i�����ʁj�͕K�� z �ɓ��ꂷ��
+        lockPos.z = z;
         cameraFollow.LockCamera(lockPos, z);
+        Debug.Log($"<color=lime>[Relock] hasBounds={boundsTriggerObject.TryGetComponent<CameraBoundsTrigger>(out _)} lockPos=({lockPos.x:F1},{lockPos.y:F1},{lockPos.z:F1}) z={z:F1}</color>");
     }
 
-    // 寄り先の一時ターゲットを作る（z が寄り距離になる）
+    // ����̈ꎞ�^�[�Q�b�g�����iz ����苗���ɂȂ�j
     private void CreateTempTarget(Vector3 worldPos, float cameraZ)
     {
         DestroyTempTarget();
@@ -201,12 +215,12 @@ public class BossSniperCameraDirector : MonoBehaviour
         }
     }
 
-    // ─── 出現演出 ─────────────────────────────
+    // ������ �o�����o ����������������������������������������������������������
 
-    /// <summary>出現演出を再生する（StageBossSniperTrigger からボス有効化の直後に呼ぶ）。</summary>
+    /// <summary>�o�����o���Đ�����iStageBossSniperTrigger ����{�X�L�����̒���ɌĂԁj�B</summary>
     public void PlayIntro()
     {
-        Debug.Log("[CameraDirector] PlayIntro 開始");
+        Debug.Log("[CameraDirector] PlayIntro �J�n");
         if (playingRoutine != null) return;
         if (bossSniper == null || cameraFollow == null) return;
         playingRoutine = StartCoroutine(IntroRoutine());
@@ -214,47 +228,52 @@ public class BossSniperCameraDirector : MonoBehaviour
 
     private IEnumerator IntroRoutine()
     {
-        Debug.Log("[CameraDirector] IntroRoutine 開始");
+        Debug.Log("[CameraDirector] IntroRoutine �J�n");
 
         SetBoundsObjectActive(false);
-        // 攻撃・テレポートは止める（出現アニメのスケールは別で動き続ける）
+        // �U���E�e���|�[�g�͎~�߂�i�o���A�j���̃X�P�[���͕ʂœ���������j
         bossSniper.SetEventPaused(true);
 
-        // ① 部屋の固定カメラをオフ → ② 寄り先ターゲット作成 → StartTrackTarget で寄る
-        
+        // �@ �����̌Œ�J�������I�t �� �A ����^�[�Q�b�g�쐬 �� StartTrackTarget �Ŋ��
+
         CreateTempTarget(bossSniper.transform.position, introCameraZ);
         cameraFollow.StartTrackTarget(tempCameraTarget.transform, introPositionSpeed, introZoomSpeed);
 
-        // 寄っていく間の地鳴り（縦のみ微振動）
+        // ����Ă����Ԃ̒n��i�c�̂ݔ��U���j
         if (ShakeTarget.Instance != null)
             ShakeTarget.Instance.Shake(introRumbleDuration, introRumbleMagnitude, 25f, false);
 
         yield return new WaitForSeconds(introApproachWait);
 
-        // 出現の衝撃
+        // �o���̏Ռ�
         if (ShakeTarget.Instance != null)
             ShakeTarget.Instance.Shake(introImpactDuration, introImpactMagnitude, 15f);
         if (bossShake != null)
             bossShake.ShakeRandom(introBossShakeStrength, introBossShakeDuration);
 
-        // 寄った状態で見せる
+        // �������ԂŌ�����
         yield return new WaitForSeconds(introHold);
 
-        // プレイヤーへ戻す → 戻り切ってから固定カメラを復活
-        cameraFollow.ReturnToPlayerFromEvent(introReturnTime);
-        yield return new WaitForSeconds(introReturnTime + 0.05f);
+        // ���� �I���i�A�����b�N����؋��܂Ȃ��ŏ��\���j����
+        // �@ �܂������g���K�[�𕜊��i������ Enter/Stay ���b�N�͖�������Ă��\��Ȃ��B����ł͇B�j
+        SetBoundsObjectActive(true);
+
+        // �A �C�x���g��Ԃ�������ށi�v���C���[����E���x�����EisEventWorking=false�j�B
+        //    ForceStop �̓A�����b�N���v���C���[�ʒu�ւ̃��[�v�𔺂����A
+        //    "�����t���[������" ����ɇB�̃��b�N�֍����ւ���̂ŒǏ]�v�Z�� 1 �t���[��������Ȃ�
+        cameraFollow.ForceStopEventCameraWork();
+
+        // �B �����̌Œ�_�iXY�j�{�����ʁiz�j�փ��b�N�������B����� z ���m���ɖ߂�
+        RelockToBoundsPoint();
 
         DestroyTempTarget();
-        
-        //RelockToBoundsPoint(); // スリープで OnTriggerStay が発火しなくても Z(-15等)へ確実に戻す
         bossSniper.SetEventPaused(false);
         playingRoutine = null;
-        SetBoundsObjectActive(true);
     }
 
-    // ─── 強化カットイン ────────────────────────
+    // ������ �����J�b�g�C�� ������������������������������������������������
 
-    /// <summary>強化カットインを再生する（onEnraged から自動で呼ばれる）。</summary>
+    /// <summary>�����J�b�g�C�����Đ�����ionEnraged ���玩���ŌĂ΂��j�B</summary>
     public void PlayEnrageCutin()
     {
         if (playingRoutine != null) return;
@@ -265,26 +284,26 @@ public class BossSniperCameraDirector : MonoBehaviour
     private IEnumerator EnrageRoutine()
     {
         SetBoundsObjectActive(false);
-        // スタン一撃などの全体スロー（timeScale低下）が明けてから始める
+        // �X�^���ꌂ�Ȃǂ̑S�̃X���[�itimeScale�ቺ�j�������Ă���n�߂�
         yield return new WaitUntil(() => Time.timeScale >= 0.99f);
 
-        // 攻撃・テレポートを止める（凍った射線も消える）
+        // �U���E�e���|�[�g���~�߂�i�������ː���������j
         bossSniper.SetEventPaused(true);
 
-        // ① 部屋の固定カメラをオフ → ② 寄り先ターゲット → 寄る
-        
+        // �@ �����̌Œ�J�������I�t �� �A ����^�[�Q�b�g �� ���
+
         CreateTempTarget(bossSniper.transform.position, enrageCameraZ);
         cameraFollow.StartTrackTarget(tempCameraTarget.transform, enragePositionSpeed, enrageZoomSpeed);
 
         yield return new WaitForSeconds(enrageApproachWait);
 
-        // ボスが正面を向く
+        // �{�X�����ʂ�����
         Transform visual = bossSniper.SelfUnit != null ? bossSniper.SelfUnit.visualTransform : null;
         Quaternion originalRot = visual != null ? visual.localRotation : Quaternion.identity;
         Quaternion frontRot = Quaternion.Euler(0f, enrageFrontYAngle, 0f);
         yield return RotateVisual(visual, originalRot, frontRot, enrageFaceFrontTime);
 
-        // 覚醒の瞬間：ボスの揺れ＋カメラシェイク
+        // �o���̏u�ԁF�{�X�̗h��{�J�����V�F�C�N
         if (bossShake != null)
             bossShake.ShakeRandom(enrageBossShakeStrength, enrageBossShakeDuration);
         if (ShakeTarget.Instance != null)
@@ -292,21 +311,20 @@ public class BossSniperCameraDirector : MonoBehaviour
 
         yield return new WaitForSeconds(enrageHoldTime);
 
-        // 向き直してから帰還
+        // ���������Ă���A��
         yield return RotateVisual(visual, frontRot, originalRot, enrageFaceBackTime);
 
-        cameraFollow.ReturnToPlayerFromEvent(enrageReturnTime);
-        yield return new WaitForSeconds(enrageReturnTime + 0.05f);
+        // ���� �I���i�A�����b�N����؋��܂Ȃ��ŏ��\���j����
+        SetBoundsObjectActive(true);
+        cameraFollow.ForceStopEventCameraWork();
+        RelockToBoundsPoint();
 
         DestroyTempTarget();
-        
-        RelockToBoundsPoint(); // スリープで OnTriggerStay が発火しなくても Z(-15等)へ確実に戻す
         bossSniper.SetEventPaused(false);
         playingRoutine = null;
-        SetBoundsObjectActive(true);
     }
 
-    // 見た目を from → to へ滑らかに回す
+    // �����ڂ� from �� to �֊��炩�ɉ�
     private IEnumerator RotateVisual(Transform visual, Quaternion from, Quaternion to, float duration)
     {
         if (visual == null || duration <= 0f)
@@ -325,13 +343,13 @@ public class BossSniperCameraDirector : MonoBehaviour
         visual.localRotation = to;
     }
 
-    // ─── 打ち切り ─────────────────────────────
+    // ������ �ł��؂� ����������������������������������������������������������
 
     /// <summary>
-    /// 実行中のカットインを打ち切って後始末する（撃破時に onDefeated 経由で自動で呼ばれる）。
-    /// カメラ本体の後始末（ReturnToPlayerFromEvent / ForceStop）は撃破イベント側が行うので、
-    /// ここでは一時ターゲットの破棄・固定カメラの復活・ボスの再開だけを確実に済ませる。
-    /// （撃破イベント側は直後に改めて SuspendBoundsLock するので二重でも問題ない）
+    /// ���s���̃J�b�g�C����ł��؂��Č�n������i���j���� onDefeated �o�R�Ŏ����ŌĂ΂��j�B
+    /// �J�����{�̂̌�n���iReturnToPlayerFromEvent / ForceStop�j�͌��j�C�x���g�����s���̂ŁA
+    /// �����ł͈ꎞ�^�[�Q�b�g�̔j���E�Œ�J�����̕����E�{�X�̍ĊJ�������m���ɍς܂���B
+    /// �i���j�C�x���g���͒���ɉ��߂� SuspendBoundsLock ����̂œ�d�ł����Ȃ��j
     /// </summary>
     public void CancelCutscenes()
     {
@@ -342,7 +360,7 @@ public class BossSniperCameraDirector : MonoBehaviour
         }
 
         DestroyTempTarget();
-        
+
         if (bossSniper != null) bossSniper.SetEventPaused(false);
         SetBoundsObjectActive(true);
     }
