@@ -500,9 +500,6 @@ MonoBehaviour:
   visualRotationSpeed: 360
   tiltRotationSpeed: 720
   shrunkenScale: 0.02
-  recoilDistance: 0.35
-  recoilReturnTime: 0.25
-  recoilTiltAngle: 12
 --- !u!1 &4583880235935741969
 GameObject:
   m_ObjectHideFlags: 0

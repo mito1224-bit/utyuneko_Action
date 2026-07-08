@@ -25702,7 +25702,7 @@ MonoBehaviour:
   requiredSkipHoldTime: 0.8
   fadeInDuration: 0.3
   fadeOutSpeed: 2
-  eventCanvasPrefab: {fileID: 1625316926}
+  eventCanvasPrefab: {fileID: 2034668354169844416, guid: 3c6f9adb56efa5c4ca392f77d5ac26fd, type: 3}
   currentPhase: 0
   hosa: {fileID: 843362239}
   bossSniper: {fileID: 1336955514}
@@ -26257,8 +26257,8 @@ MonoBehaviour:
   introReturnTime: 0
   introRumbleDuration: 0
   introRumbleMagnitude: 2
-  introImpactDuration: 1
-  introImpactMagnitude: 0.5
+  introImpactDuration: 1.5
+  introImpactMagnitude: 5
   introBossShakeStrength: 0.2
   introBossShakeDuration: 1
   enrageCameraZ: -7
@@ -26271,7 +26271,7 @@ MonoBehaviour:
   enrageFaceBackTime: 2
   enrageReturnTime: 1
   enrageShakeDuration: 1
-  enrageShakeMagnitude: 0.5
+  enrageShakeMagnitude: 5
   enrageBossShakeStrength: 0.2
   enrageBossShakeDuration: 1
 --- !u!1001 &592630785
@@ -33947,6 +33947,14 @@ PrefabInstance:
     - target: {fileID: 229262625472019341, guid: 22372edce019cdd468ea18abe06d5211, type: 3}
       propertyPath: m_Name
       value: CameraPivot
+      objectReference: {fileID: 0}
+    - target: {fileID: 709108354898074050, guid: 22372edce019cdd468ea18abe06d5211, type: 3}
+      propertyPath: useZoomCompensation
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 709108354898074050, guid: 22372edce019cdd468ea18abe06d5211, type: 3}
+      propertyPath: shakeOnPlayerCollision
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 755607411950330355, guid: 22372edce019cdd468ea18abe06d5211, type: 3}
       propertyPath: m_LocalPosition.x
@@ -61055,9 +61063,6 @@ MonoBehaviour:
   visualRotationSpeed: 360
   tiltRotationSpeed: 720
   shrunkenScale: 0.02
-  recoilDistance: 0.35
-  recoilReturnTime: 0.25
-  recoilTiltAngle: 12
 --- !u!114 &1336955514
 MonoBehaviour:
   m_ObjectHideFlags: 0
