@@ -15,6 +15,8 @@ public class BossSniperState_StunFall : BossSniperStateBase
     {
         base.Enter(boss);
 
+        Debug.Log($"<color=red>[StunFall] Enter  IsEnraged={boss.IsEnraged} EventPaused={boss.EventPaused} HP={(boss.Health != null ? boss.Health.CurrentHP : -1f)}</color>\n{System.Environment.StackTrace}");
+
         boss.DespawnClones();
         boss.SelfUnit.HideBeam();
         boss.BeginFallBody(); // Dynamic に切り替えて落下開始（コライダーも有効化される）
