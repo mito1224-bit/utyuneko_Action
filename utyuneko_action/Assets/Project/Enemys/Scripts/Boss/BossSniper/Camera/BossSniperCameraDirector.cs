@@ -656,7 +656,7 @@ public class BossSniperCameraDirector : MonoBehaviour
 
 
         // ⑦ 行動再開
-        yield return new WaitForSeconds(1.0f);
+        yield return new WaitForSeconds(0.5f);
         bossSniper.SetEventPaused(false);
 
         playingRoutine = null;
