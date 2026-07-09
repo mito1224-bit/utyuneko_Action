@@ -60948,6 +60948,7 @@ GameObject:
   - component: {fileID: 1336955515}
   - component: {fileID: 1336955517}
   - component: {fileID: 1336955518}
+  - component: {fileID: 1336955519}
   m_Layer: 9
   m_Name: BossSniper
   m_TagString: Untagged
@@ -61268,6 +61269,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BossSniperShake
   visualRoot: {fileID: 2624636134278742514}
+--- !u!114 &1336955519
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1336955507}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 29a2444f4df8721479fdb3bc88873233, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BossSniperPulse
+  visualRoot: {fileID: 2624636134278742514}
+  amplitude: 0.02
+  frequency: 1.2
 --- !u!1001 &1337950010
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -81882,6 +81898,8 @@ MonoBehaviour:
   shakeStrength: 8
   shakeDuration: 0.15
   fadeOutDuration: 0.8
+  appearScaleDuration: 0.4
+  appearChargeDuration: 1
 --- !u!225 &1802824594
 CanvasGroup:
   m_ObjectHideFlags: 0
