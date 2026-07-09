@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 8372081092729466644}
   - component: {fileID: 8496855509614668013}
   - component: {fileID: 6781125777333497583}
+  - component: {fileID: 4096742941598259600}
   m_Layer: 0
   m_Name: Goal
   m_TagString: Untagged
@@ -151,3 +152,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SceneChanger
   nextSceneName: ResultScene
+--- !u!114 &4096742941598259600
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8967739663246346028}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 47a0cfa865ae2c44aab298141c731cad, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GoalAppearEffect
+  appearTime: 0.5
+  rotateSpeed: 0
