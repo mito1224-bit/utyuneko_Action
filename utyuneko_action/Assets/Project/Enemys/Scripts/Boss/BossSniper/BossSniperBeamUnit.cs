@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 
@@ -113,6 +114,14 @@ public class BossSniperBeamUnit : MonoBehaviour
     [Tooltip("レーザー発射中の色")]
 
     public Color fireColor = new Color(1f, 0.2f, 0.2f, 0.95f);
+
+    [Tooltip("ビームに使うカスタムマテリアル。未指定なら Sprites/Default を自動生成する")]
+
+    public Material customBeamMaterial = null;
+
+    [Tooltip("ビームが消えるときのフェードアウト時間（秒）。0 で瞬間消去")]
+
+    public float beamFadeTime = 0.15f;
 
 
 
@@ -252,6 +261,10 @@ public class BossSniperBeamUnit : MonoBehaviour
     private LineRenderer line;
 
     private Material lineMaterial;
+
+    private Color lastBeamColor;
+
+    private Coroutine fadeCoroutine;
 
 
 
@@ -516,13 +529,63 @@ public class BossSniperBeamUnit : MonoBehaviour
 
 
 
-    /// <summary>ビームを消す。</summary>
+    /// <summary>ビームを消す。beamFadeTime > 0 のときはフェードアウト、0 のときは瞬間消去。</summary>
 
     public void HideBeam()
 
     {
 
+        if (line == null || !line.enabled) return;
+
+        if (fadeCoroutine != null) StopCoroutine(fadeCoroutine);
+
+        if (beamFadeTime > 0f)
+
+        {
+
+            fadeCoroutine = StartCoroutine(FadeOutBeam());
+
+        }
+
+        else
+
+        {
+
+            line.enabled = false;
+
+        }
+
+    }
+
+
+
+    private IEnumerator FadeOutBeam()
+
+    {
+
+        float elapsed = 0f;
+
+        Color from = lastBeamColor;
+
+        while (elapsed < beamFadeTime)
+
+        {
+
+            elapsed += Time.unscaledDeltaTime;
+
+            float a = Mathf.Lerp(from.a, 0f, elapsed / beamFadeTime);
+
+            Color c = new Color(from.r, from.g, from.b, a);
+
+            if (line != null) { line.startColor = c; line.endColor = c; }
+
+            yield return null;
+
+        }
+
         if (line != null) line.enabled = false;
+
+        fadeCoroutine = null;
 
     }
 
@@ -1114,17 +1177,31 @@ public class BossSniperBeamUnit : MonoBehaviour
 
 
 
-        // ビルトインRP前提。Sprites/Default は頂点カラー＆半透明ブレンド対応
+        // カスタムマテリアルが指定されていればそれを使う。無ければ Sprites/Default を実行時生成
 
-        lineMaterial = new Material(Shader.Find("Sprites/Default"));
+        if (customBeamMaterial != null)
 
-        lineMaterial.renderQueue = 3000; // Transparent
+        {
 
-        line.material = lineMaterial;
+            line.material = customBeamMaterial; // 外部管理なので OnDestroy では破棄しない
+
+        }
+
+        else
+
+        {
+
+            lineMaterial = new Material(Shader.Find("Sprites/Default")); // ビルトインRP前提
+
+            lineMaterial.renderQueue = 3000;
+
+            line.material = lineMaterial;
+
+        }
 
 
 
-        HideBeam();
+        line.enabled = false; // 初期状態は非表示
 
     }
 
@@ -1135,6 +1212,8 @@ public class BossSniperBeamUnit : MonoBehaviour
     {
 
         if (line == null) return;
+
+        if (fadeCoroutine != null) { StopCoroutine(fadeCoroutine); fadeCoroutine = null; }
 
 
 
@@ -1153,6 +1232,8 @@ public class BossSniperBeamUnit : MonoBehaviour
         line.startColor = color;
 
         line.endColor = color;
+
+        lastBeamColor = color;
 
         line.SetPosition(0, origin);
 
