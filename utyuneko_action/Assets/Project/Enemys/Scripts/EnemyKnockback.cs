@@ -62,12 +62,15 @@ public class EnemyKnockback : MonoBehaviour
     [Tooltip("死亡時に無効化するスクリプト（EnemyMovement, EnemyAttack など）")]
     public MonoBehaviour[] disableOnDeath;
 
-    [Header("点滅演出")]
-    [Tooltip("死亡中に Renderer を点滅させる")]
+    [Header("明滅演出（半透明フェード）")]
+    [Tooltip("死亡中にモデルを半透明フェードで明滅させる")]
     public bool blinkOnDeath = true;
 
-    [Tooltip("点滅の1回あたりの間隔（秒）。小さいほど速く点滅する")]
-    public float blinkInterval = 0.08f;
+    [Tooltip("明滅の1往復（不透明→半透明→不透明）にかける時間の目安（秒）。小さいほど速い")]
+    public float blinkInterval = 0.12f;
+
+    [Tooltip("明滅で最も薄くなるときのアルファ（0=完全透明 / 1=不透明のまま）")]
+    [Range(0f, 1f)] public float blinkMinAlpha = 0.3f;
 
     [Header("床ヒットで消滅")]
     [Tooltip("死亡中に着地（床・壁ヒット）したら消滅させる")]
@@ -109,8 +112,8 @@ public class EnemyKnockback : MonoBehaviour
     private int lastGroundHitFrame = -1;
 
     private Renderer[] renderers;
-    private float blinkTimer = 0f;
-    private bool blinkVisible = true;
+    private BlinkFade blinkFade;   // 半透明フェードの明滅
+    private float blinkPhase = 0f; // 明滅の位相（累積）
 
     private Camera cam; // カメラ内クランプ用（死亡時のみ使用）
 
@@ -168,9 +171,18 @@ public class EnemyKnockback : MonoBehaviour
         if (isDying) return;
         isDying = true;
 
-        // 死亡時点の最新モデルを点滅対象に取り直す（実行時に組み替え／生成されたモデル部位も確実に含める）。
-        // これで「モデルの一部が点滅しないまま」になるのを防ぐ。
+        // 進行中の被弾フラッシュ（HitFlash）があればマテリアルを元へ戻してから死亡フェードに入る
+        // （両者ともマテリアルを差し替えるので競合を防ぐ）。
+        GetComponent<HitFlash>()?.StopAndRestore();
+
+        // 死亡時点の最新モデルを明滅対象に取り直す（実行時に組み替え／生成されたモデル部位も確実に含める）。
+        // これで「モデルの一部が明滅しないまま」になるのを防ぐ。
         renderers = CollectModelRenderers();
+        if (blinkOnDeath)
+        {
+            blinkFade = new BlinkFade(renderers);
+            blinkFade.Begin(); // マテリアルを透明対応の複製へ差し替え
+        }
 
         if (disableOnDeath != null)
         {
@@ -278,21 +290,20 @@ public class EnemyKnockback : MonoBehaviour
     }
 
     /// <summary>
-    /// Renderer の表示/非表示を blinkInterval ごとに切り替えて点滅させる。
+    /// モデルのアルファを不透明↔半透明で脈動させて明滅させる（ハードな点滅ではなく半透明フェード）。
+    /// アルファ制御なので Animator の m_Enabled 上書きの影響を受けず、Animator 付きモデルでも確実に効く。
     /// </summary>
     private void UpdateBlink()
     {
-        if (renderers == null || renderers.Length == 0) return;
+        if (blinkFade == null || !blinkFade.IsActive) return;
 
-        blinkTimer += Time.deltaTime;
-        if (blinkTimer < blinkInterval) return;
+        // blinkInterval を1往復の目安時間として位相を進める（cos で 1→min→1 と滑らかに脈動）
+        float speed = Mathf.PI * 2f / Mathf.Max(0.0001f, blinkInterval);
+        blinkPhase += Time.deltaTime * speed;
 
-        blinkTimer = 0f;
-        blinkVisible = !blinkVisible;
-        foreach (var r in renderers)
-        {
-            if (r != null) r.enabled = blinkVisible;
-        }
+        float t = Mathf.Cos(blinkPhase) * 0.5f + 0.5f; // 0..1
+        float alpha = Mathf.Lerp(blinkMinAlpha, 1f, t);
+        blinkFade.SetAlpha(alpha);
     }
 
     /// <summary>

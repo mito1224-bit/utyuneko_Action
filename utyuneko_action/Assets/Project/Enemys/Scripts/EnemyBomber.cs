@@ -77,12 +77,15 @@ public class EnemyBomber : MonoBehaviour
     [Tooltip("爆発フラッシュの表示時間（自滅前の見せ時間）")]
     public float explodeFlashTime = 0.2f;
 
-    [Header("導火線の点滅")]
-    [Tooltip("カウントダウン開始時の点滅間隔（遅い）")]
+    [Header("導火線の明滅（半透明フェード）")]
+    [Tooltip("カウントダウン開始時の明滅の1往復時間（遅い）")]
     public float blinkIntervalStart = 0.3f;
 
-    [Tooltip("爆発直前の点滅間隔（速い）")]
+    [Tooltip("爆発直前の明滅の1往復時間（速い）")]
     public float blinkIntervalEnd = 0.05f;
+
+    [Tooltip("明滅で最も薄くなるときのアルファ（0=完全透明 / 1=不透明のまま）")]
+    [Range(0f, 1f)] public float blinkMinAlpha = 0.3f;
 
     [Header("可視化（爆発範囲）")]
     [Tooltip("Gameビューで爆発範囲を半透明の円で表示する")]
@@ -100,10 +103,12 @@ public class EnemyBomber : MonoBehaviour
     private enum Phase { Idle, Countdown, Exploding }
     private Phase phase = Phase.Idle;
     private float timer;
-    private float blinkTimer;
+    private BlinkFade blinkFade;  // 導火線の半透明フェード明滅
+    private float blinkPhase;     // 明滅の位相（累積）
 
     private Transform player;
     private EnemyKnockback knockback;
+    private HitFlash hitFlash;
     private Renderer[] renderers;
 
     // 追尾用
@@ -124,6 +129,7 @@ public class EnemyBomber : MonoBehaviour
         knockback = GetComponent<EnemyKnockback>();
         rb = GetComponent<Rigidbody2D>();
         movement = GetComponent<EnemyMovement>();
+        hitFlash = GetComponent<HitFlash>();
         renderers = GetComponentsInChildren<Renderer>(); // 可視化メッシュ生成前に取得（自分の見た目のみ）
         if (showRuntimeRange) CreateRangeVisual();
 
@@ -225,20 +231,23 @@ public class EnemyBomber : MonoBehaviour
     {
         phase = Phase.Countdown;
         timer = Mathf.Max(0.0001f, fuseTime);
-        blinkTimer = 0f;
+        blinkPhase = 0f;
+        blinkFade = new BlinkFade(renderers);
+        blinkFade.Begin(); // マテリアルを透明対応の複製へ差し替え
         if (chasePlayer) SuspendPatrol(); // 追尾するので巡回を止める（rb.MovePosition の競合防止）
     }
 
     private void CancelCountdown()
     {
         phase = Phase.Idle;
-        SetRenderersEnabled(true); // 点滅から確実に表示へ戻す
+        // 死亡中は死亡フェード（EnemyKnockback）にマテリアルを譲る（ここで戻すと競合する）
+        EndFade(knockback != null && knockback.IsDying);
         ResumePatrol();
     }
 
     private void Explode()
     {
-        SetRenderersEnabled(true);
+        EndFade(false); // 爆発前にモデルを元へ戻す
         DoExplosionDamage();
 
         phase = Phase.Exploding;
@@ -298,25 +307,32 @@ public class EnemyBomber : MonoBehaviour
                <= detectionRange * detectionRange;
     }
 
-    // 残り時間が減るほど点滅を速くする（導火線の演出）
+    // 残り時間が減るほど明滅を速くする（導火線の演出）。半透明フェードで脈動させる。
+    // アルファ制御なので Animator の m_Enabled 上書きの影響を受けない。
     private void UpdateFuseBlink()
     {
+        if (blinkFade == null || !blinkFade.IsActive) return;
+
         float progress = 1f - Mathf.Clamp01(timer / fuseTime);
         float interval = Mathf.Lerp(blinkIntervalStart, blinkIntervalEnd, progress);
 
-        blinkTimer += Time.deltaTime;
-        if (blinkTimer >= interval)
-        {
-            blinkTimer = 0f;
-            foreach (Renderer r in renderers)
-                if (r != null) r.enabled = !r.enabled;
-        }
+        float speed = Mathf.PI * 2f / Mathf.Max(0.0001f, interval);
+        blinkPhase += Time.deltaTime * speed;
+
+        float t = Mathf.Cos(blinkPhase) * 0.5f + 0.5f; // 0..1
+        blinkFade.SetAlpha(Mathf.Lerp(blinkMinAlpha, 1f, t));
     }
 
-    private void SetRenderersEnabled(bool on)
+    // 導火線フェードを終了する。leaveForDeathFade=true なら元へ戻さず放棄（死亡フェードに任せる）
+    private void EndFade(bool leaveForDeathFade)
     {
-        foreach (Renderer r in renderers)
-            if (r != null) r.enabled = on;
+        if (blinkFade == null) return;
+        if (!leaveForDeathFade)
+        {
+            hitFlash?.StopAndRestore(); // 進行中のフラッシュを確定（破棄する複製を後で参照しないように）
+            blinkFade.End();
+        }
+        blinkFade = null;
     }
 
     // ─── 可視化（実行時生成の塗りつぶし円。EnemyAreaAttack と同方式） ───

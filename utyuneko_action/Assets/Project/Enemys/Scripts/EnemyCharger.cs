@@ -62,11 +62,14 @@ public class EnemyCharger : MonoBehaviour
     [Tooltip("スタン明けから次の突進を始められるまでのクールダウン")]
     public float cooldown = 1f;
 
-    [Tooltip("スタン中に Renderer を点滅させる")]
+    [Tooltip("スタン中にモデルを半透明フェードで明滅させる")]
     public bool stunBlink = true;
 
-    [Tooltip("スタン点滅の間隔（秒）")]
-    public float blinkInterval = 0.1f;
+    [Tooltip("明滅の1往復（不透明→半透明→不透明）にかける時間の目安（秒）")]
+    public float blinkInterval = 0.12f;
+
+    [Tooltip("明滅で最も薄くなるときのアルファ（0=完全透明 / 1=不透明のまま）")]
+    [Range(0f, 1f)] public float blinkMinAlpha = 0.3f;
 
     [Header("検知の詰め")]
     [Tooltip("壁の手前で止めるための余白。突進が壁にめり込まないよう少し手前で停止する")]
@@ -91,11 +94,13 @@ public class EnemyCharger : MonoBehaviour
     private float timer;
 
     private Vector2 chargeDir = Vector2.left; // 予兆開始時に固定する突進方向
-    private float blinkTimer;
+    private BlinkFade blinkFade;   // スタン中の半透明フェード明滅
+    private float blinkPhase;      // 明滅の位相（累積）
 
     private Transform player;
     private EnemyKnockback knockback;
     private EnemyMovement movement;
+    private HitFlash hitFlash;
     private Collider2D col;
     private Rigidbody2D rb;
     private Renderer[] renderers;
@@ -110,6 +115,7 @@ public class EnemyCharger : MonoBehaviour
     {
         knockback = GetComponent<EnemyKnockback>();
         movement = GetComponent<EnemyMovement>();
+        hitFlash = GetComponent<HitFlash>();
         col = GetComponent<Collider2D>();
         rb = GetComponent<Rigidbody2D>();
         renderers = GetComponentsInChildren<Renderer>();
@@ -224,25 +230,43 @@ public class EnemyCharger : MonoBehaviour
         if (rb != null) rb.linearVelocity = Vector2.zero; // 突進終了。衝突で得た残留速度を消す
         phase = Phase.Stun;
         timer = Mathf.Max(0f, stunDuration);
-        blinkTimer = 0f;
+        blinkPhase = 0f;
+        if (stunBlink)
+        {
+            blinkFade = new BlinkFade(renderers);
+            blinkFade.Begin(); // マテリアルを透明対応の複製へ差し替え
+        }
     }
 
     private void BeginCooldown()
     {
         if (rb != null) rb.linearVelocity = Vector2.zero; // 突進終了。衝突で得た残留速度を消す
-        SetRenderersEnabled(true); // スタン点滅から確実に表示へ戻す
-        SetPatrolEnabled(true);    // 攻撃終了。巡回を再開する
+        EndStunFade(false);     // スタン明け：フェードを元へ戻す
+        SetPatrolEnabled(true); // 攻撃終了。巡回を再開する
         phase = Phase.Cooldown;
         timer = Mathf.Max(0f, cooldown);
     }
 
-    // 中断時：点滅を戻してクールダウンへ
+    // 中断時：フェードを戻してクールダウンへ
     private void AbortToCooldown()
     {
-        SetRenderersEnabled(true);
+        // 死亡中は死亡フェード（EnemyKnockback）にマテリアルを譲る（ここで戻すと競合する）
+        EndStunFade(knockback != null && knockback.IsDying);
         SetPatrolEnabled(true); // 攻撃終了。巡回を再開する
         phase = Phase.Cooldown;
         timer = Mathf.Max(0f, cooldown);
+    }
+
+    // スタンフェードを終了する。leaveForDeathFade=true なら元へ戻さず放棄（死亡フェードに任せる）
+    private void EndStunFade(bool leaveForDeathFade)
+    {
+        if (blinkFade == null) return;
+        if (!leaveForDeathFade)
+        {
+            hitFlash?.StopAndRestore(); // 進行中のフラッシュを確定（破棄する複製を後で参照しないように）
+            blinkFade.End();
+        }
+        blinkFade = null;
     }
 
     // 攻撃（予兆〜突進〜スタン）中は EnemyMovement を無効化して MovePosition の競合を防ぐ。
@@ -443,21 +467,17 @@ public class EnemyCharger : MonoBehaviour
 
     // ─── スタン点滅 ───────────────────────────────
 
+    // モデルのアルファを不透明↔半透明で脈動させて明滅させる（ハードな点滅ではなく半透明フェード）。
+    // アルファ制御なので Animator の m_Enabled 上書きの影響を受けない。
     private void UpdateBlink()
     {
-        blinkTimer += Time.deltaTime;
-        if (blinkTimer >= blinkInterval)
-        {
-            blinkTimer = 0f;
-            foreach (Renderer r in renderers)
-                if (r != null) r.enabled = !r.enabled;
-        }
-    }
+        if (blinkFade == null || !blinkFade.IsActive) return;
 
-    private void SetRenderersEnabled(bool on)
-    {
-        foreach (Renderer r in renderers)
-            if (r != null) r.enabled = on;
+        float speed = Mathf.PI * 2f / Mathf.Max(0.0001f, blinkInterval);
+        blinkPhase += Time.deltaTime * speed;
+
+        float t = Mathf.Cos(blinkPhase) * 0.5f + 0.5f; // 0..1
+        blinkFade.SetAlpha(Mathf.Lerp(blinkMinAlpha, 1f, t));
     }
 
     // シーンビューで索敵範囲（またはレイ）と突進方向を可視化

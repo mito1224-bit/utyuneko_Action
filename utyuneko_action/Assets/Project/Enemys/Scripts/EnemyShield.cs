@@ -34,11 +34,23 @@ public class EnemyShield : MonoBehaviour
     [Tooltip("盾を敵の中心から前方へどれだけ離して配置するか")]
     public float shieldDistance = 0.5f;
 
+    [Tooltip("盾だけを光らせる HitFlash（未指定なら shieldPivot 配下から自動取得）。盾でダメージを防いだ瞬間に光る。" +
+             "本体の HitFlash とは別に、盾の見た目（shieldPivot）側に HitFlash を付けてここへ割り当てる")]
+    public HitFlash shieldFlash;
+
     private EnemyMovement movement;
 
     void Awake()
     {
         movement = GetComponent<EnemyMovement>();
+        // 盾の見た目側に付いた HitFlash を自動取得（本体の HitFlash とは別物。盾だけを光らせる）
+        if (shieldFlash == null && shieldPivot != null) shieldFlash = shieldPivot.GetComponentInChildren<HitFlash>();
+    }
+
+    /// <summary>盾でダメージを防いだ瞬間の演出（盾のみ白フラッシュ）。EnemyHealth から呼ばれる。</summary>
+    public void PlayBlockEffect()
+    {
+        shieldFlash?.Flash();
     }
 
     void Update()

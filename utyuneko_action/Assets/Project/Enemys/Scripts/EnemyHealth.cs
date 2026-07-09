@@ -90,15 +90,16 @@ public class EnemyHealth : MonoBehaviour
 
         currentHp -= damage;
 
-        hitFlash?.Flash(); // 被弾の白フラッシュ（撃破の一撃でも光らせる。演出は HitFlash 側に委譲）
-
         if (currentHp <= 0)
         {
+            // 致命の一撃はフラッシュせず、死亡演出（EnemyKnockback の半透明フェード明滅）に任せる。
+            // ここでフラッシュするとマテリアル差し替えがフェードの複製と競合するため。
             Die(damage, hitFromPosition);
         }
-        else if (knockback != null)
+        else
         {
-            knockback.ApplyHitKnockback(hitFromPosition, damage);
+            hitFlash?.Flash(); // 生存する被弾のみ白フラッシュ
+            if (knockback != null) knockback.ApplyHitKnockback(hitFromPosition, damage);
         }
     }
 

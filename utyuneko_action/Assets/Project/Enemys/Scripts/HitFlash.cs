@@ -70,6 +70,24 @@ public class HitFlash : MonoBehaviour
     public void Flash(float _) => Flash();
     public void Flash(int _) => Flash();
 
+    /// <summary>
+    /// 進行中のフラッシュを即中断し、マテリアルを元へ戻す。
+    /// 死亡フェード等が同じマテリアルを触る直前に呼び、差し替えの競合を防ぐために使う。
+    /// </summary>
+    public void StopAndRestore()
+    {
+        if (flashCoroutine != null) { StopCoroutine(flashCoroutine); flashCoroutine = null; }
+        if (!isFlashing) return;
+
+        foreach (var e in entries)
+        {
+            if (e.sr != null) { e.sr.sharedMaterial = e.orig; e.sr.color = Color.white; }
+            if (e.smr != null) e.smr.sharedMaterial = e.orig;
+            if (e.mr != null) e.mr.sharedMaterial = e.orig;
+        }
+        isFlashing = false;
+    }
+
     private IEnumerator FlashRoutine()
     {
         Material matToUse = customFlashMaterial != null ? customFlashMaterial : defaultFlashMaterial;
