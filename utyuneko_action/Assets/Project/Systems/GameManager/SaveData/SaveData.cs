@@ -4,7 +4,8 @@ using UnityEngine;
 // 物語のメインストーリーの段階
 public enum StoryPhase
 {
-    Tutorial,            // ゲーム開始直後（補佐を助ける前）
+    StartEvent,         // ゲーム開始直後
+    Tutorial,           // ゲーム開始直後から補佐を助ける前
     Opening,            // ゲームセレクトバグ消去後
     Stage1_Cleared,     // ステージ1クリア
     Stage2_Cleared,     // ステージ2クリア
@@ -27,7 +28,7 @@ public class StageProgressData
 public class SaveData
 {
     [Header("ストーリーフラグ")]
-    public StoryPhase currentPhase = StoryPhase.Opening;
+    public StoryPhase currentPhase = StoryPhase.StartEvent;
 
     [Header("イベントフラグ")]
     // 特定のイベントが発生したかどうかを管理するフラグ

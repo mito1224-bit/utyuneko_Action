@@ -11,6 +11,7 @@ public class StageSecondBossUltimateState : StageSecondBossBaseState
     private Material rangeMaterial;
     private Mesh rangeMesh;
 
+    // 🎨 スクリプト側で管理しているウルトの色（ここが100%優先されます！）
     private Color coreColor = new Color(0.15f, 0.0f, 0.3f, 0.45f);
     private float swirlSpeed = 120f;
 
@@ -273,12 +274,10 @@ public class StageSecondBossUltimateState : StageSecondBossBaseState
         SoundManager.Instance.StopLoopSE(boss.gameObject);
         SoundManager.Instance.PlaySE(SeType.EnemyExplosion);
 
+        ShakeTarget.Instance.Shake(0.8f, 2.0f);
+
         ApplyUltimateFlash(false);
 
-        // ===================================================================
-        // 🛠️【必殺技エフェクトのサイズ連動化機能】
-        // 生成したウルト大爆発エフェクトのスケールを「ウルト半径の直径×微調整倍率」に自動変更！
-        // ===================================================================
         if (boss.ultExplosionEffect != null)
         {
             GameObject fxObj = Object.Instantiate(boss.ultExplosionEffect, boss.transform.position, Quaternion.identity);
@@ -313,8 +312,55 @@ public class StageSecondBossUltimateState : StageSecondBossBaseState
 
     public override void Exit() { isCounterAcceptable = false; SoundManager.Instance.StopLoopSE(boss.gameObject); ResetBossVisual(); CleanUpVisuals(); boss.ForceResetAllMaterials(); }
     private void ResetBossVisual() { if (boss.bossAnimator != null) boss.bossAnimator.speed = 1f; if (boss.ultVisualOffsetObject != null) boss.ultVisualOffsetObject.localScale = originalLocalScale; ApplyUltimateFlash(false); if (ultRedMaterial != null) { Object.Destroy(ultRedMaterial); ultRedMaterial = null; } }
-    private void CreateRangeVisual() { GameObject go = new GameObject("UltimateBlackHoleRange(動的生成)"); rangeVisual = go.transform; rangeVisual.SetParent(null); rangeVisual.position = boss.transform.position; MeshFilter mf = go.AddComponent<MeshFilter>(); rangeMesh = BuildDiscMesh(48); mf.sharedMesh = rangeMesh; rangeRenderer = go.AddComponent<MeshRenderer>(); rangeRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; rangeRenderer.receiveShadows = false; rangeRenderer.sortingOrder = -2; rangeMaterial = new Material(Shader.Find("Sprites/Default")); rangeMaterial.renderQueue = 3000; rangeRenderer.material = rangeMaterial; }
+
+    private void CreateRangeVisual()
+    {
+        GameObject go = new GameObject("UltimateBlackHoleRange(動的生成)");
+        rangeVisual = go.transform;
+        rangeVisual.SetParent(null);
+        rangeVisual.position = boss.transform.position;
+        MeshFilter mf = go.AddComponent<MeshFilter>();
+        rangeMesh = BuildDiscMesh(48);
+        mf.sharedMesh = rangeMesh;
+        rangeRenderer = go.AddComponent<MeshRenderer>();
+        rangeRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        rangeRenderer.receiveShadows = false;
+        rangeRenderer.sortingOrder = -2;
+
+        if (boss.instantLineWarningMaterial != null)
+        {
+            rangeMaterial = new Material(boss.instantLineWarningMaterial);
+        }
+        else
+        {
+            rangeMaterial = new Material(Shader.Find("Sprites/Default"));
+        }
+
+        rangeMaterial.renderQueue = 3000;
+        rangeRenderer.material = rangeMaterial;
+    }
+
     private Mesh BuildDiscMesh(int segments) { Mesh mesh = new Mesh { name = "UltimateDiscMesh" }; Vector3[] verts = new Vector3[segments + 1]; Color[] cols = new Color[segments + 1]; verts[0] = Vector3.zero; cols[0] = Color.white; for (int i = 0; i < segments; i++) { float a = (i / (float)segments) * Mathf.PI * 2f; verts[i + 1] = new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f); cols[i + 1] = new Color(1f, 1f, 1f, 0.2f); } int[] tris = new int[segments * 3]; for (int i = 0; i < segments; i++) { tris[i * 3] = 0; tris[i * 3 + 1] = i + 1; tris[i * 3 + 2] = (i + 1) % segments + 1; } mesh.vertices = verts; mesh.colors = cols; mesh.triangles = tris; mesh.RecalculateBounds(); return mesh; }
-    private void UpdateRangeVisual() { if (rangeVisual == null) return; rangeVisual.position = boss.transform.position; rangeVisual.localScale = Vector3.one * boss.ultPullRadius; if (swirlSpeed != 0f) rangeVisual.Rotate(0f, 0f, swirlSpeed * Time.deltaTime, Space.Self); if (rangeMaterial != null) rangeMaterial.color = coreColor; }
+
+    private void UpdateRangeVisual()
+    {
+        if (rangeVisual == null) return;
+        rangeVisual.position = boss.transform.position;
+        rangeVisual.localScale = Vector3.one * boss.ultPullRadius;
+        if (swirlSpeed != 0f) rangeVisual.Rotate(0f, 0f, swirlSpeed * Time.deltaTime, Space.Self);
+
+        // ===================================================================
+        // 🛠️【大修正：常にスクリプトの色（coreColor）を最優先で適用】
+        // ===================================================================
+        // 💡 条件分岐を完全撤廃！
+        // 自作シェーダーが当たっていようが関係なく、毎フレーム coreColor を
+        // マテリアルに流し込むことで、シェーダーは「模様」として機能しつつ、
+        // 色味はスクリプトの紫色が綺麗に乗算・優先されるようになります。
+        if (rangeMaterial != null)
+        {
+            rangeMaterial.color = coreColor;
+        }
+    }
+
     private void CleanUpVisuals() { if (boss.ultIndicatorRoot != null) boss.ultIndicatorRoot.SetActive(false); if (rangeVisual != null) Object.Destroy(rangeVisual.gameObject); if (rangeMaterial != null) Object.Destroy(rangeMaterial); if (rangeMesh != null) Object.Destroy(rangeMesh); }
 }

@@ -32,7 +32,7 @@ public class StageSecondBossBombFollowState : StageSecondBossBaseState
         }
 
         int totalShots = boss.followAttackCount;
-        float attackHeight = boss.stageMaxY - 2.0f;
+        float attackHeight = boss.stageMaxY - 5.0f;
         float leadAheadTime = 0.25f;
 
         Debug.Log($"<color=red>🎯 ボス：未来予測・偏差連続爆撃を開始！</color>");
@@ -62,6 +62,10 @@ public class StageSecondBossBombFollowState : StageSecondBossBaseState
                 sr.sprite = boss.instantLineWarningSprite;
                 sr.color = boss.instantLineWarningColor;
                 sr.sortingOrder = -1;
+                if (boss.instantLineWarningMaterial)
+                {
+                    sr.material = boss.instantLineWarningMaterial;
+                }
 
                 float spriteWidth = sr.sprite.bounds.size.x;
                 float spriteHeight = sr.sprite.bounds.size.y;

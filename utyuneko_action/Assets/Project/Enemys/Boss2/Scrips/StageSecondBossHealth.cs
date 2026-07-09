@@ -160,7 +160,6 @@ public class StageSecondBossHealth : MonoBehaviour
                 Debug.Log("<color=red>🛡️ 必殺技チャージ中に爆弾直撃！ 確定遮断スタン！</color>");
                 UpdateBarrierVisual();
                 controller.OnMineCounterHit();
-                Destroy(bombObj);
 
                 TimeManager.Instance.TriggerGlobalSlowMotion(1.0f, 0.2f);
                 return;
@@ -202,8 +201,6 @@ public class StageSecondBossHealth : MonoBehaviour
         {
             TakeDamage(bombDirectDamage);
         }
-
-        Destroy(bombObj);
     }
 
     public void TakeDamage(float damage)
@@ -230,6 +227,8 @@ public class StageSecondBossHealth : MonoBehaviour
         }
 
         currentHP -= damage;
+
+        ShakeTarget.Instance.Shake(0.2f, 1.5f);
 
         if (controller != null && controller.currentDebugStateName != "StageSecondBossStunState")
         {

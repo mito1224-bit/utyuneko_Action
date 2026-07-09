@@ -319,7 +319,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameManager
   currentSaveData:
-    currentPhase: 1
+    currentPhase: 0
     stageList: []
 --- !u!1 &8741556381754363572
 GameObject:

@@ -53,19 +53,26 @@ public class CoreCubeEventManager : BaseEventManager
 
     void Start()
     {
-        currentState = EventState.BeforeArea;
-        cameraFollow = FindFirstObjectByType<CameraFollowWithZoom>();
-
-        if (gateObject != null)
+        if (GameManager.Instance.CurrentSaveData.currentPhase >= StoryPhase.Opening)
         {
-            originalGateScale = gateObject.transform.localScale;
-            gateObject.SetActive(false);
+            OnSkipWarp();
         }
-
-        // 🧱【新設】戻り防止用の壁は、ゲーム開始時は最初は消しておく（通れる状態）
-        if (blockingWall != null)
+        else
         {
-            blockingWall.SetActive(false);
+            currentState = EventState.BeforeArea;
+            cameraFollow = FindFirstObjectByType<CameraFollowWithZoom>();
+
+            if (gateObject != null)
+            {
+                originalGateScale = gateObject.transform.localScale;
+                gateObject.SetActive(false);
+            }
+
+            // 🧱【新設】戻り防止用の壁は、ゲーム開始時は最初は消しておく（通れる状態）
+            if (blockingWall != null)
+            {
+                blockingWall.SetActive(false);
+            }
         }
     }
 
@@ -237,11 +244,17 @@ public class CoreCubeEventManager : BaseEventManager
             hosa.transform.position = hosaBasePosition.position;
             hosa.transform.rotation = hosaBasePosition.rotation;
 
-            // 💡 プレイヤーを一生追従（Follow）させず、ずっとステージの端にいてほしいので、
-            // StateFollow には戻さずに Event 状態のままその場に居座らせます！
         }
 
+        //ストーリーを進める
+        if (GameManager.Instance.CurrentSaveData.currentPhase == StoryPhase.Tutorial)
+            GameManager.Instance.AdvanceStoryPhase();
+
         currentState = EventState.Finished;
+
+        Instance.gameObject.SetActive(false);
+
+        EndEvent();
     }
 
     private void CompleteEvent()
@@ -254,6 +267,13 @@ public class CoreCubeEventManager : BaseEventManager
         }
 
         currentState = EventState.Finished;
+
+        //ストーリーを進める
+        if (GameManager.Instance.CurrentSaveData.currentPhase == StoryPhase.Tutorial)
+            GameManager.Instance.AdvanceStoryPhase();
+
+        Instance.gameObject.SetActive(false);
+
         EndEvent();
     }
 }

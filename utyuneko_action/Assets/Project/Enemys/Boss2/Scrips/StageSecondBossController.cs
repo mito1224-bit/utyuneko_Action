@@ -74,6 +74,7 @@ public class StageSecondBossController : MonoBehaviour
 
     [Header("⚙️ 一直線即爆発（グリッド爆撃）の個別設定")]
     public Sprite instantLineWarningSprite;
+    public Material instantLineWarningMaterial;
     public float instantLineWarningDuration = 0.6f;
     public Color instantLineWarningColor = new Color(1f, 1f, 1f, 1f);
 

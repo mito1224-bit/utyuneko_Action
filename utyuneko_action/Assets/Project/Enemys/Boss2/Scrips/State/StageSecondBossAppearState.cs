@@ -49,6 +49,8 @@ public class StageSecondBossAppearState : StageSecondBossBaseState
 
         // 登場時の目覚ましSE（大咆哮など）を鳴らす！
         SoundManager.Instance.PlaySE(SeType.EnemyCharge);
+
+        ShakeTarget.Instance.Shake(2.5f, 2.5f);
     }
 
     public override void Update()
@@ -87,7 +89,7 @@ public class StageSecondBossAppearState : StageSecondBossBaseState
         // 🛠️【カメラ連動】登場デモが終わったので、カメラをプレイヤーの元へフワッと戻す！
         if (cameraController != null)
         {
-            cameraController.ReturnToPlayerFromEvent(0.5f);
+            cameraController.ReturnToPlayerFromEvent(1.0f);
         }
         if (boss.BossStatgeCamera)
         {

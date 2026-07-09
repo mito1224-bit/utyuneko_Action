@@ -156,7 +156,14 @@ public class GameManager : MonoBehaviour
         LastCheckpoint.playerPosition = pos;
         LastCheckpoint.bitCubes = coins;
 
-        LastCheckpoint.dataCubeFlags = new List<bool>(flags);
+        if (flags != null)
+        {
+            LastCheckpoint.dataCubeFlags = new List<bool>(flags);
+        }
+        else
+        {
+            LastCheckpoint.dataCubeFlags = new List<bool>();
+        }
 
         Debug.Log("【GameManager】チェックポイントのデータをキャッシュ（確定）しました。");
     }
@@ -189,7 +196,6 @@ public class GameManager : MonoBehaviour
             LastCheckpoint = new CheckpointCache();
 
             AdvanceStoryPhase();
-            SaveGame();
         }
     }
 

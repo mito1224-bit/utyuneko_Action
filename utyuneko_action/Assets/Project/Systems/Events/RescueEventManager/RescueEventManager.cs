@@ -268,10 +268,7 @@ public class RescueEventManager : BaseEventManager
 
     protected override void OnEventFullyCompleted()
     {
-        if (GameManager.Instance != null)
-        {
-            GameManager.Instance.AdvanceStoryPhase();
-        }
+
     }
 
     private void CompleteEvent()

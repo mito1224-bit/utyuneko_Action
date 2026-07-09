@@ -315,6 +315,8 @@ public class StageSecondBossMineBomb : MonoBehaviour
 
         SoundManager.Instance.PlaySE(SeType.EnemyExplosion);
 
+        ShakeTarget.Instance.Shake(0.2f, 1.0f);
+
         // ===================================================================
         // 🛠 dependency【エフェクトのサイズ連動機能】
         // 生成した地雷爆発エフェクトのサイズを「感知半径の直径×微調整倍率」に自動変更！
