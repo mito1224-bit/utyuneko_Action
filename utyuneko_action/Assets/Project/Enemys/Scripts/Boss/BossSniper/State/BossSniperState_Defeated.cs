@@ -13,8 +13,9 @@ public class BossSniperState_Defeated : BossSniperStateBase
 
         boss.DespawnClones();
         boss.SelfUnit.HideBeam();
-        boss.BeginFallBody(); // 力なく地面へ倒れたままにする
+        boss.BeginDefeatedBody(); // ちょっとノックバック
 
+        Debug.Log("<color=yellow>[BossSniper] onDefeated 発火 / bossID=" + boss.GetInstanceID() + "</color>");
         boss.onDefeated?.Invoke();
 
         if (boss.destroyDelayOnDefeat > 0f)

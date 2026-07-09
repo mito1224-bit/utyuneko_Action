@@ -488,6 +488,7 @@ MonoBehaviour:
     m_Bits: 4294967295
   maxBeamLength: 30
   beamDamage: 1
+  contactDamage: 1
   sightWidth: 0.06
   beamWidth: 0.4
   aimColor: {r: 1, g: 1, b: 0, a: 0.5}
@@ -497,6 +498,7 @@ MonoBehaviour:
   leftAngle: 50
   rightAngle: -50
   visualRotationSpeed: 360
+  tiltRotationSpeed: 720
   shrunkenScale: 0.02
 --- !u!1 &4583880235935741969
 GameObject:

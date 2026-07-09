@@ -1,4 +1,12 @@
 {
-    "currentPhase": 1,
-    "stageList": []
+    "currentPhase": 2,
+    "stageList": [
+        {
+            "stageId": "BIG_GOSS",
+            "isCoreCubeCollected": true,
+            "maxBitCubes": 0,
+            "totalBitCubes": 0,
+            "dataCubeFlags": []
+        }
+    ]
 }

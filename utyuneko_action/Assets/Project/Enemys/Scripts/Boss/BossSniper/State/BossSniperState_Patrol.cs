@@ -31,12 +31,12 @@ public class BossSniperState_Patrol : BossSniperStateBase
             return;
         }
 
-        // 分身攻撃の間隔が満ちたら（テレポ中でないときに）次の攻撃へ。
-        // 行き先はフェーズにより異なる：通常は 全体攻撃→分身、最終フェーズは全体攻撃を挟むかランダム
+        // 巡回行動の時間（AttackTimer）が満ちたら、次の行動へ。
+        // 行き先は重み付きランダム（巡回／全体攻撃／横一斉射）で、規定回数を挟んだら分身攻撃（boss.ChooseNextAction）
         boss.AttackTimer -= Time.deltaTime;
         if (boss.AttackTimer <= 0f)
         {
-            boss.TransitionToState(boss.NextAttackAfterPatrol());
+            boss.TransitionToState(boss.ChooseNextAction());
             return;
         }
 
@@ -52,7 +52,7 @@ public class BossSniperState_Patrol : BossSniperStateBase
             }
             else
             {
-                teleport.Begin(boss.SelfUnit, boss.RandomPatrolPoint(), boss.teleportShrinkTime, boss.teleportExpandTime, onBeforeExpand: () => boss.SelfUnit.SnapVisualToPlayerImmediate());
+                teleport.Begin(boss.SelfUnit, boss.RandomPatrolPointForBoss(), boss.teleportShrinkTime, boss.teleportExpandTime, onBeforeExpand: () => boss.SelfUnit.SnapVisualToPlayerImmediate());
             }
         }
     }

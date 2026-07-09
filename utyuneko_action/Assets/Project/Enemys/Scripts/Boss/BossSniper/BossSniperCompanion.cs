@@ -44,6 +44,7 @@ public class BossSniperCompanion : MonoBehaviour
     void Update()
     {
         if (boss == null || unit == null) return;
+        if (boss.EventPaused) return; // カメラ演出中は行動を止める（テレポート・照準・発射すべて）
         BossSniper.CompanionSettings cs = boss.companionSettings;
 
         switch (step)
@@ -63,7 +64,7 @@ public class BossSniperCompanion : MonoBehaviour
                 timer -= Time.deltaTime;
                 if (timer <= 0f)
                 {
-                    teleport.Begin(unit, boss.RandomPatrolPoint(), boss.teleportShrinkTime, boss.teleportExpandTime, onBeforeExpand: () => boss.SelfUnit.SnapVisualToPlayerImmediate());
+                    teleport.Begin(unit, boss.RandomPatrolPointForCompanion(), boss.teleportShrinkTime, boss.teleportExpandTime, onBeforeExpand: () => unit.SnapVisualToPlayerImmediate());
 
                     step = Step.Teleporting;
                 }
@@ -80,7 +81,7 @@ public class BossSniperCompanion : MonoBehaviour
 
             case Step.PreparingAim:
                 unit.AimVisualOnlyTick();
-                if(unit.IsVisualAlignedToAim())
+                if (unit.IsVisualAlignedToAim())
                 {
                     timer = Mathf.Max(0.05f, cs.lockTime);
                     step = Step.Locking;
@@ -134,6 +135,23 @@ public class BossSniperCompanion : MonoBehaviour
         unit.SetAimPoint(aimPoint);
 
         step = Step.PreparingAim;
+    }
+
+    /// <summary>
+    /// カメラ演出の一時停止が始まった（BossSniper.SetEventPaused(true) から呼ばれる）。
+    /// 照準・発射の途中なら中断して待機に戻し、凍った射線が画面に残らないようにする。
+    /// テレポートの収縮・展開の途中で止まった場合は、再開後に続きから進むので何もしない。
+    /// </summary>
+    public void NotifyEventPaused()
+    {
+        if (unit == null) return;
+
+        if (step == Step.PreparingAim || step == Step.Locking || step == Step.Firing)
+        {
+            unit.HideBeam();
+            timer = boss != null ? boss.companionSettings.teleportInterval : 1f;
+            step = Step.Idle;
+        }
     }
 
     // プレイヤーのバースト体当たり → 撃破（バースト回数の回復と再出現禁止はボス側が処理）

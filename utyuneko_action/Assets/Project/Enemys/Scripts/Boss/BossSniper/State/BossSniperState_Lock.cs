@@ -30,8 +30,18 @@ public class BossSniperState_Lock : BossSniperStateBase
         if (unit.IsReal)
         {
             // 発射直前まで見破りは有効。通常ダメージを入れてスタン落下へ
+            bool wasEnraged = boss.IsEnraged; // 殴る前の強化状態を記録
             boss.HandleNormalBurstHit(unit, pc);
-            boss.TransitionToState(boss.StateStunFall);
+
+            // 撃破済み（Defeated）ならスタン落下で上書きしない（復活バグ防止）。
+            // この一撃で強化に入った場合もスタン落下を重ねない（演出後にスタンが持ち越される／
+            // 落下が先に走るのを防ぐ）。ダメージは既に入っている。
+            // 判定は EventPaused ではなく IsEnraged の変化で見る（演出のポーズは遅れて立つことがあるため）。
+            bool enteredEnrageThisHit = !wasEnraged && boss.IsEnraged;
+            if (boss.CurrentState == this && !enteredEnrageThisHit)
+            {
+                boss.TransitionToState(boss.StateStunFall);
+            }
         }
         else
         {
