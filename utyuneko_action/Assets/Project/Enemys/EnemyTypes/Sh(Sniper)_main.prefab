@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 8922974852480719977}
   - component: {fileID: 5199383734447450194}
   - component: {fileID: 2527882561175420884}
+  - component: {fileID: 8046607831475873357}
   m_Layer: 0
   m_Name: Sh(Sniper)_main
   m_TagString: Enemy
@@ -263,6 +264,21 @@ MonoBehaviour:
   invertBodyPitch: 1
   minBodyPitch: -45
   maxBodyPitch: 45
+--- !u!114 &8046607831475873357
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3342613708304440510}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6e82f1416c9f4e499ee4fb975d8d0ba6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HitFlash
+  visualRoot: {fileID: 5430463468131000312}
+  flashDuration: 0.08
+  customFlashMaterial: {fileID: 0}
 --- !u!1 &3391874124885955842
 GameObject:
   m_ObjectHideFlags: 0

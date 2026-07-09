@@ -82,6 +82,7 @@ GameObject:
   - component: {fileID: 8900219762903418583}
   - component: {fileID: 2439165875155092051}
   - component: {fileID: 6074525624085011262}
+  - component: {fileID: 6257162102905686700}
   m_Layer: 0
   m_Name: Oc(Hole)_main
   m_TagString: Enemy
@@ -253,7 +254,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2b660973e08c8ce458a40cca14ee2fe1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyMovement
-  moveSpeed: 2
+  moveSpeed: 0
   moveDirection: {x: -1, y: 0, z: 0}
   useTimedReversal: 1
   changeInterval: 3
@@ -353,6 +354,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DamageSource
   damageAmount: 1
+--- !u!114 &6257162102905686700
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9031014412451709146}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6e82f1416c9f4e499ee4fb975d8d0ba6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HitFlash
+  visualRoot: {fileID: 4019751068862393496}
+  flashDuration: 0.08
+  customFlashMaterial: {fileID: 0}
 --- !u!1001 &7614847380960238396
 PrefabInstance:
   m_ObjectHideFlags: 0

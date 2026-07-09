@@ -383,6 +383,8 @@ GameObject:
   - component: {fileID: 4509628652013570583}
   - component: {fileID: 4205721695737604593}
   - component: {fileID: 7443794314034295921}
+  - component: {fileID: 5200540277384331458}
+  - component: {fileID: 4485279926331557569}
   m_Layer: 0
   m_Name: Hz(Pierce)_main
   m_TagString: Enemy
@@ -592,7 +594,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyMovement
   moveSpeed: 0
-  moveDirection: {x: 0, y: 0, z: 0}
+  moveDirection: {x: -1, y: 0, z: 0}
   useTimedReversal: 1
   changeInterval: 3
   groundLayers:
@@ -615,6 +617,34 @@ MonoBehaviour:
   returnDelay: 0.5
   returnSpeed: 1.5
   returnThreshold: 0.05
+--- !u!114 &5200540277384331458
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4772398401030728419}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eb839e130a425e348ae61d57ae68acc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DamageSource
+  damageAmount: 1
+--- !u!114 &4485279926331557569
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4772398401030728419}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6e82f1416c9f4e499ee4fb975d8d0ba6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HitFlash
+  visualRoot: {fileID: 5025879628779977376}
+  flashDuration: 0.08
+  customFlashMaterial: {fileID: 0}
 --- !u!1 &5755319891585296566
 GameObject:
   m_ObjectHideFlags: 0

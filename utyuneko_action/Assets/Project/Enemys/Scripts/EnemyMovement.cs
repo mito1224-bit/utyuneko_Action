@@ -14,7 +14,7 @@ using UnityEngine;
 public class EnemyMovement : MonoBehaviour
 {
     [Header("移動設定")]
-    public float moveSpeed = 2.0f;               // 移動速度
+    public float moveSpeed = 0.0f;               // 移動速度
     public Vector3 moveDirection = Vector3.left; // 現在の移動方向
 
     [Header("時間での方向転換（任意）")]
