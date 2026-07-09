@@ -16,6 +16,7 @@ public class ResultScreen : MonoBehaviour
 
     [Header("演出設定")]
     [SerializeField] private float animationDuration = 1.5f; // ゲージが最大になるまでの時間（秒）
+    [SerializeField] private float bitAnimationDuration = 1.0f; // ★追加：Bitカウントアップにかける時間
 
     [Header("ゲージのイージング設定（カーブ）")]
     [SerializeField] private AnimationCurve gaugeEasingCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
@@ -56,11 +57,11 @@ public class ResultScreen : MonoBehaviour
         {
             InputManager.Instance.UI.Enable();
         }
-
+        
         // 1. Bitキューブ（通常コイン）の表示更新をGameManagerから取得
         if (bitCubeText != null)
         {
-            bitCubeText.text = $"{GameManager.Instance.FinalBitCurrent} / {GameManager.Instance.FinalBitMax}";
+            bitCubeText.text = $"×0";
         }
 
         // 2. DataCube（スターコイン）の表示更新をGameManagerから取得
@@ -152,6 +153,9 @@ public class ResultScreen : MonoBehaviour
     // 演出全体を順番にコントロールするコルーチン
     private IEnumerator PlayResultSequence(float completionRate)
     {
+        yield return StartCoroutine(AnimateBitCubes(GameManager.Instance.FinalBitCurrent));
+        yield return new WaitForSeconds(0.2f); // 少し余韻
+
         // ① まずはドーナツゲージのアニメーションが終わるのを待つ
         yield return StartCoroutine(AnimateGauge(completionRate));
 
@@ -171,6 +175,37 @@ public class ResultScreen : MonoBehaviour
 
         // 入力を許可するフラグをON！これがないとUpdateで弾かれてしまいます
         isResultSequenceFinished = true;
+    }
+
+    private IEnumerator AnimateBitCubes(int targetBit)
+    {
+        if (targetBit <= 0) yield break; // 0なら演出スキップ
+
+        float elapsedTime = 0f;
+
+        while (elapsedTime < bitAnimationDuration)
+        {
+            elapsedTime += Time.deltaTime;
+            float linearProgress = elapsedTime / bitAnimationDuration;
+
+            // イージングカーブを使って徐々にゆっくりになるようにする
+            float easedProgress = gaugeEasingCurve.Evaluate(linearProgress);
+
+            int currentBit = Mathf.RoundToInt(Mathf.Lerp(0f, targetBit, easedProgress));
+
+            if (bitCubeText != null)
+            {
+                bitCubeText.text = $"×{currentBit}";
+            }
+
+            yield return null;
+        }
+
+        // 最後にピッタリ目標の値に合わせる
+        if (bitCubeText != null)
+        {
+            bitCubeText.text = $"×{targetBit}";
+        }
     }
 
     private IEnumerator AnimateGauge(float targetRate)
@@ -224,6 +259,10 @@ public class ResultScreen : MonoBehaviour
 
             // 1. まず本物画像をアクティブにする
             actualImage.gameObject.SetActive(true);
+            // アニメーション全部無効
+            //actualImage.color = Color.white;
+            actualImage.transform.localScale = Vector3.one;
+
 
             // 2. 初期状態を設定（ここが重要）
             float startScale = 8.0f;
@@ -262,7 +301,7 @@ public class ResultScreen : MonoBehaviour
             // テキストの更新（スターコインの獲得数を＋１）
             if (dataCubeText != null)
             {
-                dataCubeText.text = $"{i + 1} / {maxCubes}";
+                dataCubeText.text = $"×{i + 1}";
             }
 
             // 次のコインまでのウェイト
