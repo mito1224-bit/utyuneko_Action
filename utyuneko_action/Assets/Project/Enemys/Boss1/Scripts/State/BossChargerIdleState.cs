@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -6,7 +7,9 @@ using UnityEngine;
 /// 行動選択:
 ///   - フェーズ2かつ盾投げクールダウン明け → 盾投げ（技⑤）
 ///   - プレイヤーが bashTriggerRange 内   → シールドバッシュ（技③・密着対策）
-///   - それ以外                           → 突進（技①／フェーズ2は連続突進②）
+///   - それ以外                           → 遠距離技からランダム
+///       突進（技①／フェーズ2は連続突進②） / 地面叩き（技⑦） / 飛び上がり叩きつけ（技⑧）
+///       ※地面叩き・飛びつきはクールダウン明けのときだけ候補に入る。
 /// </summary>
 public class BossChargerIdleState : BossChargerBaseState
 {
@@ -33,8 +36,9 @@ public class BossChargerIdleState : BossChargerBaseState
 
     public override void FixedUpdate()
     {
-        // ゆっくり間合いを詰める（盾を構えたまま歩く圧）
-        if (boss.idleApproachSpeed <= 0f) return;
+        // ゆっくり間合いを詰める（盾を構えたまま歩く圧）。
+        // idleApproach が OFF のときは待機中は動かない＝移動は攻撃（突進・地面叩き等）のときだけになる。
+        if (!boss.idleApproach || boss.idleApproachSpeed <= 0f) return;
         Transform player = boss.GetPlayerTransform();
         if (player == null) return;
 
@@ -64,6 +68,11 @@ public class BossChargerIdleState : BossChargerBaseState
             return;
         }
 
-        boss.TransitionToState(boss.StateCharge);
+        // 遠距離技：クールダウン明けの候補からランダムに選ぶ（突進は常に候補）
+        var candidates = new List<BossChargerBaseState> { boss.StateCharge };
+        if (boss.enableGroundSlam && boss.GroundSlamTimer <= 0f) candidates.Add(boss.StateGroundSlam);
+        if (boss.enableLeapSlam && boss.LeapSlamTimer <= 0f) candidates.Add(boss.StateLeapSlam);
+
+        boss.TransitionToState(candidates[Random.Range(0, candidates.Count)]);
     }
 }

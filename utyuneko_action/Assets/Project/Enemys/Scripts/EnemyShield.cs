@@ -1,17 +1,25 @@
 using UnityEngine;
 
 /// <summary>
-/// 盾を持つ敵。向いている方向（前方）からの攻撃を盾で防ぎ、ダメージを無効化する。
-/// 盾の反対側（背後）から当てたときだけ EnemyHealth がダメージを通す。
+/// 盾を持つ敵の「物理盾」フォロワー。BossChargerShield と同じ思想を汎用エネミー用に薄くしたもの。
 ///
-/// 仕組み:
-///   - 前方（盾の向き）は EnemyMovement.moveDirection に追従する（巡回反転で盾の向きも反転）。
-///   - EnemyHealth.HandleHit がダメージ適用の前に Blocks() を問い合わせ、前方からの攻撃なら無効化する。
-///   - 反射／ノックバックは EnemyCollision の Reflect ソリッドコライダーが担当（盾はダメージのみゲートする）。
+/// 仕組み（物理ガード）:
+///   - 盾はソリッドの Collider2D を持つ子オブジェクト（RefObj レイヤー）で、敵本体の正面を物理的に覆う。
+///   - プレイヤーのバーストは盾に当たると壁と同じく反射する（反射はプレイヤー側＝RefObj を壁扱い）。
+///     盾に阻まれて本体コライダーへ届かないので、本体（EnemyHealth）にはダメージが入らない。
+///   - 盾の反対側（背後）から当てたときだけ本体コライダーに届いてダメージが通る。
+///   - ステートが Normal のプレイヤーが盾へ触れるとダメージ＝盾オブジェクトの DamageSource が担当（このスクリプト外。
+///     Enemy タグにしておけばバースト中は PlayerHealth 側で免除される。BossChargerShield と同じ）。
 ///
-/// 想定セットアップ:
-///   - EnemyCollision の collisionType は Reflect（前から当てても背後から当てても、いったん弾く）。
-///   - 盾の見た目（子オブジェクト）を shieldPivot に割り当てると、前方を向くよう自動回転する。
+/// このスクリプトの唯一の仕事は「盾の向きを本体の移動方向へ追従させる」こと。
+///   - 向きは shieldPivot の localPosition.x の符号反転で切り替える。
+///     ★親を回転／スケールさせて追従させると 2D コライダーが潰れる（当たり判定が崩れる）ため、
+///       shieldPivot は root 直下の「回転・スケールを継承しない」位置へ置くこと（BossChargerShield と同じ理由）。
+///
+/// 想定セットアップ（Editor）:
+///   - root直下に空アンカー → その下に盾オブジェクト（ソリッド Collider2D ＋ RefObj レイヤー ＋ DamageSource）。
+///   - shieldPivot にそのアンカーを割り当てる。初期 localPosition.x に前方オフセットを持たせる（例 x=-0.5 で左構え）。
+///   - EnemyCollision は Reflect（本体コライダーへのバーストだけダメージ。盾ヒットは otherCollider 判定で除外される）。
 /// </summary>
 [RequireComponent(typeof(EnemyHealth))]
 public class EnemyShield : MonoBehaviour
@@ -23,66 +31,48 @@ public class EnemyShield : MonoBehaviour
     [Tooltip("EnemyMovement が無い／追従しない場合の前方向き（ワールド方向）")]
     public Vector2 facingOverride = Vector2.left;
 
-    [Header("盾の防御範囲")]
-    [Tooltip("前方からこの角度（度）以内の攻撃を盾で防ぐ。90で前方半円すべてを防御")]
-    [Range(0f, 180f)] public float shieldHalfAngle = 90f;
-
-    [Header("演出（任意）")]
-    [Tooltip("盾の見た目。設定すると前方（右=+X）を向くよう自動回転し、前方へ配置する")]
+    [Header("盾オブジェクト")]
+    [Tooltip("向きを追従させる盾アンカー（root直下・非回転非スケール推奨）。localPosition.x の符号を反転して前方へ構える")]
     public Transform shieldPivot;
 
-    [Tooltip("盾を敵の中心から前方へどれだけ離して配置するか")]
+    [Tooltip("shieldPivot の初期 localPosition.x が 0 のときに使う前方オフセット（絶対値）")]
     public float shieldDistance = 0.5f;
 
-    [Tooltip("盾だけを光らせる HitFlash（未指定なら shieldPivot 配下から自動取得）。盾でダメージを防いだ瞬間に光る。" +
-             "本体の HitFlash とは別に、盾の見た目（shieldPivot）側に HitFlash を付けてここへ割り当てる")]
+    [Header("演出（任意）")]
+    [Tooltip("盾でバーストを弾いた瞬間に光らせる HitFlash（未指定なら shieldPivot 配下から自動取得）。EnemyCollision から叩かれる")]
     public HitFlash shieldFlash;
 
     private EnemyMovement movement;
+    private Vector3 heldLocalPos;   // 構え位置（右向き時。左向きは x 反転）
+    private int facing = -1;        // -1=左 / +1=右
 
     void Awake()
     {
         movement = GetComponent<EnemyMovement>();
+        if (shieldPivot != null) heldLocalPos = shieldPivot.localPosition;
         // 盾の見た目側に付いた HitFlash を自動取得（本体の HitFlash とは別物。盾だけを光らせる）
         if (shieldFlash == null && shieldPivot != null) shieldFlash = shieldPivot.GetComponentInChildren<HitFlash>();
-    }
-
-    /// <summary>盾でダメージを防いだ瞬間の演出（盾のみ白フラッシュ）。EnemyHealth から呼ばれる。</summary>
-    public void PlayBlockEffect()
-    {
-        shieldFlash?.Flash();
     }
 
     void Update()
     {
         if (shieldPivot == null) return;
 
-        Vector2 facing = GetFacing();
-        if (facing.sqrMagnitude < 0.0001f) return;
+        Vector2 f = GetFacing();
+        if (f.sqrMagnitude < 0.0001f) return;
+        facing = f.x >= 0f ? 1 : -1;
 
-        shieldPivot.right = facing; // 盾の見た目を前方へ向ける
-        // 前方へオフセットした位置に配置する（敵が反転すると盾も反対側へ移動）
-        shieldPivot.position = transform.position + (Vector3)(facing * shieldDistance);
+        // localPosition.x の符号だけ切り替える（親の回転・スケールを継承しないので当たり判定が潰れない）
+        float mag = Mathf.Abs(heldLocalPos.x);
+        if (mag < 0.0001f) mag = Mathf.Abs(shieldDistance);
+
+        Vector3 lp = heldLocalPos;
+        lp.x = mag * facing;
+        shieldPivot.localPosition = lp;
     }
 
-    /// <summary>
-    /// 攻撃元（プレイヤー位置）が盾の防御範囲（前方）にあるなら true ＝ ダメージを防ぐ。
-    /// EnemyHealth.HandleHit から呼ばれる。
-    /// </summary>
-    public bool Blocks(Vector3 hitFromPosition)
-    {
-        Vector2 facing = GetFacing();
-        if (facing.sqrMagnitude < 0.0001f) return false;
-        facing.Normalize();
-
-        Vector2 toAttacker = (Vector2)(hitFromPosition - transform.position);
-        if (toAttacker.sqrMagnitude < 0.0001f) return false;
-        toAttacker.Normalize();
-
-        // 前方となす角が shieldHalfAngle 以内なら盾で防ぐ
-        float cosThreshold = Mathf.Cos(shieldHalfAngle * Mathf.Deg2Rad);
-        return Vector2.Dot(toAttacker, facing) >= cosThreshold;
-    }
+    /// <summary>盾でバーストを弾いた瞬間の演出（盾のみ白フラッシュ）。EnemyCollision から呼ばれる。</summary>
+    public void PlayBlockEffect() => shieldFlash?.Flash();
 
     // 現在の前方向き（盾の向き）。移動方向に追従するか、固定値を使う。
     private Vector2 GetFacing()
@@ -95,23 +85,12 @@ public class EnemyShield : MonoBehaviour
         return facingOverride.sqrMagnitude > 0.0001f ? facingOverride.normalized : Vector2.left;
     }
 
-    // シーンビューで盾の防御範囲を可視化（調整用）
+    // シーンビューで盾の構え側（前方）を可視化（調整用）
     private void OnDrawGizmosSelected()
     {
-        Vector2 facing = GetFacing();
-        if (facing.sqrMagnitude < 0.0001f) return;
-
-        Vector3 pos = transform.position;
-        const float r = 1f;
-
+        Vector2 f = GetFacing();
+        if (f.sqrMagnitude < 0.0001f) return;
         Gizmos.color = Color.blue;
-        Gizmos.DrawLine(pos, pos + (Vector3)facing * r); // 前方（盾の正面）
-
-        // 防御範囲の端（前方 ± shieldHalfAngle）
-        Vector3 edgeA = Quaternion.Euler(0f, 0f, shieldHalfAngle) * (Vector3)facing * r;
-        Vector3 edgeB = Quaternion.Euler(0f, 0f, -shieldHalfAngle) * (Vector3)facing * r;
-        Gizmos.color = new Color(0.2f, 0.5f, 1f, 0.7f);
-        Gizmos.DrawLine(pos, pos + edgeA);
-        Gizmos.DrawLine(pos, pos + edgeB);
+        Gizmos.DrawLine(transform.position, transform.position + (Vector3)(f.normalized * 1f));
     }
 }

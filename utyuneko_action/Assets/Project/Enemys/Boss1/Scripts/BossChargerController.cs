@@ -51,7 +51,10 @@ public class BossChargerController : MonoBehaviour
     [Header("待機（Idle）")]
     [Tooltip("次の行動を選ぶまでの待機時間（秒）")]
     public float idleTime = 1.2f;
-    [Tooltip("待機中にプレイヤーへ寄る移動速度（0で移動しない）")]
+    [Tooltip("待機中もプレイヤーへ寄って歩く（＝攻撃以外でも移動する）。" +
+             "OFF なら待機中は動かず、移動は突進・地面叩き等の攻撃時のみになる")]
+    public bool idleApproach = false;
+    [Tooltip("待機中にプレイヤーへ寄る移動速度（idleApproach が ON のときのみ有効。0で移動しない）")]
     public float idleApproachSpeed = 2f;
     [Tooltip("プレイヤーとの距離がこれ未満ならシールドバッシュを選ぶ")]
     public float bashTriggerRange = 3.5f;
@@ -85,8 +88,10 @@ public class BossChargerController : MonoBehaviour
     public bool invertModelPitch = false;
     [Tooltip("予兆中に突進予定の視線ライン（LineRenderer）をプレイヤーへ見せる")]
     public bool showChargeTelegraph = true;
-    [Tooltip("視線ラインの色")]
-    public Color chargeTelegraphColor = new Color(1f, 0.25f, 0.25f, 0.7f);
+    [Tooltip("視線ラインの色：予兆の開始（まだ余裕がある＝黄）")]
+    public Color chargeTelegraphColorStart = new Color(1f, 0.92f, 0.2f, 0.5f);
+    [Tooltip("視線ラインの色：予兆の直前（もう来る＝赤）。予兆の進行に合わせて開始色からここへ変化する")]
+    public Color chargeTelegraphColorEnd = new Color(1f, 0.15f, 0.15f, 0.95f);
     [Tooltip("視線ラインの太さ")]
     public float chargeTelegraphWidth = 0.08f;
     [Tooltip("視線ラインの最大長（壁があればそこで止まる）")]
@@ -134,6 +139,71 @@ public class BossChargerController : MonoBehaviour
     [Tooltip("カウンターのクールダウン（連発防止・秒）")]
     public float counterCooldown = 4f;
 
+    [Header("地面叩き→隆起衝撃柱（技⑦）")]
+    [Tooltip("この技を選択候補に入れる")]
+    public bool enableGroundSlam = true;
+    [Tooltip("叩く前のタメ時間（秒）")]
+    public float groundSlamWindupTime = 0.7f;
+    [Tooltip("柱を撒き終えてから待機へ戻るまでの追加硬直（秒）")]
+    public float groundSlamRecoverTime = 0.6f;
+    [Tooltip("この技のクールダウン（秒。連発防止）")]
+    public float groundSlamCooldown = 8f;
+    [Tooltip("並べる衝撃柱の本数")]
+    public int groundSlamPillarCount = 5;
+    [Tooltip("柱と柱の間隔")]
+    public float groundSlamPillarSpacing = 1.6f;
+    [Tooltip("足元から1本目までの距離")]
+    public float groundSlamPillarStartOffset = 1.5f;
+    [Tooltip("隣の柱が起きるまでの時間差（波及感。0で一斉）")]
+    public float groundSlamPillarStagger = 0.1f;
+    [Tooltip("各柱の予兆時間（足元に印を出す秒数）")]
+    public float pillarTelegraphTime = 0.35f;
+    [Tooltip("各柱が0→全高へ隆起する時間（秒）")]
+    public float pillarRiseTime = 0.12f;
+    [Tooltip("各柱が全高で当たり判定を残す時間（秒）")]
+    public float pillarActiveTime = 0.2f;
+    [Tooltip("各柱の幅")]
+    public float pillarWidth = 0.9f;
+    [Tooltip("各柱の高さ")]
+    public float pillarHeight = 2.6f;
+    [Tooltip("柱に当たったプレイヤーへのダメージ")]
+    public int pillarDamage = 1;
+    [Tooltip("柱の見た目に使うマテリアル（未指定なら従来どおり実行時生成の Sprites/Default 板を使う）。" +
+             "隆起アニメ（下端固定で上へ伸びる）はこのマテリアルのまま効く")]
+    public Material pillarMaterial;
+    [Tooltip("柱マテリアルを予兆色（黄→赤）で色付けする。OFF ならマテリアルの見た目をそのまま出す")]
+    public bool tintPillarMaterial = true;
+    [Tooltip("柱予兆の色：出始め（まだ余裕＝黄）")]
+    public Color pillarTelegraphColorStart = new Color(1f, 0.9f, 0.15f, 0.5f);
+    [Tooltip("柱予兆の色：隆起直前（もう来る＝赤）")]
+    public Color pillarTelegraphColorEnd = new Color(1f, 0.15f, 0.1f, 0.85f);
+    [Tooltip("柱が隆起して当たり判定を出している間の色（危険＝赤）")]
+    public Color pillarActiveColor = new Color(1f, 0.2f, 0.15f, 0.9f);
+
+    [Header("飛び上がり叩きつけAoE（技⑧）")]
+    [Tooltip("この技を選択候補に入れる")]
+    public bool enableLeapSlam = true;
+    [Tooltip("跳ぶ前のタメ時間（秒）")]
+    public float leapWindupTime = 0.45f;
+    [Tooltip("跳躍（放物線移動）にかける時間（秒）")]
+    public float leapTime = 0.7f;
+    [Tooltip("放物線の最高到達点の高さ")]
+    public float leapArcHeight = 5f;
+    [Tooltip("着地後の硬直（秒）")]
+    public float leapRecoverTime = 0.6f;
+    [Tooltip("着地AoEの半径")]
+    public float leapLandRadius = 3.5f;
+    [Tooltip("着地AoEに当たったプレイヤーへのダメージ")]
+    public int leapDamage = 1;
+    [Tooltip("着地時に左右へ衝撃波も出す（技④の SpawnShockwaves を流用。shockwavePrefab 未設定なら出ない）")]
+    public bool leapLandShockwaves = true;
+    [Tooltip("この技のクールダウン（秒。連発防止）")]
+    public float leapSlamCooldown = 9f;
+
+    [Header("範囲技共通")]
+    [Tooltip("柱・着地AoE の Overlapで走査する対象レイヤー（プレイヤーのレイヤーを含めること）")]
+    public LayerMask attackTargetLayers = ~0;
+
     [Header("登場・死亡")]
     [Tooltip("登場演出の時間（秒）")]
     public float appearTime = 1.5f;
@@ -141,6 +211,10 @@ public class BossChargerController : MonoBehaviour
     public float phaseTransitionTime = 1.5f;
     [Tooltip("死亡してから消滅するまでの時間（秒）")]
     public float deathDestroyDelay = 2f;
+    [Tooltip("死亡中の半透明フェード明滅の1往復の時間（秒）。0以下で明滅なし")]
+    public float deathBlinkInterval = 0.12f;
+    [Tooltip("死亡明滅で最も薄くなるときのアルファ（0=完全透明 / 1=不透明のまま）")]
+    [Range(0f, 1f)] public float deathBlinkMinAlpha = 0.3f;
     [Tooltip("死亡時に発火するイベント（扉を開ける・イベントトリガー起動など）")]
     public UnityEngine.Events.UnityEvent onDefeated;
 
@@ -152,6 +226,8 @@ public class BossChargerController : MonoBehaviour
     public BossChargerShieldBashState StateShieldBash { get; private set; }
     public BossChargerShieldThrowState StateShieldThrow { get; private set; }
     public BossChargerCounterState StateCounter { get; private set; }
+    public BossChargerGroundSlamState StateGroundSlam { get; private set; }
+    public BossChargerLeapSlamState StateLeapSlam { get; private set; }
     public BossChargerPhaseTransitionState StatePhaseTransition { get; private set; }
     public BossChargerDeadState StateDead { get; private set; }
 
@@ -164,9 +240,11 @@ public class BossChargerController : MonoBehaviour
     public Rigidbody2D Rb { get; private set; }
     public BossChargerHealth Health { get; private set; }
 
-    // 盾投げ・カウンターのクールダウン管理（状態から参照）
+    // 盾投げ・カウンター・範囲技のクールダウン管理（状態から参照）
     public float ShieldThrowTimer { get; set; }
     public float CounterTimer { get; set; }
+    public float GroundSlamTimer { get; set; }
+    public float LeapSlamTimer { get; set; }
 
     private Transform player;
     private Rigidbody2D playerRb;
@@ -195,6 +273,8 @@ public class BossChargerController : MonoBehaviour
         StateShieldBash = new BossChargerShieldBashState(this);
         StateShieldThrow = new BossChargerShieldThrowState(this);
         StateCounter = new BossChargerCounterState(this);
+        StateGroundSlam = new BossChargerGroundSlamState(this);
+        StateLeapSlam = new BossChargerLeapSlamState(this);
         StatePhaseTransition = new BossChargerPhaseTransitionState(this);
         StateDead = new BossChargerDeadState(this);
     }
@@ -216,6 +296,8 @@ public class BossChargerController : MonoBehaviour
     {
         if (ShieldThrowTimer > 0f) ShieldThrowTimer -= Time.deltaTime;
         if (CounterTimer > 0f) CounterTimer -= Time.deltaTime;
+        if (GroundSlamTimer > 0f) GroundSlamTimer -= Time.deltaTime;
+        if (LeapSlamTimer > 0f) LeapSlamTimer -= Time.deltaTime;
 
         CurrentState?.Update();
 
@@ -337,8 +419,12 @@ public class BossChargerController : MonoBehaviour
         HideChargeTelegraph();
     }
 
-    /// <summary>予兆中に突進予定の視線を描く（壁があればそこで止まる）。ChargeState の Windup から毎フレーム呼ぶ</summary>
-    public void ShowChargeTelegraph(Vector2 dir)
+    /// <summary>
+    /// 予兆中に突進予定の視線を描く（壁があればそこで止まる）。ChargeState の Windup から毎フレーム呼ぶ。
+    /// progress01 は予兆の進行度（0=始まったばかり / 1=もう突進する直前）。色を黄→赤へ変えて
+    /// 「いつ来るか」を分かりやすく見せる。
+    /// </summary>
+    public void ShowChargeTelegraph(Vector2 dir, float progress01)
     {
         if (telegraphLine == null || !showChargeTelegraph) { HideChargeTelegraph(); return; }
 
@@ -347,12 +433,15 @@ public class BossChargerController : MonoBehaviour
         RaycastHit2D hit = Physics2D.CircleCast(origin, BodyRadius(), dir, chargeTelegraphMaxLength, wallLayers);
         if (hit.collider != null) len = hit.distance;
 
+        // 予兆の進行に合わせて黄（余裕）→赤（直前）へ。直前ほど濃く・危険に見せる
+        Color col = Color.Lerp(chargeTelegraphColorStart, chargeTelegraphColorEnd, Mathf.Clamp01(progress01));
+
         telegraphLine.enabled = true;
         telegraphLine.startWidth = chargeTelegraphWidth;
         telegraphLine.endWidth = chargeTelegraphWidth;
-        telegraphLine.startColor = chargeTelegraphColor;
+        telegraphLine.startColor = col;
         // 先端はフェードさせて「伸びていく矢印」感を出す
-        telegraphLine.endColor = new Color(chargeTelegraphColor.r, chargeTelegraphColor.g, chargeTelegraphColor.b, 0f);
+        telegraphLine.endColor = new Color(col.r, col.g, col.b, 0f);
 
         float z = transform.position.z;
         telegraphLine.SetPosition(0, new Vector3(origin.x, origin.y, z));

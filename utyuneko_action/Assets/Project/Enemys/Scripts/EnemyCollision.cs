@@ -37,6 +37,7 @@ public class EnemyCollision : MonoBehaviour
 
     private Collider2D myCol;
     private EnemyHealth enemyHealth;
+    private EnemyShield enemyShield; // 盾を持つ敵のみ。無ければ null
 
     private Rigidbody2D myRB;
 
@@ -47,6 +48,7 @@ public class EnemyCollision : MonoBehaviour
         myRB = GetComponent<Rigidbody2D>();
 
         enemyHealth = GetComponent<EnemyHealth>();
+        enemyShield = GetComponent<EnemyShield>(); // 盾を持つ敵のみ
 
         // 回転だけ固定する（Z回転フリーズ）。位置は固定しない。
         // 巡回移動は EnemyMovement が rb.MovePosition でスイープ移動させ、静的な床・壁にぶつかって
@@ -120,12 +122,20 @@ public class EnemyCollision : MonoBehaviour
 
         if (!collision.gameObject.CompareTag(playerTag)) return;
 
-        float impactSpeed = collision.relativeVelocity.magnitude;
-
         // プレイヤーがバースト状態かどうかを状態機械から直接判定（レイヤーに依存しない）
         PlayerController p = collision.gameObject.GetComponent<PlayerController>();
         bool isBursting = IsBursting(p);
 
+        // 盾（本体以外のコライダー）に当たった分は本体ダメージにしない＝物理ガード（BossChargerController と同じ流儀）。
+        // 盾は正面を物理的に覆うソリッドコライダー（RefObjレイヤー）で、バーストの反射はプレイヤー側（壁扱い）が担当する。
+        // ここでは弾いた演出だけ出して抜ける（本体へのダメージ・ノックバック・ヒットストップは出さない）。
+        if (myCol != null && collision.otherCollider != myCol)
+        {
+            if (isBursting) enemyShield?.PlayBlockEffect();
+            return;
+        }
+
+        float impactSpeed = collision.relativeVelocity.magnitude;
         Vector3 hitFromPos = collision.transform.position;
 
         // バースト中に当たったときだけバースト回数の回復を行う（ジャンプ接触では回復させない）

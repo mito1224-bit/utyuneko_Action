@@ -44,7 +44,9 @@ public class BossChargerChargeState : BossChargerBaseState
                 chargeDir = boss.DirectionToPlayer(boss.chargeHorizontalOnly);
                 boss.SetFacing((int)Mathf.Sign(chargeDir.x));
                 boss.UpdateModelFacing(chargeDir);
-                boss.ShowChargeTelegraph(chargeDir);
+                // 予兆の進行度（0→1）。突進直前ほど 1 に近づき、視線ラインが黄→赤へ変わる
+                float aimProgress = phaseTotal > 0f ? 1f - Mathf.Clamp01(timer / phaseTotal) : 1f;
+                boss.ShowChargeTelegraph(chargeDir, aimProgress);
                 timer -= Time.deltaTime;
                 if (timer <= 0f) BeginDash();
                 break;

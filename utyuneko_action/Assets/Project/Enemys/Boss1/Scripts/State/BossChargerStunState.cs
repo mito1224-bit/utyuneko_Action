@@ -45,6 +45,11 @@ public class BossChargerStunState : BossChargerBaseState
 
     public override void Exit()
     {
+        // フェードを戻す前に進行中の白フラッシュを確定させる（EnemyCharger.EndStunFade と同じ流儀）。
+        // 先に End() すると、フラッシュが掴んでいる複製マテリアルが破棄され、
+        // フラッシュ復帰時に破棄済みマテリアルへ戻ってピンク化するため。
+        boss.Health?.StopFlash();
+
         // フェードを元へ戻し、盾を構え直す
         blinkFade?.End();
         blinkFade = null;

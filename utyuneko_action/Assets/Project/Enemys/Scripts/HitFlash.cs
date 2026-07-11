@@ -33,6 +33,7 @@ public class HitFlash : MonoBehaviour
     private Material defaultFlashMaterial;
     private bool isFlashing;
     private Coroutine flashCoroutine;
+    private System.Action pendingOnComplete; // フラッシュが自然終了したときに1回だけ呼ぶコールバック
 
     // 差し替えたレンダラーと、その元マテリアルの記録
     private struct Entry
@@ -59,10 +60,19 @@ public class HitFlash : MonoBehaviour
     }
 
     /// <summary>白フラッシュを1回再生する。被弾側（EnemyHealth 等）から呼ぶ。</summary>
-    public void Flash()
+    public void Flash() => Flash((System.Action)null);
+
+    /// <summary>
+    /// 白フラッシュを1回再生し、フラッシュが自然終了したら onComplete を1回だけ呼ぶ。
+    /// 「白フラッシュ → 終わってから死亡フェード」のように演出を直列に繋ぐために使う
+    /// （同時にマテリアルを差し替えると競合＝ピンク化するので順番に流す）。
+    /// HitFlash が無効／非表示のときは即 onComplete を呼び、後続処理を止めない。
+    /// </summary>
+    public void Flash(System.Action onComplete)
     {
-        if (!isActiveAndEnabled) return;
+        if (!isActiveAndEnabled) { onComplete?.Invoke(); return; }
         if (flashCoroutine != null) StopCoroutine(flashCoroutine);
+        pendingOnComplete = onComplete;
         flashCoroutine = StartCoroutine(FlashRoutine());
     }
 
@@ -77,6 +87,8 @@ public class HitFlash : MonoBehaviour
     public void StopAndRestore()
     {
         if (flashCoroutine != null) { StopCoroutine(flashCoroutine); flashCoroutine = null; }
+        // 中断（完了ではない）なので完了コールバックは呼ばずに捨てる
+        pendingOnComplete = null;
         if (!isFlashing) return;
 
         foreach (var e in entries)
@@ -131,6 +143,11 @@ public class HitFlash : MonoBehaviour
 
         isFlashing = false;
         flashCoroutine = null;
+
+        // 自然終了：完了コールバックを1回だけ呼ぶ（死亡フェードなど後続演出への橋渡し）
+        var cb = pendingOnComplete;
+        pendingOnComplete = null;
+        cb?.Invoke();
     }
 
     void OnDestroy()

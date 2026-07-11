@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 4254220254093668619}
   - component: {fileID: 128014447240560005}
   - component: {fileID: 7572175799709088673}
+  - component: {fileID: 2033075582548049623}
   m_Layer: 9
   m_Name: Shield__main
   m_TagString: Enemy
@@ -29,7 +30,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: -1.7, y: 0, z: 0}
-  m_LocalScale: {x: 0.35, y: 2.8, z: 0.6}
+  m_LocalScale: {x: 1, y: 2.8, z: 0.6}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8300000000000000031}
@@ -79,7 +80,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 1, y: 1}
+  m_Size: {x: 2, y: 1.2}
   m_EdgeRadius: 0
 --- !u!114 &128014447240560005
 MonoBehaviour:
@@ -111,6 +112,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DamageSource
   damageAmount: 1
+--- !u!114 &2033075582548049623
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4131698415403715822}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6e82f1416c9f4e499ee4fb975d8d0ba6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HitFlash
+  visualRoot: {fileID: 8262040805198470005}
+  flashDuration: 0.08
+  customFlashMaterial: {fileID: 0}
 --- !u!1 &8300000000000000001
 GameObject:
   m_ObjectHideFlags: 0
@@ -227,7 +243,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BossChargerController
   playerTag: Player
   visualTransform: {fileID: 8300000000000000011}
-  shield: {fileID: 8300000000000000033}
+  shield: {fileID: 128014447240560005}
   wallLayers:
     serializedVersion: 2
     m_Bits: 8
@@ -237,12 +253,13 @@ MonoBehaviour:
   phase2HpThresholdRatio: 0.5
   phase2SpeedMultiplier: 1.3
   idleTime: 1.2
+  idleApproach: 0
   idleApproachSpeed: 2
   bashTriggerRange: 3.5
   chargeWindupTime: 0.8
   chargeSpeed: 16
   maxChargeTime: 3
-  chargeHorizontalOnly: 1
+  chargeHorizontalOnly: 0
   multiChargeCount: 3
   reAimTime: 0.35
   wallSkin: 0.05
@@ -250,13 +267,15 @@ MonoBehaviour:
   chargeBackstepTime: 0.2
   tiltModelToChargeDir: 1
   modelPitchMax: 60
-  invertModelPitch: 0
+  invertModelPitch: 1
   showChargeTelegraph: 1
-  chargeTelegraphColor: {r: 1, g: 0.25, b: 0.25, a: 0.7}
-  chargeTelegraphWidth: 0.08
+  chargeTelegraphColorStart: {r: 1, g: 0.92, b: 0.2, a: 0.5}
+  chargeTelegraphColorEnd: {r: 1, g: 0.15, b: 0.15, a: 0.95}
+  chargeTelegraphWidth: 1
   chargeTelegraphMaxLength: 20
-  stunDuration: 3
+  stunDuration: 1
   stunBlinkInterval: 0.12
+  stunBlinkMinAlpha: 0.3
   shockwavePrefab: {fileID: 8200000000000000001, guid: 79b943d5ca344241b0021107aa045615, type: 3}
   shockwaveSpawnOffset: {x: 0, y: -0.5}
   bashWindupTime: 0.5
@@ -271,9 +290,42 @@ MonoBehaviour:
   counterSpeed: 20
   counterDuration: 0.5
   counterCooldown: 4
+  enableGroundSlam: 1
+  groundSlamWindupTime: 0.7
+  groundSlamRecoverTime: 0.6
+  groundSlamCooldown: 8
+  groundSlamPillarCount: 5
+  groundSlamPillarSpacing: 1.6
+  groundSlamPillarStartOffset: 1.5
+  groundSlamPillarStagger: 0.1
+  pillarTelegraphTime: 0.35
+  pillarRiseTime: 0.12
+  pillarActiveTime: 0.2
+  pillarWidth: 0.9
+  pillarHeight: 2.6
+  pillarDamage: 1
+  pillarMaterial: {fileID: -876546973899608171, guid: 0d12e714efcd9474f9f3bd3613ba5f9a, type: 3}
+  tintPillarMaterial: 1
+  pillarTelegraphColorStart: {r: 1, g: 0.9, b: 0.15, a: 0.5}
+  pillarTelegraphColorEnd: {r: 1, g: 0.15, b: 0.1, a: 0.85}
+  pillarActiveColor: {r: 1, g: 0.2, b: 0.15, a: 0.9}
+  enableLeapSlam: 1
+  leapWindupTime: 0.45
+  leapTime: 0.7
+  leapArcHeight: 5
+  leapRecoverTime: 0.6
+  leapLandRadius: 3.5
+  leapDamage: 1
+  leapLandShockwaves: 1
+  leapSlamCooldown: 9
+  attackTargetLayers:
+    serializedVersion: 2
+    m_Bits: 128
   appearTime: 1.5
   phaseTransitionTime: 1.5
   deathDestroyDelay: 2
+  deathBlinkInterval: 0.12
+  deathBlinkMinAlpha: 0.3
   onDefeated:
     m_PersistentCalls:
       m_Calls: []
@@ -290,8 +342,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3f17ccdae428462e81395c5ff6ef0064, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BossChargerHealth
-  hitFlash: {fileID: 8300000000000000008}
-  maxHP: 100
+  maxHP: 400
   currentHP: 0
   requireBurstToDamage: 1
   damageSpeedThreshold: 5
@@ -301,6 +352,7 @@ MonoBehaviour:
   throwDamageMultiplier: 1.5
   phaseTransitionDamageMultiplier: 0.2
   damageInterval: 0.4
+  hitFlash: {fileID: 8300000000000000008}
   hpBar: {fileID: 0}
 --- !u!114 &8300000000000000007
 MonoBehaviour:
@@ -315,6 +367,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DamageSource
   damageAmount: 1
+--- !u!114 &8300000000000000008
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8300000000000000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6e82f1416c9f4e499ee4fb975d8d0ba6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HitFlash
+  visualRoot: {fileID: 8300000000000000011}
+  flashDuration: 0.08
+  customFlashMaterial: {fileID: 0}
 --- !u!1 &8300000000000000010
 GameObject:
   m_ObjectHideFlags: 0
@@ -442,10 +509,10 @@ MeshRenderer:
   m_SmallMeshCulling: 1
   m_ForceMeshLod: -1
   m_MeshLodSelectionBias: 0
-  m_RenderingLayerMask: 1
+  m_RenderingLayerMask: 4
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 10302, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: 4ef7aa72946b92744bf6133627b70658, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -581,18 +648,3 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
---- !u!114 &8300000000000000008
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8300000000000000001}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6e82f1416c9f4e499ee4fb975d8d0ba6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HitFlash
-  visualRoot: {fileID: 0}
-  flashDuration: 0.08
-  customFlashMaterial: {fileID: 0}

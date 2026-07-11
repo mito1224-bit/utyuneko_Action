@@ -84,14 +84,23 @@ public class BossChargerHealth : MonoBehaviour
         invincibilityTimer = damageInterval;
         hpBar?.SetRatio(CurrentHpRatio);
 
-        hitFlash?.Flash(); // 被弾の白フラッシュ
-
         if (currentHP <= 0f)
         {
+            // トドメの一撃はフラッシュしない（EnemyHealth と同じ流儀）。
+            // ここでフラッシュすると、スタン/死亡フェード（BlinkFade）の一時複製マテリアルを
+            // HitFlash が「元マテリアル」として掴み、フェード終了時に複製が破棄されて
+            // 破棄済みマテリアルへ復帰＝ピンク（マゼンタ）化するため。死亡演出は BlinkFade に任せる。
             IsDead = true;
             controller?.TransitionToState(controller.StateDead);
         }
+        else
+        {
+            hitFlash?.Flash(); // 生存する被弾のみ白フラッシュ
+        }
     }
+
+    /// <summary>進行中の白フラッシュを止めてマテリアルを元へ戻す。フェード（BlinkFade）と競合させたくない直前に呼ぶ。</summary>
+    public void StopFlash() => hitFlash?.StopAndRestore();
 
     // 現在の状態に応じたダメージ倍率
     private float CurrentStateMultiplier()
