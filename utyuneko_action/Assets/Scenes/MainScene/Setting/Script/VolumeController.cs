@@ -1,43 +1,82 @@
-using UnityEngine;
-using UnityEngine.UI; // Slider‚ğg‚¤‚½‚ß‚É•K—v
+ï»¿using UnityEngine;
+using UnityEngine.UI; // Sliderã‚’ä½¿ã†ãŸã‚ã«å¿…è¦
 
 /// <summary>
-/// ‘S‘Ì‰¹—ÊEBGMESE ‚Ì3ƒXƒ‰ƒCƒ_[‚ğŠÇ—‚·‚éƒRƒ“ƒgƒ[ƒ‰[B
-/// ƒ}ƒXƒ^[˜A“®‚ÍuVolumeController‘¤‚ÌŠ|‚¯Zv‚ÅÀŒ»‚µ‚Ä‚¢‚é‚½‚ßA
-/// SoundManager ‚ªŒöŠJ‚µ‚Ä‚¢‚é SetGlobalBgmVolume / SetGlobalSeVolume ‚É
-/// uŠeƒXƒ‰ƒCƒ_[’l ~ ƒ}ƒXƒ^[’lv‚ğ“n‚·‚±‚Æ‚ÅAƒ}ƒXƒ^[‚ÌŒø‰Ê‚ğæ‚¹‚Ä‚¢‚Ü‚·B
+/// å…¨ä½“éŸ³é‡ãƒ»BGMãƒ»SE ã®3ã‚¹ãƒ©ã‚¤ãƒ€ãƒ¼ã‚’ç®¡ç†ã™ã‚‹ã‚³ãƒ³ãƒˆãƒ­ãƒ¼ãƒ©ãƒ¼ã€‚
+/// ãƒã‚¹ã‚¿ãƒ¼ã¯ã€ŒVolumeControllerå´ã®æ›ã‘ç®—ã€ã§å®Ÿç¾ã—ã¦ã„ã‚‹ãŸã‚ã€
+/// SoundManager ãŒå…¬é–‹ã—ã¦ã„ã‚‹ SetGlobalBgmVolume / SetGlobalSeVolume ã«
+/// ã€Œå„ã‚¹ãƒ©ã‚¤ãƒ€ãƒ¼å€¤ Ã— ãƒã‚¹ã‚¿ãƒ¼å€¤ã€ã‚’æ¸¡ã™ã“ã¨ã§ã€ãƒã‚¹ã‚¿ãƒ¼ã®åŠ¹æœã‚’ã®ã›ã¦ã„ã¾ã™ã€‚
+/// ã‚­ãƒ¼ãƒœãƒ¼ãƒ‰ï¼ã‚²ãƒ¼ãƒ ãƒ‘ãƒƒãƒ‰æ“ä½œç”¨ã« SelectSlider / AdjustSlider ã‚’å…¬é–‹ã—ã¦ãŠã‚Šã€
+/// TitleManager ãªã©ã®å¤–éƒ¨ã‹ã‚‰ã‚¹ãƒ©ã‚¤ãƒ€ãƒ¼ã®é¸æŠãƒ»å¢—æ¸›ãŒã§ãã¾ã™ã€‚
 /// </summary>
 public class VolumeController : MonoBehaviour
 {
-    [Header("ƒXƒ‰ƒCƒ_[‚Ìİ’è")]
-    [SerializeField] private Slider globalSlider; // ‘S‘Ì‰¹—Êiƒ}ƒXƒ^[j—p
-    [SerializeField] private Slider bgmSlider;    // BGM—p
-    [SerializeField] private Slider seSlider;     // SE—p
+    [Header("ã‚¹ãƒ©ã‚¤ãƒ€ãƒ¼ã®è¨­å®š")]
+    [SerializeField] private Slider globalSlider; // å…¨ä½“éŸ³é‡ï¼ˆãƒã‚¹ã‚¿ãƒ¼ï¼‰ç”¨
+    [SerializeField] private Slider bgmSlider;    // BGMç”¨
+    [SerializeField] private Slider seSlider;     // SEç”¨
+
+    /// <summary>
+    /// ç®¡ç†ã—ã¦ã„ã‚‹ã‚¹ãƒ©ã‚¤ãƒ€ãƒ¼ã®æ•°ï¼ˆå¤–éƒ¨ã®ã‚«ãƒ¼ã‚½ãƒ«ç§»å‹•å‡¦ç†ç”¨ï¼‰ã€‚
+    /// </summary>
+    public int SliderCount => 3;
 
     void Start()
     {
-        // 1. ŠeƒXƒ‰ƒCƒ_[‚Ì‰Šú’l‚ğİ’è
-        //    PlayerPrefs ‚È‚Ç‚Å•Û‘¶‚µ‚Ä‚¢‚éê‡‚ÍA‚±‚±‚Åƒ[ƒh‚µ‚½’l‚ğ“ü‚ê‚Ä‚­‚¾‚³‚¢B
+        // 1. å„ã‚¹ãƒ©ã‚¤ãƒ€ãƒ¼ã®åˆæœŸå€¤ã‚’è¨­å®š
+        //    PlayerPrefs ãªã©ã§ä¿å­˜ã—ã¦ã„ã‚‹å ´åˆã¯ã€ã“ã“ã§ãƒ­ãƒ¼ãƒ‰ã—ãŸå€¤ã‚’å…¥ã‚Œã¦ãã ã•ã„ã€‚
         if (globalSlider != null) globalSlider.value = 1.0f;
         if (bgmSlider != null) bgmSlider.value = 1.0f;
         if (seSlider != null) seSlider.value = 1.0f;
 
-        // 2. ƒXƒ‰ƒCƒ_[•ÏX‚ÌƒCƒxƒ“ƒgiƒŠƒXƒi[j‚ğ“o˜^
+        // 2. ã‚¹ãƒ©ã‚¤ãƒ€ãƒ¼å¤‰æ›´æ™‚ã®ã‚¤ãƒ™ãƒ³ãƒˆï¼ˆãƒªã‚¹ãƒŠãƒ¼ï¼‰ã‚’ç™»éŒ²
         if (globalSlider != null) globalSlider.onValueChanged.AddListener(OnMasterVolumeChanged);
         if (bgmSlider != null) bgmSlider.onValueChanged.AddListener(OnBgmVolumeChanged);
         if (seSlider != null) seSlider.onValueChanged.AddListener(OnSeVolumeChanged);
 
-        // 3. ‹N“®‚ÉŒ»İ‚Ì’l‚ğ1“x“K—p‚µ‚Ä‚¨‚­
+        // 3. èµ·å‹•æ™‚ã«ç¾åœ¨ã®å€¤ã‚’1åº¦é©ç”¨ã—ã¦ãŠã
         ApplyAllVolumes();
-
-        SoundManager.Instance.PlayBGM(BgmType.Opening, 0.5f);
     }
 
     /// <summary>
-    /// ‘S‘Ì‰¹—Êiƒ}ƒXƒ^[jƒXƒ‰ƒCƒ_[‚ª“®‚¢‚½‚Æ‚«B
-    /// ƒ}ƒXƒ^[’P‘Ì‚ğ‘—‚éê—pŠÖ”‚Í SoundManager ‚É–³‚¢‚½‚ßA
-    /// BGM/SE ‚ğƒ}ƒXƒ^[‚İ‚ÅÄŒvZ‚µ‚Ä”½‰f‚·‚éB
-    /// iBGM/SE ƒXƒ‰ƒCƒ_[‚ÌˆÊ’u‚Í“®‚©‚È‚¢B’l‚ğ“Ç‚Ş‚¾‚¯j
+    /// æŒ‡å®šã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã®ã‚¹ãƒ©ã‚¤ãƒ€ãƒ¼ã‚’é¸æŠçŠ¶æ…‹ã«ã™ã‚‹ï¼ˆ0:å…¨ä½“ 1:BGM 2:SEï¼‰ã€‚
+    /// EventSystem ã®é¸æŠãƒã‚¤ãƒ©ã‚¤ãƒˆãŒä»˜ããŸã‚ã€ã‚«ãƒ¼ã‚½ãƒ«ä½ç½®ã®è¡¨ç¤ºã«ä½¿ãˆã‚‹ã€‚
+    /// </summary>
+    public void SelectSlider(int index)
+    {
+        Slider s = GetSlider(index);
+        if (s != null) s.Select();
+    }
+
+    /// <summary>
+    /// æŒ‡å®šã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã®ã‚¹ãƒ©ã‚¤ãƒ€ãƒ¼ã®å€¤ã‚’ delta ã¶ã‚“å¢—æ¸›ã™ã‚‹ï¼ˆ0ã€œ1ã«ã‚¯ãƒ©ãƒ³ãƒ—ï¼‰ã€‚
+    /// å€¤ã®å¤‰æ›´ã§ onValueChanged ãŒç™ºç«ã™ã‚‹ãŸã‚ã€éŸ³é‡ã¸ã®åæ˜ ã¯è‡ªå‹•ã§è¡Œã‚ã‚Œã‚‹ã€‚
+    /// </summary>
+    public void AdjustSlider(int index, float delta)
+    {
+        Slider s = GetSlider(index);
+        if (s != null) s.value = Mathf.Clamp01(s.value + delta);
+    }
+
+    /// <summary>
+    /// ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã‹ã‚‰ã‚¹ãƒ©ã‚¤ãƒ€ãƒ¼ã‚’å–å¾—ã™ã‚‹ï¼ˆç¯„å›²å¤–ã¯ nullï¼‰ã€‚
+    /// </summary>
+    private Slider GetSlider(int index)
+    {
+        switch (index)
+        {
+            case 0: return globalSlider;
+            case 1: return bgmSlider;
+            case 2: return seSlider;
+            default: return null;
+        }
+    }
+
+    /// <summary>
+    /// å…¨ä½“éŸ³é‡ï¼ˆãƒã‚¹ã‚¿ãƒ¼ï¼‰ã‚¹ãƒ©ã‚¤ãƒ€ãƒ¼ãŒå‹•ã„ãŸã¨ãã€‚
+    /// ãƒã‚¹ã‚¿ãƒ¼å˜ä½“ã‚’é€ã‚‹ç”¨é–¢æ•°ãŒ SoundManager ã«ç„¡ã„ãŸã‚ã€
+    /// BGM/SE ã‚’ãƒã‚¹ã‚¿ãƒ¼è¾¼ã¿ã§å†è¨ˆç®—ã—ã¦åæ˜ ã™ã‚‹ã€‚
+    /// ï¼ˆBGM/SE ã‚¹ãƒ©ã‚¤ãƒ€ãƒ¼ã®ä½ç½®ã¯å‹•ã‹ãªã„ã€‚å€¤ã‚’èª­ã‚€ã ã‘ï¼‰
     /// </summary>
     private void OnMasterVolumeChanged(float value)
     {
@@ -45,8 +84,8 @@ public class VolumeController : MonoBehaviour
     }
 
     /// <summary>
-    /// BGM‰¹—ÊƒXƒ‰ƒCƒ_[‚ª“®‚¢‚½‚Æ‚«B
-    /// ÅI‰¹—Ê = BGM’l ~ ƒ}ƒXƒ^[’l ‚ğ SoundManager ‚É“n‚·B
+    /// BGMéŸ³é‡ã‚¹ãƒ©ã‚¤ãƒ€ãƒ¼ãŒå‹•ã„ãŸã¨ãã€‚
+    /// æœ€çµ‚éŸ³é‡ = BGMå€¤ Ã— ãƒã‚¹ã‚¿ãƒ¼å€¤ ã‚’ SoundManager ã«æ¸¡ã™ã€‚
     /// </summary>
     private void OnBgmVolumeChanged(float value)
     {
@@ -57,8 +96,8 @@ public class VolumeController : MonoBehaviour
     }
 
     /// <summary>
-    /// SE‰¹—ÊƒXƒ‰ƒCƒ_[‚ª“®‚¢‚½‚Æ‚«B
-    /// ÅI‰¹—Ê = SE’l ~ ƒ}ƒXƒ^[’l ‚ğ SoundManager ‚É“n‚·B
+    /// SEéŸ³é‡ã‚¹ãƒ©ã‚¤ãƒ€ãƒ¼ãŒå‹•ã„ãŸã¨ãã€‚
+    /// æœ€çµ‚éŸ³é‡ = SEå€¤ Ã— ãƒã‚¹ã‚¿ãƒ¼å€¤ ã‚’ SoundManager ã«æ¸¡ã™ã€‚
     /// </summary>
     private void OnSeVolumeChanged(float value)
     {
@@ -69,8 +108,8 @@ public class VolumeController : MonoBehaviour
     }
 
     /// <summary>
-    /// Œ»İ‚ÌƒXƒ‰ƒCƒ_[’l‚ğŒ³‚ÉA‚·‚×‚Ä‚Ì‰¹—Ê‚ğÄ“K—p‚·‚éB
-    /// slider.value ‚Íu“Ç‚Şv‚¾‚¯‚È‚Ì‚ÅAƒXƒ‰ƒCƒ_[‚Ì‚Â‚Ü‚İ‚Í“®‚©‚È‚¢B
+    /// ç¾åœ¨ã®ã‚¹ãƒ©ã‚¤ãƒ€ãƒ¼å€¤ã‚’å…ƒã«ã€ã™ã¹ã¦ã®éŸ³é‡ã‚’å†é©ç”¨ã™ã‚‹ã€‚
+    /// slider.value ã¯ã€Œèª­ã‚€ã€ã ã‘ãªã®ã§ã€ã‚¹ãƒ©ã‚¤ãƒ€ãƒ¼ã®ã¤ã¾ã¿ã¯å‹•ã‹ãªã„ã€‚
     /// </summary>
     private void ApplyAllVolumes()
     {
@@ -80,7 +119,7 @@ public class VolumeController : MonoBehaviour
 
     void OnDestroy()
     {
-        // ƒƒ‚ƒŠƒŠ[ƒN–h~‚Ì‚½‚ßA”jŠü‚ÉƒŠƒXƒi[‚ğ‰ğœ
+        // ãƒ¡ãƒ¢ãƒªãƒªãƒ¼ã‚¯é˜²æ­¢ã®ãŸã‚ã€ç ´æ£„æ™‚ã«ãƒªã‚¹ãƒŠãƒ¼ã‚’è§£é™¤
         if (globalSlider != null) globalSlider.onValueChanged.RemoveListener(OnMasterVolumeChanged);
         if (bgmSlider != null) bgmSlider.onValueChanged.RemoveListener(OnBgmVolumeChanged);
         if (seSlider != null) seSlider.onValueChanged.RemoveListener(OnSeVolumeChanged);
