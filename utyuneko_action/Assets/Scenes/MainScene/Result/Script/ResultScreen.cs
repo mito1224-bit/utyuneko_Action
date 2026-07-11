@@ -109,7 +109,7 @@ public class ResultScreen : MonoBehaviour
                 isResultSequenceFinished = false;
 
                 Debug.Log("Enterが押されました！次の画面へ進みます。");
-                TransitionManager.Instance.ChangeScene("StageSelect", TransitionType.Wipe);
+                TransitionManager.Instance.ChangeScene("IntroStage", TransitionType.Wipe);
                 // TODO: ここにシーン遷移などの処理を追加する
             }
         }
