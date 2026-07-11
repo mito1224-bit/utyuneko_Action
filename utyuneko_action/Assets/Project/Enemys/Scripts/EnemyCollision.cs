@@ -3,28 +3,21 @@ using UnityEngine;
 /// <summary>
 /// エネミーの衝突タイプを一元管理するスクリプト。
 ///
-/// Reflect    : 全方向ノックバック（バースト中はすり抜け）
-/// Pierce     : 全方向すり抜け（isTrigger=true）
-/// PierceZone : 本体は常に反射。貫通は子オブジェクトの PierceZoneTrigger が担当する。
+/// Reflect : 全方向ノックバック（バースト中は壁のように反射させ、ダメージを与える）
+/// Pierce  : 全方向すり抜け（isTrigger=true。バースト中のみダメージ）
 ///
-/// 【PierceZone の仕組み】
-///   特定の方向からのみ貫通させたいエネミー向け。
-///   本体（このスクリプト）は OnCollisionEnter で常にノックバック（反射）する。
-///   貫通させたい面に子オブジェクト（トリガー Collider + PierceZoneTrigger）を配置し、
-///   プレイヤーがバースト中にその子トリガーへ入ったときだけ、
-///   PierceZoneTrigger が Physics.IgnoreCollision で本体とのすり抜けを許可する。
-///   子トリガーを本体より外側へはみ出して配置することで、
-///   本体の反射より先に貫通判定が成立する。
+/// バースト判定はプレイヤーの状態機械（PlayerController.CurrentState == StateBurst）を直接参照する。
+/// ※以前は PlayerBurst レイヤーで判定していたが、レイヤーは PlayerLayerSwitcher が状態から派生させた
+///   物理マトリクス用の信号にすぎず、レイヤー削除で壊れるため、状態を直接見る方式に統一した。
 /// </summary>
 public class EnemyCollision : MonoBehaviour
 {
-    public enum CollisionType { Reflect, Pierce, PierceZone }
+    public enum CollisionType { Reflect, Pierce }
 
     [Header("衝突タイプ")]
     [Tooltip(
-        "Reflect    : 全方向ノックバック（バースト中はすり抜け）\n" +
-        "Pierce     : 全方向すり抜け\n" +
-        "PierceZone : 本体は常に反射。貫通は子の PierceZoneTrigger が担当"
+        "Reflect : 全方向ノックバック（バースト中は反射＋ダメージ）\n" +
+        "Pierce  : 全方向すり抜け（バースト中のみダメージ）"
     )]
     public CollisionType collisionType = CollisionType.Reflect;
 
@@ -44,6 +37,7 @@ public class EnemyCollision : MonoBehaviour
 
     private Collider2D myCol;
     private EnemyHealth enemyHealth;
+    private EnemyShield enemyShield; // 盾を持つ敵のみ。無ければ null
 
     private Rigidbody2D myRB;
 
@@ -54,6 +48,7 @@ public class EnemyCollision : MonoBehaviour
         myRB = GetComponent<Rigidbody2D>();
 
         enemyHealth = GetComponent<EnemyHealth>();
+        enemyShield = GetComponent<EnemyShield>(); // 盾を持つ敵のみ
 
         // 回転だけ固定する（Z回転フリーズ）。位置は固定しない。
         // 巡回移動は EnemyMovement が rb.MovePosition でスイープ移動させ、静的な床・壁にぶつかって
@@ -78,7 +73,7 @@ public class EnemyCollision : MonoBehaviour
         }
         else
         {
-            // Reflect / PierceZone: 本体コライダーは常にソリッド
+            // Reflect: 本体コライダーは常にソリッド
             myCol = GetComponent<Collider2D>();
             if (myCol != null) myCol.isTrigger = false;
         }
@@ -119,7 +114,7 @@ public class EnemyCollision : MonoBehaviour
     }
 
     // =========================================================
-    //  Reflect / PierceZone → OnCollisionEnter2D
+    //  Reflect → OnCollisionEnter2D
     // =========================================================
     void OnCollisionEnter2D(Collision2D collision)
     {
@@ -127,39 +122,33 @@ public class EnemyCollision : MonoBehaviour
 
         if (!collision.gameObject.CompareTag(playerTag)) return;
 
+        // プレイヤーがバースト状態かどうかを状態機械から直接判定（レイヤーに依存しない）
+        PlayerController p = collision.gameObject.GetComponent<PlayerController>();
+        bool isBursting = IsBursting(p);
+
+        // 盾（本体以外のコライダー）に当たった分は本体ダメージにしない＝物理ガード（BossChargerController と同じ流儀）。
+        // 盾は正面を物理的に覆うソリッドコライダー（RefObjレイヤー）で、バーストの反射はプレイヤー側（壁扱い）が担当する。
+        // ここでは弾いた演出だけ出して抜ける（本体へのダメージ・ノックバック・ヒットストップは出さない）。
+        if (myCol != null && collision.otherCollider != myCol)
+        {
+            if (isBursting) enemyShield?.PlayBlockEffect();
+            return;
+        }
+
         float impactSpeed = collision.relativeVelocity.magnitude;
-
-        // プレイヤーがバースト状態（PlayerBurstレイヤー）かどうかを判定
-        bool isBursting = (collision.gameObject.layer == LayerMask.NameToLayer("PlayerBurst"));
-
         Vector3 hitFromPos = collision.transform.position;
 
-        PlayerController p = collision.gameObject.GetComponent<PlayerController>();
-        if (p) p.OnEnemyKilledInBurst();
+        // バースト中に当たったときだけバースト回数の回復を行う（ジャンプ接触では回復させない）
+        if (p && isBursting) p.OnEnemyKilledInBurst();
 
-        switch (collisionType)
+        // Reflect: 反射そのものは PlayerState_Burst（壁と同じ Vector3.Reflect）が担当する。
+        // バースト中もすり抜けさせず、壁のように跳ね返す。
+        // 非バースト時はノックバックで弾く。ダメージはバースト時のみ（EnemyHealth 側でゲート）。
+        if (!isBursting)
         {
-            case CollisionType.Reflect:
-                // 反射そのものは PlayerState_Burst（壁と同じ Vector3.Reflect）が担当する。
-                // バースト中もすり抜けさせず、壁のように跳ね返す。
-                // 非バースト時はノックバックで弾く。ダメージはどちらでも与える。
-                if (!isBursting)
-                {
-                    ApplyKnockback(collision.rigidbody, collision.transform.position);
-                }
-                enemyHealth?.HandleHit(impactSpeed, hitFromPos);
-
-                break;
-
-            case CollisionType.PierceZone:
-                // 本体は常に反射。貫通は子オブジェクト（PierceZoneTrigger）が
-                // Physics.IgnoreCollision で先に成立させるため、ここに到達した
-                // 衝突は「貫通面以外から当たった」とみなして弾く。
-                ApplyKnockback(collision.rigidbody, collision.transform.position);
-                enemyHealth?.HandleHit(impactSpeed, hitFromPos);
-
-                break;
+            ApplyKnockback(collision.rigidbody, collision.transform.position);
         }
+        enemyHealth?.HandleHit(impactSpeed, hitFromPos, isBursting);
 
         TimeManager.Instance.TriggerGlobalHitStop(hitStopTime);
     }
@@ -174,12 +163,16 @@ public class EnemyCollision : MonoBehaviour
         if (collisionType != CollisionType.Pierce) return;
         if (!other.CompareTag(playerTag)) return;
 
+        // プレイヤーがバースト状態かどうかを状態機械から直接判定（レイヤーに依存しない）
         PlayerController p = other.gameObject.GetComponent<PlayerController>();
-        if (p) p.OnEnemyKilledInBurst();
+        bool isBursting = IsBursting(p);
+
+        // バースト中に当たったときだけバースト回数の回復を行う
+        if (p && isBursting) p.OnEnemyKilledInBurst();
 
         Rigidbody2D rb = other.GetComponent<Rigidbody2D>();
         if (rb != null)
-            enemyHealth?.HandleHit(rb.linearVelocity.magnitude, other.transform.position);
+            enemyHealth?.HandleHit(rb.linearVelocity.magnitude, other.transform.position, isBursting);
 
         TimeManager.Instance.TriggerGlobalHitStop(hitStopTime);
     }
@@ -187,6 +180,14 @@ public class EnemyCollision : MonoBehaviour
     // =========================================================
     //  共通ユーティリティ
     // =========================================================
+
+    // プレイヤーがバースト攻撃中か。状態機械（PlayerController）を直接参照するのが最も正確。
+    // タグは「プレイヤーかどうか」の識別用、レイヤーは物理マトリクス用であって、状態の判定には使わない。
+    private bool IsBursting(PlayerController p)
+    {
+        return p != null && p.CurrentState == p.StateBurst;
+    }
+
     private void ApplyKnockback(Rigidbody2D targetRb, Vector3 targetPos)
     {
         if (targetRb == null) return;

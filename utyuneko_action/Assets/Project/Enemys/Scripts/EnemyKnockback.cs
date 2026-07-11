@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 /// <summary>
 /// エネミーの吹き飛び挙動。
@@ -11,6 +12,8 @@ using UnityEngine;
 ///   - disableOnDeath にセットされた MonoBehaviour（EnemyMovement, EnemyAttack 等）を無効化
 ///   - Renderer を点滅させる
 ///   - 床・壁（groundLayers）にぶつかったら、bounceOnDeath が有効なら数回バウンドしてから消滅
+///   - keepInCameraOnDeath が有効なら、画面外へ飛ばさずカメラ範囲でクランプ＆反射して画面内で吹っ飛ぶ
+///   - decelerateOnDeath が OFF（既定）なら死亡吹き飛び中は減速しない（一定速度で飛び続ける）
 ///   - 床に当たらず飛び続けた場合の保険として deathDestroyDelay 秒後にも消滅
 /// </summary>
 public class EnemyKnockback : MonoBehaviour
@@ -33,8 +36,21 @@ public class EnemyKnockback : MonoBehaviour
     [Tooltip("毎秒あたりの速度減衰係数（1.0で減衰なし、0.5で1秒で半減）")]
     [Range(0.05f, 1f)] public float decayPerSecond = 0.4f;
 
+    [Tooltip("死亡吹き飛び中も速度を減衰させる。OFF＝一定速度で飛び続ける（カメラ内で跳ね回らせたいとき用）")]
+    public bool decelerateOnDeath = false;
+
     [Tooltip("死亡時に適用される下向き重力")]
     public float deathGravity = 25f;
+
+    [Header("死亡時にカメラ内へ留める")]
+    [Tooltip("死亡吹き飛び中、画面外へ飛んでいかないようカメラ表示範囲でクランプ＆反射する")]
+    public bool keepInCameraOnDeath = true;
+
+    [Tooltip("カメラ端からの余白（ビューポート比率。0＝端ぴったり / 0.05＝少し内側で跳ねる）")]
+    [Range(0f, 0.4f)] public float cameraMargin = 0.03f;
+
+    [Tooltip("カメラ端で跳ね返るときの速度保持率（1＝減速なしで跳ね返る）")]
+    [Range(0f, 1f)] public float cameraBounceFactor = 1f;
 
     [Header("死亡時の挙動")]
     [Tooltip("通常ダメージ時に対する死亡時の力の倍率")]
@@ -46,12 +62,15 @@ public class EnemyKnockback : MonoBehaviour
     [Tooltip("死亡時に無効化するスクリプト（EnemyMovement, EnemyAttack など）")]
     public MonoBehaviour[] disableOnDeath;
 
-    [Header("点滅演出")]
-    [Tooltip("死亡中に Renderer を点滅させる")]
+    [Header("明滅演出（半透明フェード）")]
+    [Tooltip("死亡中にモデルを半透明フェードで明滅させる")]
     public bool blinkOnDeath = true;
 
-    [Tooltip("点滅の1回あたりの間隔（秒）。小さいほど速く点滅する")]
-    public float blinkInterval = 0.08f;
+    [Tooltip("明滅の1往復（不透明→半透明→不透明）にかける時間の目安（秒）。小さいほど速い")]
+    public float blinkInterval = 0.12f;
+
+    [Tooltip("明滅で最も薄くなるときのアルファ（0=完全透明 / 1=不透明のまま）")]
+    [Range(0f, 1f)] public float blinkMinAlpha = 0.3f;
 
     [Header("床ヒットで消滅")]
     [Tooltip("死亡中に着地（床・壁ヒット）したら消滅させる")]
@@ -93,8 +112,10 @@ public class EnemyKnockback : MonoBehaviour
     private int lastGroundHitFrame = -1;
 
     private Renderer[] renderers;
-    private float blinkTimer = 0f;
-    private bool blinkVisible = true;
+    private BlinkFade blinkFade;   // 半透明フェードの明滅
+    private float blinkPhase = 0f; // 明滅の位相（累積）
+
+    private Camera cam; // カメラ内クランプ用（死亡時のみ使用）
 
     public bool IsDying => isDying;
 
@@ -104,9 +125,31 @@ public class EnemyKnockback : MonoBehaviour
     /// </summary>
     public bool IsActive => active;
 
+    /// <summary>
+    /// 死亡吹き飛び中に床・壁へぶつかった瞬間に発火する（引数＝接触面の法線）。
+    /// 購読側でバウンド/消滅とは独立に処理を差し込める（例: EnemyBomber の「壁ヒットで即爆発」）。
+    /// このイベントは isDying 中の HandleGroundHit からのみ呼ばれる。
+    /// </summary>
+    public event System.Action<Vector2> OnDeathGroundHit;
+
     void Awake()
     {
-        renderers = GetComponentsInChildren<Renderer>(true);
+        renderers = CollectModelRenderers();
+    }
+
+    // 点滅対象のモデル用レンダラーを集める（Mesh/Skinned/Sprite）。
+    // 視線ライン（LineRenderer）や軌跡（TrailRenderer）は点滅で復活すると困るので除外する。
+    private Renderer[] CollectModelRenderers()
+    {
+        var all = GetComponentsInChildren<Renderer>(true);
+        var list = new List<Renderer>(all.Length);
+        foreach (var r in all)
+        {
+            if (r == null) continue;
+            if (r is LineRenderer || r is TrailRenderer) continue;
+            list.Add(r);
+        }
+        return list.ToArray();
     }
 
     /// <summary>
@@ -128,12 +171,32 @@ public class EnemyKnockback : MonoBehaviour
         if (isDying) return;
         isDying = true;
 
+        // 進行中の被弾フラッシュ（HitFlash）があればマテリアルを元へ戻してから死亡フェードに入る
+        // （両者ともマテリアルを差し替えるので競合を防ぐ）。
+        GetComponent<HitFlash>()?.StopAndRestore();
+
+        // 死亡時点の最新モデルを明滅対象に取り直す（実行時に組み替え／生成されたモデル部位も確実に含める）。
+        // これで「モデルの一部が明滅しないまま」になるのを防ぐ。
+        renderers = CollectModelRenderers();
+        if (blinkOnDeath)
+        {
+            blinkFade = new BlinkFade(renderers);
+            blinkFade.Begin(); // マテリアルを透明対応の複製へ差し替え
+        }
+
         if (disableOnDeath != null)
         {
             foreach (var mb in disableOnDeath)
             {
                 if (mb != null) mb.enabled = false;
             }
+        }
+
+        // 死亡吹き飛び中に触れてもダメージを受けないよう、接触ダメージを自動で無効化する。
+        // PlayerHealth 側が source.enabled を見ているので、disableOnDeath への手動登録漏れがあっても効く。
+        foreach (var ds in GetComponentsInChildren<DamageSource>(true))
+        {
+            ds.enabled = false;
         }
 
         currentVelocity = ComputeLaunchVelocity(fromPosition, damage, true);
@@ -176,7 +239,14 @@ public class EnemyKnockback : MonoBehaviour
         delta.z = 0f;
         transform.position += delta;
 
-        currentVelocity *= Mathf.Pow(decayPerSecond, Time.deltaTime);
+        // 死亡時は画面外へ飛ばさないようカメラ範囲でクランプ＆反射する
+        if (isDying && keepInCameraOnDeath) ClampToCamera();
+
+        // 減衰。死亡時は decelerateOnDeath が OFF なら減速させない（一定速度で飛び続ける）
+        if (!isDying || decelerateOnDeath)
+        {
+            currentVelocity *= Mathf.Pow(decayPerSecond, Time.deltaTime);
+        }
 
         if (!isDying && currentVelocity.sqrMagnitude < 0.04f)
         {
@@ -186,21 +256,54 @@ public class EnemyKnockback : MonoBehaviour
     }
 
     /// <summary>
-    /// Renderer の表示/非表示を blinkInterval ごとに切り替えて点滅させる。
+    /// 死亡吹き飛び中、カメラの表示範囲外へ出ないよう位置をクランプし、端で速度を反射させる。
+    /// これにより敵は画面内で吹っ飛んで（跳ね回って）から消滅する。
+    /// </summary>
+    private void ClampToCamera()
+    {
+        if (cam == null) cam = Camera.main;
+        if (cam == null) return;
+
+        Vector3 vp = cam.WorldToViewportPoint(transform.position);
+        // カメラ後方（vp.z<0）はクランプ計算が破綻するので何もしない
+        if (vp.z <= 0f) return;
+
+        float min = cameraMargin;
+        float max = 1f - cameraMargin;
+        bool hitX = false, hitY = false;
+
+        if (vp.x < min) { vp.x = min; hitX = true; }
+        else if (vp.x > max) { vp.x = max; hitX = true; }
+
+        if (vp.y < min) { vp.y = min; hitY = true; }
+        else if (vp.y > max) { vp.y = max; hitY = true; }
+
+        if (!hitX && !hitY) return;
+
+        Vector3 clamped = cam.ViewportToWorldPoint(vp);
+        clamped.z = transform.position.z; // Z平面は維持
+        transform.position = clamped;
+
+        // ぶつかった軸だけ速度を反転（端で跳ね返る）。cameraBounceFactor=1 なら減速なし
+        if (hitX) currentVelocity.x = -currentVelocity.x * cameraBounceFactor;
+        if (hitY) currentVelocity.y = -currentVelocity.y * cameraBounceFactor;
+    }
+
+    /// <summary>
+    /// モデルのアルファを不透明↔半透明で脈動させて明滅させる（ハードな点滅ではなく半透明フェード）。
+    /// アルファ制御なので Animator の m_Enabled 上書きの影響を受けず、Animator 付きモデルでも確実に効く。
     /// </summary>
     private void UpdateBlink()
     {
-        if (renderers == null || renderers.Length == 0) return;
+        if (blinkFade == null || !blinkFade.IsActive) return;
 
-        blinkTimer += Time.deltaTime;
-        if (blinkTimer < blinkInterval) return;
+        // blinkInterval を1往復の目安時間として位相を進める（cos で 1→min→1 と滑らかに脈動）
+        float speed = Mathf.PI * 2f / Mathf.Max(0.0001f, blinkInterval);
+        blinkPhase += Time.deltaTime * speed;
 
-        blinkTimer = 0f;
-        blinkVisible = !blinkVisible;
-        foreach (var r in renderers)
-        {
-            if (r != null) r.enabled = blinkVisible;
-        }
+        float t = Mathf.Cos(blinkPhase) * 0.5f + 0.5f; // 0..1
+        float alpha = Mathf.Lerp(blinkMinAlpha, 1f, t);
+        blinkFade.SetAlpha(alpha);
     }
 
     /// <summary>
@@ -259,6 +362,9 @@ public class EnemyKnockback : MonoBehaviour
         // 同フレーム内に衝突(Body)とトリガー(ダメージ判定)の両方から呼ばれても1回だけ処理する
         if (Time.frameCount == lastGroundHitFrame) return;
         lastGroundHitFrame = Time.frameCount;
+
+        // 死亡吹き飛び中の壁・床ヒットを購読側へ通知（EnemyBomber の壁ヒット即爆発など。バウンド/消滅とは独立）
+        OnDeathGroundHit?.Invoke(normal);
 
         // バウンド条件：有効＆残り回数あり＆十分な速度で当たっている
         if (bounceOnDeath && bounceCount < maxBounceCount && currentVelocity.magnitude >= minBounceSpeed)

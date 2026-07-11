@@ -12,7 +12,7 @@ public class BitCubeController : MonoBehaviour
     [Header("演出の設定")]
     [SerializeField] private float animationDuration = 1.0f; // 演出時間
     [SerializeField] private float moveUpDistance = 1.5f;     // 浮き上がる距離
-    [SerializeField] private Vector3 rotationSpeed = new Vector3(0, 0, 360); // 1秒あたりの回転角
+    [SerializeField] private Vector3 rotationSpeed = new Vector3(0, 0, 360);
 
     public static System.Action<int> OnBitCubeCollected;
 
@@ -30,7 +30,6 @@ public class BitCubeController : MonoBehaviour
 
             // エフェクトはアイテムの現在位置で再生
             FXManager.Instance.Play(FXType.ItemGet, transform.position);
-
             StartCoroutine(CollectAnimationRoutine());
         }
     }
@@ -39,6 +38,7 @@ public class BitCubeController : MonoBehaviour
     {
         // 1. プレイヤーと再び当たらないように、自分のコライダーを即座に無効化
         if (TryGetComponent<Collider2D>(out var col)) col.enabled = false;
+       
 
         // ★演出対象を決定（親がいれば親、いなければ自分自身をターゲットにする）
         Transform targetTransform = transform.parent != null ? transform.parent : transform;
@@ -65,10 +65,12 @@ public class BitCubeController : MonoBehaviour
             targetTransform.localScale = Vector3.Lerp(startScale, Vector3.zero, t);
 
             yield return null;
+            
         }
 
         // 2. 演出が終わったら、ターゲット（親オブジェクト）ごと削除
         Destroy(targetTransform.gameObject);
+        
     }
 }
 

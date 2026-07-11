@@ -16,6 +16,11 @@ public class EnemyHealth : MonoBehaviour
     [SerializeField] private bool isDeadFlg = false;
     public bool IsDeadFlg => isDeadFlg; // 外部からは読み取りのみ
 
+    [Header("バースト限定ダメージ")]
+    [Tooltip("プレイヤーがバースト中のときだけダメージを受ける（ジャンプで軽く当たっただけでは倒せない）。" +
+             "OFF＝速度が閾値を超えれば非バーストでもダメージ")]
+    public bool requireBurstToDamage = true;
+
     [Header("ダメージ判定設定")]
     [Tooltip("ダメージを与えるための最低スピード")]
     public float damageSpeedThreshold = 5.0f;
@@ -26,13 +31,19 @@ public class EnemyHealth : MonoBehaviour
     [Tooltip("超過スピード1ごとの追加ダメージ倍率")]
     public float speedDamageMultiplier = 1.0f;
 
+    [Header("撃破演出")]
+    [Tooltip("撃破時、まず白フラッシュ（HitFlash）を見せてから、終わったらアルファ点滅（死亡フェード）を始める。" +
+             "白とフェードを同時に出すとマテリアルを奪い合ってピンク化するため直列に流す。" +
+             "HitFlash が無い／OFF のときは即フェード（従来動作）")]
+    public bool deathFlashThenBlink = true;
+
     private EnemyKnockback knockback;
-    private EnemyShield shield;
+    private HitFlash hitFlash;
 
     void Awake()
     {
         knockback = GetComponent<EnemyKnockback>();
-        shield = GetComponent<EnemyShield>(); // 盾を持つ敵のみ。無ければ null
+        hitFlash = GetComponent<HitFlash>();   // 白フラッシュ演出。付いていなければ null（任意）
     }
 
     void Start()
@@ -43,18 +54,19 @@ public class EnemyHealth : MonoBehaviour
     /// <summary>
     /// EnemyCollision から衝突速度と被弾元の位置を受け取ってダメージを計算する。
     /// hitFromPosition は吹き飛び方向を決めるために使用する（=プレイヤーの位置）。
+    /// isBursting はプレイヤーがバースト攻撃中かどうか。requireBurstToDamage が ON なら
+    /// バースト中でない当たり（ジャンプ接触など）はダメージ無効にする。
     /// </summary>
-    public void HandleHit(float impactSpeed, Vector3 hitFromPosition)
+    public void HandleHit(float impactSpeed, Vector3 hitFromPosition, bool isBursting)
     {
+        // バースト限定ダメージ：バースト中でない当たりはダメージを与えない（弾き・ノックバックは EnemyCollision が担当）
+        if (requireBurstToDamage && !isBursting) return;
+
         if (impactSpeed < damageSpeedThreshold) return;
 
-        // 盾を持つ敵は、前方（盾側）から当てられてもダメージを受けない。
-        // 反射・ノックバックは EnemyCollision（Reflect）が担当するので、ここではダメージだけ無効化する。
-        if (shield != null && shield.Blocks(hitFromPosition))
-        {
-            Debug.Log($"{gameObject.name}: 盾で防御！ ダメージ無効（盾の反対側から当てる必要あり）");
-            return;
-        }
+        // ※盾によるダメージ無効化は物理（EnemyShield の盾コライダーが正面を覆う）で実現する。
+        //   盾に当たったバーストは本体コライダーへ届かず、EnemyCollision 側で otherCollider 判定により
+        //   HandleHit まで来ない。よってここでの角度ブロック判定は不要（撤去済み）。
 
         float extraSpeed = impactSpeed - damageSpeedThreshold;
         int damage = baseDamage + Mathf.FloorToInt(extraSpeed * speedDamageMultiplier);
@@ -81,9 +93,10 @@ public class EnemyHealth : MonoBehaviour
         {
             Die(damage, hitFromPosition);
         }
-        else if (knockback != null)
+        else
         {
-            knockback.ApplyHitKnockback(hitFromPosition, damage);
+            hitFlash?.Flash(); // 生存する被弾のみ白フラッシュ
+            if (knockback != null) knockback.ApplyHitKnockback(hitFromPosition, damage);
         }
     }
 
@@ -91,6 +104,23 @@ public class EnemyHealth : MonoBehaviour
     {
         isDeadFlg = true; // 撃破フラグを立てる（ノックバック処理より先に立てて同フレーム参照でも拾える）
         Debug.Log($"{gameObject.name} を撃破！");
+
+        // 白フラッシュ → 終わってから死亡フェード（アルファ点滅）へ。
+        // 白とフェードは両方マテリアルを差し替えるので、同時に出さず HitFlash 完了コールバックで直列に繋ぐ
+        // （同時実行すると復帰時に破棄済みマテリアルを掴んでピンク化する）。
+        if (hitFlash != null && deathFlashThenBlink)
+        {
+            hitFlash.Flash(() => StartDeathSequence(lastDamage, hitFromPosition));
+        }
+        else
+        {
+            StartDeathSequence(lastDamage, hitFromPosition);
+        }
+    }
+
+    // 死亡フェード＋吹き飛びを開始する（HitFlash が無い/OFF なら即時、有りなら白フラッシュ完了後に呼ばれる）
+    private void StartDeathSequence(int lastDamage, Vector3 hitFromPosition)
+    {
         if (knockback != null)
         {
             knockback.ApplyDeathKnockback(hitFromPosition, lastDamage);

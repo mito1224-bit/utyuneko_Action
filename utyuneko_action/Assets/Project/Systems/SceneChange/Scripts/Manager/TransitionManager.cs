@@ -17,6 +17,8 @@ public enum TransitionType
     DigitalRain,
     Wipe,
     Fade,
+    SquareStep,
+    SquareStepZoom,
     // 新しいエフェクトを追加するときはここに1行足すだけ
 }
 

@@ -30,8 +30,6 @@ public class BaseEventManager : MonoBehaviour
     protected PlayerController playerController;
 
     protected Coroutine activeTimelineCoroutine;
-
-    // 🔒【新設】エリア演出のコルーチンを安全に管理するための共通変数
     protected Coroutine baseAreaNoticeCoroutine;
 
     private float skipHoldTimer = 0f;
@@ -88,14 +86,6 @@ public class BaseEventManager : MonoBehaviour
         BlockPlayerInput();
     }
 
-
-    // ===================================================================
-    // 🚩【新設】汎用エリア侵入時トリガーシステム
-    // どのイベントでも、トリガー壁を踏むとまずここが呼び出されます。
-    // ===================================================================
-    /// <summary>
-    /// EventTriggerArea2D（トリガー壁）を踏んだ瞬間に全自動で呼び出されるパブリック関数
-    /// </summary>
     public virtual void OnAreaEntered()
     {
         if (baseAreaNoticeCoroutine == null)
@@ -104,10 +94,6 @@ public class BaseEventManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// エリアに入った直後の演出を担当する仮想コルーチン。
-    /// 各イベント固有の演出を行いたい場合は、派生クラス側で自由に override（上書き）してください。
-    /// </summary>
     protected virtual IEnumerator BaseAreaNoticeRoutine()
     {
         Debug.Log($"[{gameObject.name}] エリア通知演出が開始されました（デフォルト処理）。");
@@ -120,7 +106,7 @@ public class BaseEventManager : MonoBehaviour
         if (!isEventActive || isEventSkipped) return;
         if (!allowSkip) return;
 
-        bool isHolding = (Input.GetKey(KeyCode.Space) || Input.GetMouseButton(0)) && !isFadingIn;
+        bool isHolding = (InputManager.Instance.Event.Skip.IsPressed() && !isFadingIn);
 
         if (isHolding)
         {
@@ -164,8 +150,16 @@ public class BaseEventManager : MonoBehaviour
         }
         if (skipFadeCanvasGroup != null) skipFadeCanvasGroup.alpha = 1f;
 
-        if (activeTimelineCoroutine != null) { StopCoroutine(activeTimelineCoroutine); activeTimelineCoroutine = null; }
-        StopAllCoroutines();
+        if (activeTimelineCoroutine != null)
+        {
+            StopCoroutine(activeTimelineCoroutine);
+            activeTimelineCoroutine = null;
+        }
+        if (baseAreaNoticeCoroutine != null)
+        {
+            StopCoroutine(baseAreaNoticeCoroutine);
+            baseAreaNoticeCoroutine = null;
+        }
 
         OnSkipWarp();
         StartCoroutine(FadeOutAndEndRoutine());
@@ -206,9 +200,15 @@ public class BaseEventManager : MonoBehaviour
     protected void BlockPlayerInput()
     {
         activeManagers.Add(this);
-        if (playerController != null && playerController.inputActions != null)
+        if (playerController != null && InputManager.Instance != null)
         {
-            playerController.inputActions.Player.Disable();
+            InputManager.Instance.Player.Disable();
+            InputManager.Instance.Event.Enable();
+
+            // ===================================================================
+            // 🛠️【超重要リセット】StateNormal に完全復帰！！
+            // 元の正常に動いていたコードと100%同じ Normal ステートにリセットしました。
+            // ===================================================================
             playerController.TransitionToState(playerController.StateNormal);
         }
     }
@@ -216,18 +216,30 @@ public class BaseEventManager : MonoBehaviour
     protected void BenjaminReleasePlayerInput()
     {
         activeManagers.Remove(this);
-        if (playerController != null && playerController.inputActions != null) playerController.inputActions.Player.Enable();
+        if (InputManager.Instance != null)
+        {
+            InputManager.Instance.Player.Enable();
+            InputManager.Instance.Event.Disable();
+        }
     }
 
     protected void ReleasePlayerInput()
     {
         activeManagers.Remove(this);
-        if (playerController != null && playerController.inputActions != null) playerController.inputActions.Player.Enable();
+        if (InputManager.Instance != null)
+        {
+            InputManager.Instance.Player.Enable();
+            InputManager.Instance.Event.Disable();
+        }
     }
 
     protected virtual void OnDestroy()
     {
         activeManagers.Remove(this);
+        if (InputManager.Instance != null)
+        {
+            InputManager.Instance.Event.Disable();
+        }
     }
 
     protected IEnumerator Wait(float duration) { yield return new WaitForSecondsRealtime(duration); }

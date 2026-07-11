@@ -64,6 +64,6 @@ Material:
     - _Xscroll: 1
     - _Yscroll: -1
     m_Colors:
-    - _Color: {r: 0, g: 0.24851936, b: 1, a: 1}
+    - _Color: {r: 0, g: 0.09019608, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

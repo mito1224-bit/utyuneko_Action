@@ -63,7 +63,7 @@ MeshRenderer:
   m_SmallMeshCulling: 1
   m_ForceMeshLod: -1
   m_MeshLodSelectionBias: 0
-  m_RenderingLayerMask: 1
+  m_RenderingLayerMask: 4
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 2100000, guid: cc4a551e618257746a5435dfe3df86ed, type: 2}
@@ -106,7 +106,9 @@ GameObject:
   - component: {fileID: 1952369700053198486}
   - component: {fileID: 6742313741352971692}
   - component: {fileID: 5186322571142747673}
-  m_Layer: 0
+  - component: {fileID: 6120344787843694091}
+  - component: {fileID: 1882910141361065742}
+  m_Layer: 9
   m_Name: Bv(Charger)_main
   m_TagString: Enemy
   m_Icon: {fileID: 0}
@@ -123,8 +125,8 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -2.38, y: 0.81, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 1.5, y: 1.5, z: 1.5}
+  m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 668807570126026463}
   m_Father: {fileID: 0}
@@ -206,9 +208,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyHealth
   maxHp: 1
   isDeadFlg: 0
+  requireBurstToDamage: 1
   damageSpeedThreshold: 5
   baseDamage: 1
   speedDamageMultiplier: 1
+  deathFlashThenBlink: 1
 --- !u!114 &4660817142412679519
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -243,12 +247,17 @@ MonoBehaviour:
   maxForce: 25
   upwardBlend: 0.3
   decayPerSecond: 0.4
-  deathGravity: 25
+  decelerateOnDeath: 0
+  deathGravity: 0
+  keepInCameraOnDeath: 1
+  cameraMargin: 0.03
+  cameraBounceFactor: 1
   deathMultiplier: 2.5
   deathDestroyDelay: 1.5
   disableOnDeath: []
   blinkOnDeath: 1
   blinkInterval: 0.08
+  blinkMinAlpha: 0.3
   destroyOnGroundHit: 1
   groundLayers:
     serializedVersion: 2
@@ -273,7 +282,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2b660973e08c8ce458a40cca14ee2fe1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyMovement
-  moveSpeed: 2
+  moveSpeed: 0
   moveDirection: {x: -1, y: 0, z: 0}
   useTimedReversal: 1
   changeInterval: 3
@@ -315,8 +324,13 @@ MonoBehaviour:
   wallLayers:
     serializedVersion: 2
     m_Bits: 8
+  useRayDetection: 1
+  rayDetectionRange: 20
+  rayDetectionLayers:
+    serializedVersion: 2
+    m_Bits: 136
   windupTime: 0.5
-  chargeSpeed: 14
+  chargeSpeed: 30
   maxChargeTime: 2
   horizontalOnly: 0
   trackDuringWindup: 0
@@ -324,7 +338,40 @@ MonoBehaviour:
   cooldown: 1
   stunBlink: 1
   blinkInterval: 0.1
+  blinkMinAlpha: 0.3
   wallSkin: 0.05
+  showRayDetectionLine: 1
+  rayDetectionColor: {r: 1, g: 0.2, b: 0.2, a: 0.6}
+  rayDetectionWidth: 3
+  debugRayDetection: 1
+--- !u!114 &6120344787843694091
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2756069979359815170}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eb839e130a425e348ae61d57ae68acc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DamageSource
+  damageAmount: 1
+--- !u!114 &1882910141361065742
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2756069979359815170}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6e82f1416c9f4e499ee4fb975d8d0ba6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HitFlash
+  visualRoot: {fileID: 5773463837830570199}
+  flashDuration: 0.08
+  customFlashMaterial: {fileID: 0}
 --- !u!1 &2913267078588088512
 GameObject:
   m_ObjectHideFlags: 0
@@ -391,7 +438,7 @@ MeshRenderer:
   m_SmallMeshCulling: 1
   m_ForceMeshLod: -1
   m_MeshLodSelectionBias: 0
-  m_RenderingLayerMask: 1
+  m_RenderingLayerMask: 4
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 2100000, guid: 790a8a9857d27964cb8b2c8636d0bd52, type: 2}
@@ -481,7 +528,7 @@ MeshRenderer:
   m_SmallMeshCulling: 1
   m_ForceMeshLod: -1
   m_MeshLodSelectionBias: 0
-  m_RenderingLayerMask: 1
+  m_RenderingLayerMask: 4
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 2100000, guid: cc4a551e618257746a5435dfe3df86ed, type: 2}
@@ -604,7 +651,7 @@ MeshRenderer:
   m_SmallMeshCulling: 1
   m_ForceMeshLod: -1
   m_MeshLodSelectionBias: 0
-  m_RenderingLayerMask: 1
+  m_RenderingLayerMask: 4
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 2100000, guid: 3179a8821acac7249a182407d694eb48, type: 2}
@@ -640,6 +687,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6389243981772693784}
+  - component: {fileID: 5959595959595959001}
   m_Layer: 0
   m_Name: Bv(Charger)Core
   m_TagString: Untagged
@@ -663,6 +711,28 @@ Transform:
   - {fileID: 8562507931514383847}
   m_Father: {fileID: 5773463837830570199}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!95 &5959595959595959001
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6044102417386929058}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 10fe6cca8010c574a9e224abdfad0696, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &7130642181457452876
 GameObject:
   m_ObjectHideFlags: 0
@@ -726,7 +796,7 @@ MeshRenderer:
   m_SmallMeshCulling: 1
   m_ForceMeshLod: -1
   m_MeshLodSelectionBias: 0
-  m_RenderingLayerMask: 1
+  m_RenderingLayerMask: 4
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 2100000, guid: cc4a551e618257746a5435dfe3df86ed, type: 2}

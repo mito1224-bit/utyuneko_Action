@@ -64,6 +64,42 @@ public class CameraBoundsTrigger : MonoBehaviour
         }
     }
 
+    private float nextLogTime = 0f;
+    public float logInterval = 2f;
+
+    void OnTriggerStay2D(Collider2D collision)
+    {
+        if (collision.CompareTag("Player"))
+        {
+            InitializeReferences();
+
+            if (customCameraController != null)
+            {
+                Vector3 lockBasePosition = (cameraTargetPoint != null) ? cameraTargetPoint.position :
+                                           (triggerCollider != null ? triggerCollider.bounds.center : transform.position);
+
+                customCameraController.LockCamera(lockBasePosition, targetZOffset);
+
+                if (Time.time >= nextLogTime)
+                {
+                    nextLogTime = Time.time + logInterval;
+                    Debug.Log("<color=yellow><b>カスタムカメラコライダーに入ってまーす</b></color> Z=" + targetZOffset);
+                }
+                //Debug.Log("<color=yellow><b>カスタムカメラコライダーに入ってまーす</b></color> Z=" + targetZOffset);
+            }
+            else
+            {
+                Debug.LogError($"[CameraBoundsTrigger] {gameObject.name} から 'MainCamera' の親にある 'CameraFollowWithZoom' が見つかりません！タグの設定や構造を確認してください。");
+                //Debug.Log("<color=red><b>カスタムカメラコライダーに入ってませーん</b></color> Z=" + targetZOffset);
+                if (Time.time >= nextLogTime)
+                {
+                    nextLogTime = Time.time + logInterval;
+                    Debug.Log("<color=yellow><b>カスタムカメラコライダーに入ってませーん</b></color> Z=" + targetZOffset);
+                }
+            }
+        }
+    }
+
     void OnTriggerExit2D(Collider2D collision)
     {
         if (collision.CompareTag("Player"))

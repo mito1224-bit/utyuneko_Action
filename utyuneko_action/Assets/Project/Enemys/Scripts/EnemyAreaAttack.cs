@@ -259,6 +259,10 @@ public class EnemyAreaAttack : MonoBehaviour
         // 半径が Inspector で変わっても追従（円メッシュは半径1なので半径そのものを掛ける）
         rangeVisual.localScale = Vector3.one * attackRadius;
 
+        // 親（モデル/ルート）が進行方向へ回転しても、範囲円は常にカメラ正面（XY平面）を向かせる。
+        // ワールド回転を無回転に固定＝親のY軸回転を継承して円が斜めに寝るのを防ぐ。
+        rangeVisual.rotation = Quaternion.identity;
+
         Color c;
         if (hidden)
         {

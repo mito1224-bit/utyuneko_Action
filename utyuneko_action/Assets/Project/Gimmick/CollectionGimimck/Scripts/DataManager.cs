@@ -151,6 +151,16 @@ public class DataManager : MonoBehaviour
     {
         if (GameManager.Instance != null)
         {
+
+            GameManager.Instance.SaveFinalResult(
+                currentBitCubes,
+                maxBitCube,
+                currentDataCubes,
+                maxDataCube,
+                GetTotalCompletionRate(),
+                collectedStarCoinFlags
+            );
+
             GameManager.Instance.ClearStage(currentBitCubes);
 
             // ★ クリアしたのでチェックポイントのキャッシュを消す

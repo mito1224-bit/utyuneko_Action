@@ -35,6 +35,13 @@ public class TitleManager : MonoBehaviour
     [SerializeField] private Button yesButton;
     [SerializeField] private Button noButton;
 
+    [Header("設定画面（Panel）")]
+    [SerializeField] private GameObject settingPanel;
+    [SerializeField] private VolumeController volumeController;
+
+    [Tooltip("A/D長押しでスライダーが1秒間に変化する量（1.0で1秒で端から端まで）")]
+    [SerializeField] private float sliderAdjustSpeed = 1.0f;
+
     private enum TitleState
     {
         SceneFadingIn,
@@ -47,6 +54,8 @@ public class TitleManager : MonoBehaviour
 
     private int selectedIndex = 0;
     private bool isInConfirmMenu = false;
+    private bool isInSettingMenu = false;
+    private int settingIndex = 0;
     private float inputTimer = 0f;
 
     private GameInputActions inputActions;
@@ -73,6 +82,7 @@ public class TitleManager : MonoBehaviour
     void Start()
     {
         if (confirmPanel != null) confirmPanel.SetActive(false);
+        if (settingPanel != null) settingPanel.SetActive(false);
 
         if (buttonGroup != null)
         {
@@ -176,6 +186,31 @@ public class TitleManager : MonoBehaviour
 
         bool isCancelTriggered = inputActions.UI.Cancel.triggered;
 
+        if (isInSettingMenu)
+        {
+            if (isCancelTriggered)
+            {
+                CloseSetting();
+                return;
+            }
+
+            int count = (volumeController != null) ? volumeController.SliderCount : 0;
+            if (count > 0)
+            {
+                // 上下：1押しにつき1つ、スライダーの選択を移動
+                if (verticalInput < 0) { settingIndex = (settingIndex + 1) % count; SelectSettingSlider(); }
+                if (verticalInput > 0) { settingIndex = (settingIndex + count - 1) % count; SelectSettingSlider(); }
+
+                // 左右：押しっぱなしで選択中のスライダーを連続増減
+                if (Mathf.Abs(moveInput.x) > 0.5f)
+                {
+                    volumeController.AdjustSlider(settingIndex, Mathf.Sign(moveInput.x) * sliderAdjustSpeed * Time.deltaTime);
+                }
+            }
+
+            return;
+        }
+
         if (isInConfirmMenu)
         {
             if (isCancelTriggered)
@@ -207,6 +242,11 @@ public class TitleManager : MonoBehaviour
         if (noButton != null && selectedIndex == 1) noButton.Select();
     }
 
+    void SelectSettingSlider()
+    {
+        if (volumeController != null) volumeController.SelectSlider(settingIndex);
+    }
+
     public void OnStart()
     {
         if (currentState != TitleState.ActiveMenu) return;
@@ -221,7 +261,40 @@ public class TitleManager : MonoBehaviour
 
     public void OnSetting()
     {
-        Debug.Log("設定未実装");
+        if (currentState != TitleState.ActiveMenu) return;
+        if (isInConfirmMenu || isInSettingMenu) return;
+        if (settingPanel == null) return;
+
+        settingPanel.SetActive(true);
+        isInSettingMenu = true;
+        settingIndex = 0;
+        SelectSettingSlider();
+
+        // 設定中はメインボタンをマウスで押せないようにする
+        if (buttonGroup != null)
+        {
+            buttonGroup.interactable = false;
+            buttonGroup.blocksRaycasts = false;
+        }
+
+        SoundManager.Instance.PlaySE(SeType.UiEnter);
+    }
+
+    private void CloseSetting()
+    {
+        if (settingPanel != null) settingPanel.SetActive(false);
+        isInSettingMenu = false;
+
+        // メインボタンを再び操作可能にして、セッティングボタンへフォーカスを戻す
+        if (buttonGroup != null)
+        {
+            buttonGroup.interactable = true;
+            buttonGroup.blocksRaycasts = true;
+        }
+        selectedIndex = 1;
+        SelectButton();
+
+        SoundManager.Instance.PlaySE(SeType.UiCancel);
     }
 
     public void OnEnd()
