@@ -4,6 +4,9 @@ using System.Collections;
 
 public class SceneChanger : MonoBehaviour
 {
+    [SerializeField, Tooltip("チェックを入れると、このEntry演出はステージクリア扱いになります（ステージ内のゴールに使用）")]
+    private bool isGoalObject = false; // ★追加
+
     [SerializeField] private string nextSceneName; // インスペクターからシーン名を指定
 
     [Header("ワープ演出設定")]
@@ -17,6 +20,36 @@ public class SceneChanger : MonoBehaviour
     [Header("カメラズーム設定 (Feature 4)")]
     [SerializeField, Tooltip("演出完了時のカメラサイズの倍率（1より小さいとズームイン）")]
     private float zoomTargetZ = -20f;
+
+    [Header("退出演出設定 (Exitモード専用)")]
+    [SerializeField, Tooltip("出現後にカメラが一度見に行く『次のステージの見どころ』")]
+    private Transform nextStageLookPoint;
+    [SerializeField] private float lookPanDuration = 1.0f;   // 見どころへ移動する時間
+    [SerializeField] private float lookAtDuration = 1.0f;    // 見どころを見せている時間
+    [SerializeField] private float returnPanDuration = 1.0f; // プレイヤーへ戻る時間
+
+
+    private void Start()
+    {
+        bool wasThisGateUsed = GameManager.Instance != null &&
+                                        GameManager.Instance.TryConsumeLastClearedScene(nextSceneName);
+
+        if (wasThisGateUsed)
+        {
+            PlayerController player = FindObjectOfType<PlayerController>();
+            if (player != null)
+            {
+                bool alreadyPlayedReveal = false;
+                if (GameManager.Instance != null)
+                {
+                    StoryPhase phase = GameManager.Instance.CurrentSaveData.currentPhase;
+                    alreadyPlayedReveal = GameManager.Instance.IsGateRevealPlayed(phase);
+                }
+                isWarping = true; // 退出演出中も、入場トリガーが誤発火しないようロックしておく
+                StartCoroutine(ExitAnimationRoutine(player, alreadyPlayedReveal));
+            }
+        }
+    }
 
     private bool isWarping = false; // 連続接触によるバグ防止フラグ
 
@@ -37,6 +70,9 @@ public class SceneChanger : MonoBehaviour
         }
     }
 
+    // ====================================================================
+    // Entry演出
+    // ====================================================================
     private IEnumerator WarpAnimationRoutine(PlayerController player)
     {
         // プレイヤーの操作と物理演算を無効化
@@ -82,16 +118,6 @@ public class SceneChanger : MonoBehaviour
         Vector3 goalPos = transform.position;
         Vector3 startScale = playerTransform.localScale;
 
-        //// 【Feature 4: カメラの準備】
-        //Camera mainCam = Camera.main;
-        //float startCamSize = 5f;
-        //float targetCamSize = 5f;
-        //if (mainCam != null)
-        //{
-        //    startCamSize = mainCam.orthographicSize;
-        //    targetCamSize = startCamSize * zoomFactor; // 指定倍率までズームイン
-        //}
-
         float elapsed = 0f;
 
         while (elapsed < warpDuration)
@@ -134,16 +160,100 @@ public class SceneChanger : MonoBehaviour
         playerTransform.position = goalPos;
         playerTransform.localScale = Vector3.zero;
 
-        // データ保存とシーン遷移
-        if (DataManager.Instance != null)
+        if (isGoalObject)
         {
-            DataManager.Instance.ProcessStageClear();
-        }
-        else
-        {
-            Debug.LogWarning("[SceneChanger] DataManagerが見つかりません。");
+            if (DataManager.Instance != null)
+            {
+                DataManager.Instance.ProcessStageClear();
+            }
+            else
+            {
+                Debug.LogWarning("[SceneChanger] DataManagerが見つかりません。");
+            }
         }
 
         TransitionManager.Instance.ChangeScene(nextSceneName, TransitionType.Wipe);
+    }
+
+    // ====================================================================
+    // Exit演出
+    // ====================================================================
+    private IEnumerator ExitAnimationRoutine(PlayerController player, bool skipReveal)
+    {
+        // 【1. 出現前の準備】プレイヤーを入場位置に固定し、操作を止める
+        player.TransitionToState(player.StateNone);
+
+        Transform playerTransform = player.transform;
+        Vector3 spawnPos = transform.position;
+        playerTransform.position = spawnPos;
+
+        Vector3 fullScale = playerTransform.localScale;
+        playerTransform.localScale = Vector3.zero;
+
+        if (player.rb2D != null)
+        {
+            player.rb2D.linearVelocity = Vector2.zero;
+            player.rb2D.simulated = false;
+        }
+
+        Camera mainCam = Camera.main;
+        CameraFollowWithZoom camWithZoom = mainCam != null ? mainCam.GetComponent<CameraFollowWithZoom>() : null;
+
+        // Entry演出終了時と同じズームイン状態から始める
+        if (camWithZoom != null)
+        {
+            camWithZoom.LockCamera(spawnPos, zoomTargetZ);
+        }
+
+        // 【2. 出現アニメーション：吸い込みの逆再生】
+        float elapsed = 0f;
+        while (elapsed < warpDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / warpDuration;
+            float easeOut = 1f - (1f - t) * (1f - t);
+
+            float currentX = Mathf.Lerp(0f, fullScale.x, easeOut);
+            float currentY = Mathf.Lerp(fullScale.y * stretchMultiplier, fullScale.y, easeOut) * easeOut;
+            playerTransform.localScale = new Vector3(currentX, currentY, fullScale.z);
+
+            playerTransform.Rotate(0f, 0f, spinSpeed * (1f - easeOut) * Time.deltaTime);
+
+            if (camWithZoom != null)
+            {
+                float normalZ = camWithZoom.offset.z; // 通常時のズーム距離をそのまま使う
+                float currentZ = Mathf.Lerp(zoomTargetZ, normalZ, easeOut);
+                camWithZoom.LockCamera(spawnPos, currentZ);
+            }
+
+            yield return null;
+        }
+
+        playerTransform.localScale = fullScale;
+        playerTransform.rotation = Quaternion.identity;
+
+        if (!skipReveal && camWithZoom != null && nextStageLookPoint != null)
+        {
+            camWithZoom.StartZoomTrack(nextStageLookPoint, camWithZoom.offset.z, lookPanDuration);
+            yield return new WaitForSeconds(lookPanDuration + lookAtDuration);
+
+            camWithZoom.ReturnFromZoomEvent(returnPanDuration);
+            yield return new WaitForSeconds(returnPanDuration);
+
+            // ★演出を最後まで見終えたのでここで既読マーク
+            if (GameManager.Instance != null)
+            {
+                StoryPhase phase = GameManager.Instance.CurrentSaveData.currentPhase;
+                GameManager.Instance.MarkGateRevealPlayed(phase);
+            }
+        }
+        else
+        {
+            // 見どころ演出がない、またはすでに見た場合は自力で操作を戻す
+            if (camWithZoom != null) camWithZoom.UnlockCamera(); // ★追加：ロック解除を忘れずに
+            player.TransitionToState(player.StateNormal);
+        }
+
+        if (player.rb2D != null) player.rb2D.simulated = true;
     }
 }

@@ -21,8 +21,6 @@ public class CoreCubeController : MonoBehaviour
     [SerializeField] private float goalViewWait = 1.0f;       // Goal出現後に見せる時間
     [SerializeField] private float cameraReturnTime = 1.0f;
 
-
-
     [Header("CoreCube消滅演出")]
     [SerializeField] private Transform visualRoot; // 見た目だけを入れる。未設定なら自分自身を使う
     [SerializeField] private float coreDisappearTime = 3.0f;
@@ -40,7 +38,7 @@ public class CoreCubeController : MonoBehaviour
 
     private bool isActivated = false;
 
-
+    
     private void OnTriggerEnter2D(Collider2D collision)
     {
         if (isActivated) return;

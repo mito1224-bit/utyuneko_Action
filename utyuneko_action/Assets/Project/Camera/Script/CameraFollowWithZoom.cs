@@ -576,8 +576,6 @@ public class CameraFollowWithZoom : MonoBehaviour
         eventCameraCoroutine = null;
     }
 
-
-
     // 強制停止安全弁（スキップ対策も分離版に対応！）
     public void ForceStopEventCameraWork()
     {

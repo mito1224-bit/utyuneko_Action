@@ -243,13 +243,16 @@ public class ResultScreen : MonoBehaviour
 
     private IEnumerator AnimateDataCubes()
     {
-        int currentObtained = GameManager.Instance.FinalDataCurrent;
+        //int currentObtained = GameManager.Instance.FinalDataCurrent;
         int maxCubes = GameManager.Instance.FinalDataMax;
+        var flags = GameManager.Instance.FinalDataFlags;
+        int displayedObtainedCount = 0; // 画面のテキスト更新用のカウンター
 
         if (maxCubes <= 0) yield break;
 
-        for (int i = 0; i < currentObtained; i++)
+        for (int i = 0; i < maxCubes; i++)
         {
+            if (flags == null || i >= flags.Count || !flags[i]) continue;
             // インデックスとコンポーネントのチェック
             if (i >= dataCubeSlots.Length || dataCubeSlots[i].actualCubeImage == null) continue;
 
@@ -298,6 +301,7 @@ public class ResultScreen : MonoBehaviour
             actualTransform.localScale = Vector3.one;
             actualImage.color = originalColor; // 元の色（アルファ1）に戻す
 
+            displayedObtainedCount++;
             // テキストの更新（スターコインの獲得数を＋１）
             if (dataCubeText != null)
             {

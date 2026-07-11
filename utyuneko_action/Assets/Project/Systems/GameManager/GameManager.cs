@@ -33,16 +33,54 @@ public class GameManager : MonoBehaviour
     public int FinalDataCurrent { get; private set; }
     public int FinalDataMax { get; private set; }
     public float FinalCompletionRate { get; private set; }
+    //スターコイン用のフラグ
+    public List<bool> FinalDataFlags { get; private set; } = new List<bool>();
+
+    private string lastClearedSceneName = null;
+
+    // 指定したシーン名が「直前にクリアされたシーン」と一致すれば true を返し、記憶を消費する
+    public bool TryConsumeLastClearedScene(string sceneNameToCheck)
+    {
+        if (lastClearedSceneName == sceneNameToCheck)
+        {
+            lastClearedSceneName = null; // 一度使ったら消す（誤発火防止）
+            return true;
+        }
+        return false;
+    }
 
     // --- 【追加】DataManagerがクリアした瞬間に、リザルト用データを確定させる関数 ---
-    public void SaveFinalResult(int bitCur, int bitMax, int dataCur, int dataMax, float rate)
+    public void SaveFinalResult(int bitCur, int bitMax, int dataCur, int dataMax, float rate,bool[] flags)
     {
         FinalBitCurrent = bitCur;
         FinalBitMax = bitMax;
         FinalDataCurrent = dataCur;
         FinalDataMax = dataMax;
         FinalCompletionRate = rate;
+
+        FinalDataFlags = new List<bool>(flags);
         Debug.Log($"【GameManager】リザルト画面用のデータを保存しました: {rate:F1}%");
+    }
+
+    // ====================================================================
+    // ゲート演出（新ゲート披露）の既読管理用API
+    // ====================================================================
+
+    // 指定フェーズのゲート披露演出を再生済みにし、セーブする
+    public void MarkGateRevealPlayed(StoryPhase phase)
+    {
+        if (!currentSaveData.playedGateReveals.Contains(phase))
+        {
+            currentSaveData.playedGateReveals.Add(phase);
+            SaveGame();
+            Debug.Log($"【GameManager】フェーズ「{phase}」のゲート披露演出を再生済みに記録しました。");
+        }
+    }
+
+    // 指定フェーズのゲート披露演出が再生済みかどうかを返す
+    public bool IsGateRevealPlayed(StoryPhase phase)
+    {
+        return currentSaveData.playedGateReveals.Contains(phase);
     }
 
     private void Awake()
@@ -94,6 +132,24 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    // ====================================================================
+    // 演出フラグ管理用の関数（API）
+    // ====================================================================
+    public void MarkEventAsPlayed(StoryPhase phase)
+    {
+        if (!currentSaveData.playedEventPhases.Contains(phase))
+        {
+            currentSaveData.playedEventPhases.Add(phase);
+            SaveGame();
+            Debug.Log($"【GameManager】フェーズ「{phase}」の演出を再生済みに記録しました。");
+        }
+    }
+
+    // 指定フェーズの演出がすでに再生済みかどうかを返す
+    public bool IsEventPlayed(StoryPhase phase)
+    {
+        return currentSaveData.playedEventPhases.Contains(phase);
+    }
 
     // ====================================================================
     // 全自動窓口関数（API）
@@ -192,10 +248,44 @@ public class GameManager : MonoBehaviour
                 stage.maxBitCubes = currentBitCubes;
             }
 
+            lastClearedSceneName = currentSceneName; // どのステージをクリアしたか記憶
             // ★追加：クリアしたので次のステージのためにチェックポイントをリセット
             LastCheckpoint = new CheckpointCache();
+            //無条件に AdvanceStoryPhase() を呼ぶのをやめ、判定関数を挟む
+            CheckAndAdvanceStory(currentSceneName);
 
-            AdvanceStoryPhase();
+            SaveGame();//フェーズが進まなくても、ステージのクリア状況は必ず保存する
+        }
+    }
+
+    //クリアしたステージと現在のフェーズを比較し、正しい進行であればストーリーを進める
+    private void CheckAndAdvanceStory(string clearedSceneName)
+    {
+        // ※実際のステージの「シーン名」に合わせて文字列を調整してください
+        // 例: ステージ1のシーン名が "Stage1"、ステージ2が "Stage2"... の場合
+
+        if (clearedSceneName == "Stage1" && currentSaveData.currentPhase == StoryPhase.Opening)
+        {
+            currentSaveData.currentPhase = StoryPhase.Stage1_Cleared;
+            Debug.Log("【ストーリー進行】ステージ1を初クリア！フェーズが Stage1_Cleared に進みました。");
+            SaveGame();
+        }
+        else if (clearedSceneName == "Stage2" && currentSaveData.currentPhase == StoryPhase.Stage1_Cleared)
+        {
+            currentSaveData.currentPhase = StoryPhase.Stage2_Cleared;
+            Debug.Log("【ストーリー進行】ステージ2を初クリア！フェーズが Stage2_Cleared に進みました。");
+            SaveGame();
+        }
+        else if (clearedSceneName == "Stage3" && currentSaveData.currentPhase == StoryPhase.Stage2_Cleared)
+        {
+            currentSaveData.currentPhase = StoryPhase.Stage3_Cleared;
+            Debug.Log("【ストーリー進行】ステージ3を初クリア！フェーズが Stage3_Cleared に進みました。");
+            SaveGame();
+        }
+        else
+        {
+            // すでに先のステージに進んでいる場合や、過去ステージの再クリア時はここに来る
+            Debug.Log($"【ストーリー維持】現在のフェーズ({currentSaveData.currentPhase})に対して、クリアしたステージ({clearedSceneName})が古いため進行をスキップしました。");
         }
     }
 

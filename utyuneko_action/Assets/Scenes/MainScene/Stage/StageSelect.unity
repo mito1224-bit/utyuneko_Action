@@ -1470,6 +1470,10 @@ PrefabInstance:
       value: DtaCube1 (2)
       objectReference: {fileID: 0}
     - target: {fileID: 7909408799787157604, guid: ce14d337182ba2b4c988a3fb232b11ce, type: 3}
+      propertyPath: dataCubeID
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 7909408799787157604, guid: ce14d337182ba2b4c988a3fb232b11ce, type: 3}
       propertyPath: eventCamera
       value: 
       objectReference: {fileID: 1921465679}
@@ -1668,7 +1672,7 @@ Transform:
   m_GameObject: {fileID: 444036922}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -28.9, y: 2.09, z: 0}
+  m_LocalPosition: {x: -19.24, y: 2.09, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -3272,6 +3276,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: BitCube1 (3)
       objectReference: {fileID: 0}
+    - target: {fileID: 5374946492836672861, guid: aed541dfb53fc5549b0d2abcec0d9ca9, type: 3}
+      propertyPath: moveUpDistance
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -3794,6 +3802,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: BitCube1 (2)
       objectReference: {fileID: 0}
+    - target: {fileID: 5374946492836672861, guid: aed541dfb53fc5549b0d2abcec0d9ca9, type: 3}
+      propertyPath: moveUpDistance
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -3884,6 +3896,10 @@ PrefabInstance:
       value: DtaCube1 (1)
       objectReference: {fileID: 0}
     - target: {fileID: 7909408799787157604, guid: ce14d337182ba2b4c988a3fb232b11ce, type: 3}
+      propertyPath: dataCubeID
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 7909408799787157604, guid: ce14d337182ba2b4c988a3fb232b11ce, type: 3}
       propertyPath: eventCamera
       value: 
       objectReference: {fileID: 1921465679}
@@ -3947,6 +3963,10 @@ PrefabInstance:
     - target: {fileID: 3288498471118654464, guid: ce14d337182ba2b4c988a3fb232b11ce, type: 3}
       propertyPath: m_Name
       value: DtaCube1 (3)
+      objectReference: {fileID: 0}
+    - target: {fileID: 7909408799787157604, guid: ce14d337182ba2b4c988a3fb232b11ce, type: 3}
+      propertyPath: dataCubeID
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 7909408799787157604, guid: ce14d337182ba2b4c988a3fb232b11ce, type: 3}
       propertyPath: eventCamera
@@ -5589,6 +5609,10 @@ PrefabInstance:
     - target: {fileID: 2388924610988940243, guid: aed541dfb53fc5549b0d2abcec0d9ca9, type: 3}
       propertyPath: m_Name
       value: BitCube1 (1)
+      objectReference: {fileID: 0}
+    - target: {fileID: 5374946492836672861, guid: aed541dfb53fc5549b0d2abcec0d9ca9, type: 3}
+      propertyPath: moveUpDistance
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -416057,7 +416081,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3955993885028874202, guid: ac82d9768ef769e4995f55bbaff80b26, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6970076942768052921, guid: ac82d9768ef769e4995f55bbaff80b26, type: 3}
       propertyPath: eventCamera
@@ -416190,15 +416214,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7140366136846706026, guid: 22372edce019cdd468ea18abe06d5211, type: 3}
       propertyPath: m_BackGroundColor.b
-      value: 0.9924528
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7140366136846706026, guid: 22372edce019cdd468ea18abe06d5211, type: 3}
       propertyPath: m_BackGroundColor.g
-      value: 0.065539196
+      value: 0.027592659
       objectReference: {fileID: 0}
     - target: {fileID: 7140366136846706026, guid: 22372edce019cdd468ea18abe06d5211, type: 3}
       propertyPath: m_BackGroundColor.r
-      value: 0.11130914
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7323738274929012226, guid: 22372edce019cdd468ea18abe06d5211, type: 3}
       propertyPath: target
