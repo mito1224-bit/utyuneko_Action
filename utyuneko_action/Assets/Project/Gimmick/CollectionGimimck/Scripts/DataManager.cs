@@ -157,7 +157,8 @@ public class DataManager : MonoBehaviour
                 maxBitCube,
                 currentDataCubes,
                 maxDataCube,
-                GetTotalCompletionRate()
+                GetTotalCompletionRate(),
+                collectedStarCoinFlags
             );
 
             GameManager.Instance.ClearStage(currentBitCubes);

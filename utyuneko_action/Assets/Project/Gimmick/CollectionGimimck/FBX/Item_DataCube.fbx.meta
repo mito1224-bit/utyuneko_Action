@@ -3,7 +3,17 @@ guid: e1248eec7e12d62488c1e10ed02fcc0b
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: DetaCube
+    second: {fileID: 2100000, guid: 7e977ec422c40a4498363ce00ed954c9, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: openPBR_shader1
+    second: {fileID: 2100000, guid: b515222253898d4449ee97f4886d47eb, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0
