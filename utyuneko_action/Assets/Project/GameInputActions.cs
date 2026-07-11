@@ -498,6 +498,76 @@ public partial class @GameInputActions: IInputActionCollection2, IDisposable
                     ""isPartOfComposite"": false
                 }
             ]
+        },
+        {
+            ""name"": ""Event"",
+            ""id"": ""071d9575-d75f-4bbe-8b54-4a2a019e32fe"",
+            ""actions"": [
+                {
+                    ""name"": ""Skip"",
+                    ""type"": ""Button"",
+                    ""id"": ""2dcac592-70e2-48bb-b7cf-7bff1f7b29f0"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Jump"",
+                    ""type"": ""Button"",
+                    ""id"": ""a9d98853-29ef-483f-893d-6758cc31db52"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                }
+            ],
+            ""bindings"": [
+                {
+                    ""name"": """",
+                    ""id"": ""f762faf9-36d1-4bc4-8bfa-014d66adec29"",
+                    ""path"": ""<Keyboard>/escape"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Skip"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""3e145cac-f2af-4ccd-bb9b-f46a9362c809"",
+                    ""path"": ""<Gamepad>/start"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Skip"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""ba0f8870-c4aa-4c2d-baab-5ec48af19c32"",
+                    ""path"": ""<Gamepad>/buttonSouth"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Jump"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""91d2c733-04d3-45ef-9623-48fdeea1fdb9"",
+                    ""path"": ""<Keyboard>/space"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Jump"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                }
+            ]
         }
     ],
     ""controlSchemes"": []
@@ -518,6 +588,10 @@ public partial class @GameInputActions: IInputActionCollection2, IDisposable
         // Gimmick
         m_Gimmick = asset.FindActionMap("Gimmick", throwIfNotFound: true);
         m_Gimmick_Firing = m_Gimmick.FindAction("Firing", throwIfNotFound: true);
+        // Event
+        m_Event = asset.FindActionMap("Event", throwIfNotFound: true);
+        m_Event_Skip = m_Event.FindAction("Skip", throwIfNotFound: true);
+        m_Event_Jump = m_Event.FindAction("Jump", throwIfNotFound: true);
     }
 
     ~@GameInputActions()
@@ -525,6 +599,7 @@ public partial class @GameInputActions: IInputActionCollection2, IDisposable
         UnityEngine.Debug.Assert(!m_Player.enabled, "This will cause a leak and performance issues, GameInputActions.Player.Disable() has not been called.");
         UnityEngine.Debug.Assert(!m_UI.enabled, "This will cause a leak and performance issues, GameInputActions.UI.Disable() has not been called.");
         UnityEngine.Debug.Assert(!m_Gimmick.enabled, "This will cause a leak and performance issues, GameInputActions.Gimmick.Disable() has not been called.");
+        UnityEngine.Debug.Assert(!m_Event.enabled, "This will cause a leak and performance issues, GameInputActions.Event.Disable() has not been called.");
     }
 
     /// <summary>
@@ -961,6 +1036,113 @@ public partial class @GameInputActions: IInputActionCollection2, IDisposable
     /// Provides a new <see cref="GimmickActions" /> instance referencing this action map.
     /// </summary>
     public GimmickActions @Gimmick => new GimmickActions(this);
+
+    // Event
+    private readonly InputActionMap m_Event;
+    private List<IEventActions> m_EventActionsCallbackInterfaces = new List<IEventActions>();
+    private readonly InputAction m_Event_Skip;
+    private readonly InputAction m_Event_Jump;
+    /// <summary>
+    /// Provides access to input actions defined in input action map "Event".
+    /// </summary>
+    public struct EventActions
+    {
+        private @GameInputActions m_Wrapper;
+
+        /// <summary>
+        /// Construct a new instance of the input action map wrapper class.
+        /// </summary>
+        public EventActions(@GameInputActions wrapper) { m_Wrapper = wrapper; }
+        /// <summary>
+        /// Provides access to the underlying input action "Event/Skip".
+        /// </summary>
+        public InputAction @Skip => m_Wrapper.m_Event_Skip;
+        /// <summary>
+        /// Provides access to the underlying input action "Event/Jump".
+        /// </summary>
+        public InputAction @Jump => m_Wrapper.m_Event_Jump;
+        /// <summary>
+        /// Provides access to the underlying input action map instance.
+        /// </summary>
+        public InputActionMap Get() { return m_Wrapper.m_Event; }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Enable()" />
+        public void Enable() { Get().Enable(); }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Disable()" />
+        public void Disable() { Get().Disable(); }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.enabled" />
+        public bool enabled => Get().enabled;
+        /// <summary>
+        /// Implicitly converts an <see ref="EventActions" /> to an <see ref="InputActionMap" /> instance.
+        /// </summary>
+        public static implicit operator InputActionMap(EventActions set) { return set.Get(); }
+        /// <summary>
+        /// Adds <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
+        /// </summary>
+        /// <param name="instance">Callback instance.</param>
+        /// <remarks>
+        /// If <paramref name="instance" /> is <c>null</c> or <paramref name="instance"/> have already been added this method does nothing.
+        /// </remarks>
+        /// <seealso cref="EventActions" />
+        public void AddCallbacks(IEventActions instance)
+        {
+            if (instance == null || m_Wrapper.m_EventActionsCallbackInterfaces.Contains(instance)) return;
+            m_Wrapper.m_EventActionsCallbackInterfaces.Add(instance);
+            @Skip.started += instance.OnSkip;
+            @Skip.performed += instance.OnSkip;
+            @Skip.canceled += instance.OnSkip;
+            @Jump.started += instance.OnJump;
+            @Jump.performed += instance.OnJump;
+            @Jump.canceled += instance.OnJump;
+        }
+
+        /// <summary>
+        /// Removes <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
+        /// </summary>
+        /// <remarks>
+        /// Calling this method when <paramref name="instance" /> have not previously been registered has no side-effects.
+        /// </remarks>
+        /// <seealso cref="EventActions" />
+        private void UnregisterCallbacks(IEventActions instance)
+        {
+            @Skip.started -= instance.OnSkip;
+            @Skip.performed -= instance.OnSkip;
+            @Skip.canceled -= instance.OnSkip;
+            @Jump.started -= instance.OnJump;
+            @Jump.performed -= instance.OnJump;
+            @Jump.canceled -= instance.OnJump;
+        }
+
+        /// <summary>
+        /// Unregisters <param cref="instance" /> and unregisters all input action callbacks via <see cref="EventActions.UnregisterCallbacks(IEventActions)" />.
+        /// </summary>
+        /// <seealso cref="EventActions.UnregisterCallbacks(IEventActions)" />
+        public void RemoveCallbacks(IEventActions instance)
+        {
+            if (m_Wrapper.m_EventActionsCallbackInterfaces.Remove(instance))
+                UnregisterCallbacks(instance);
+        }
+
+        /// <summary>
+        /// Replaces all existing callback instances and previously registered input action callbacks associated with them with callbacks provided via <param cref="instance" />.
+        /// </summary>
+        /// <remarks>
+        /// If <paramref name="instance" /> is <c>null</c>, calling this method will only unregister all existing callbacks but not register any new callbacks.
+        /// </remarks>
+        /// <seealso cref="EventActions.AddCallbacks(IEventActions)" />
+        /// <seealso cref="EventActions.RemoveCallbacks(IEventActions)" />
+        /// <seealso cref="EventActions.UnregisterCallbacks(IEventActions)" />
+        public void SetCallbacks(IEventActions instance)
+        {
+            foreach (var item in m_Wrapper.m_EventActionsCallbackInterfaces)
+                UnregisterCallbacks(item);
+            m_Wrapper.m_EventActionsCallbackInterfaces.Clear();
+            AddCallbacks(instance);
+        }
+    }
+    /// <summary>
+    /// Provides a new <see cref="EventActions" /> instance referencing this action map.
+    /// </summary>
+    public EventActions @Event => new EventActions(this);
     /// <summary>
     /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "Player" which allows adding and removing callbacks.
     /// </summary>
@@ -1054,5 +1236,27 @@ public partial class @GameInputActions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnFiring(InputAction.CallbackContext context);
+    }
+    /// <summary>
+    /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "Event" which allows adding and removing callbacks.
+    /// </summary>
+    /// <seealso cref="EventActions.AddCallbacks(IEventActions)" />
+    /// <seealso cref="EventActions.RemoveCallbacks(IEventActions)" />
+    public interface IEventActions
+    {
+        /// <summary>
+        /// Method invoked when associated input action "Skip" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnSkip(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Jump" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnJump(InputAction.CallbackContext context);
     }
 }

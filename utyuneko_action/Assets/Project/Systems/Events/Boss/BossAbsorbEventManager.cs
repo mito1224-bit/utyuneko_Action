@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.SocialPlatforms;
 
 public class BossAbsorbEventManager : BaseEventManager
 {
@@ -37,6 +38,7 @@ public class BossAbsorbEventManager : BaseEventManager
     private float maxLookAngle = 30f;
     private float lookSmoothing = 12.0f;
     private bool isLookingActive = false;
+    private bool isCore = false;
 
     private Quaternion originalPlayerVisualRotation;
     private StageSecondBossController bossController;
@@ -199,11 +201,12 @@ public class BossAbsorbEventManager : BaseEventManager
             float targetGroundY = playerTransform != null ? playerTransform.position.y : hosa.transform.position.y - 0.5f;
             Vector3 cubeTargetWorkspace = new Vector3(stageCenterX, targetGroundY, 0f);
 
-            if(coreCubeTransfome) cubeTargetWorkspace = coreCubeTransfome.position;
+            if (coreCubeTransfome) cubeTargetWorkspace = coreCubeTransfome.position;
 
             // 補佐の現在地からプレハブを生成
             GameObject spawnedCube = Instantiate(coreCubePrefab, hosa.transform.position, Quaternion.identity);
 
+            isCore = true;
             // 🚀 放物線移動コルーチンを実行して、着地までしっかり演出！
             yield return StartCoroutine(TossCubeLinearRoutine(spawnedCube, hosa.transform.position, cubeTargetWorkspace, 0.65f, 3.5f));
         }
@@ -297,14 +300,12 @@ public class BossAbsorbEventManager : BaseEventManager
         }
         if (bossController.BossStatgeCamera)
         {
-            bossController.BossStatgeCamera.gameObject.SetActive(true);
+            bossController.BossStatgeCamera.gameObject.SetActive(false);
         }
 
-        if (coreCubePrefab != null)
+        if (coreCubePrefab != null && !isCore)
         {
-            float stageCenterX = (bossController != null) ? (bossController.stageMinX + bossController.stageMaxX) / 2f : hosa.transform.position.x;
-            float targetGroundY = playerTransform != null ? playerTransform.position.y : hosa.transform.position.y;
-            Instantiate(coreCubePrefab, new Vector3(stageCenterX, targetGroundY, 0f), Quaternion.identity);
+            Instantiate(coreCubePrefab, coreCubeTransfome.position, Quaternion.identity);
         }
 
         if (hosa != null)
@@ -366,7 +367,7 @@ public class BossAbsorbEventManager : BaseEventManager
 
         if (bossController.BossStatgeCamera)
         {
-            bossController.BossStatgeCamera.gameObject.SetActive(true);
+            bossController.BossStatgeCamera.gameObject.SetActive(false);
         }
 
         // 入力ブロックを解除してガチでイベント終了！

@@ -7,16 +7,46 @@ public class GoalAppearEffect : MonoBehaviour
     [SerializeField] private float appearTime = 0.5f;
 
     private Vector3 targetScale;
+    private bool initialized = false;
+    private Coroutine appearCoroutine;
 
     private void Awake()
     {
-        targetScale = transform.localScale;
-        transform.localScale = Vector3.zero;
+        // SetActive(true) された瞬間にAwakeとOnEnableがほぼ同時に呼ばれるため、
+        // ここで先にtargetScaleを確保しておく
+        CaptureTargetScaleIfNeeded();
     }
 
-    private void Start()
+    private void OnEnable()
     {
-        StartCoroutine(AppearRoutine());
+        // オブジェクトが最初からActiveな場合など、Awakeより先にOnEnableが
+        // 呼ばれるケースに備えて念のためここでも確保する
+        CaptureTargetScaleIfNeeded();
+
+        // SetActive(true) されるたびに必ずスケール0から再生し直す
+        transform.localScale = Vector3.zero;
+
+        if (appearCoroutine != null)
+        {
+            StopCoroutine(appearCoroutine);
+        }
+        appearCoroutine = StartCoroutine(AppearRoutine());
+    }
+
+    private void OnDisable()
+    {
+        // 非表示になったら次回のためにコルーチン参照をクリア
+        appearCoroutine = null;
+    }
+
+    private void CaptureTargetScaleIfNeeded()
+    {
+        if (!initialized)
+        {
+            // まだ0になっていない「本来の完成スケール」をここで記録する
+            targetScale = transform.localScale;
+            initialized = true;
+        }
     }
 
     private IEnumerator AppearRoutine()
@@ -25,7 +55,7 @@ public class GoalAppearEffect : MonoBehaviour
 
         while (timer < appearTime)
         {
-            timer += Time.deltaTime;
+            timer += Time.unscaledDeltaTime;
 
             float t = timer / appearTime;
 
@@ -49,7 +79,7 @@ public class GoalAppearEffect : MonoBehaviour
 
         while (timer < returnTime)
         {
-            timer += Time.deltaTime;
+            timer += Time.unscaledDeltaTime;
 
             float t = timer / returnTime;
 
@@ -60,6 +90,7 @@ public class GoalAppearEffect : MonoBehaviour
         }
 
         transform.localScale = targetScale;
+        appearCoroutine = null;
     }
 
 }

@@ -43,7 +43,6 @@ public class CoreCubeEventManager : BaseEventManager
     [SerializeField] private float hosaMoveSpeed = 6f;
 
     private CameraFollowWithZoom cameraFollow;
-    private Vector3 originalGateScale = Vector3.one;
 
     protected override void Awake()
     {
@@ -64,7 +63,6 @@ public class CoreCubeEventManager : BaseEventManager
 
             if (gateObject != null)
             {
-                originalGateScale = gateObject.transform.localScale;
                 gateObject.SetActive(false);
             }
 
@@ -177,19 +175,7 @@ public class CoreCubeEventManager : BaseEventManager
         // 🚪 3. カメラの目の前でゲートが拡大出現
         if (gateObject != null)
         {
-            gateObject.transform.localScale = Vector3.zero;
             gateObject.SetActive(true);
-
-            float elapsed = 0f;
-            while (elapsed < gateAppearDuration)
-            {
-                elapsed += Time.deltaTime;
-                float t = Mathf.Clamp01(elapsed / gateAppearDuration);
-                float lerpValue = Mathf.SmoothStep(0f, 1f, t);
-                gateObject.transform.localScale = Vector3.Lerp(Vector3.zero, originalGateScale, lerpValue);
-                yield return null;
-            }
-            gateObject.transform.localScale = originalGateScale;
         }
 
         // ===================================================================
@@ -232,7 +218,6 @@ public class CoreCubeEventManager : BaseEventManager
         if (gateObject != null)
         {
             gateObject.SetActive(true);
-            gateObject.transform.localScale = originalGateScale;
         }
 
         // 🧱 スキップされても、壁は確実にアクティブ（出現状態）にする

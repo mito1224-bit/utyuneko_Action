@@ -92,6 +92,8 @@ public class GameManager : MonoBehaviour
             // --- ここから書き換え ---
             string saveDirectoryPath = "";
 
+            DontDestroyOnLoad(gameObject);
+
 #if UNITY_EDITOR
             // 【Unityエディタで実行中】
             // プロジェクトのルートフォルダ（Assetsフォルダの1つ上）に「SaveData」フォルダを作る

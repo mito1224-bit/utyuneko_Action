@@ -42,6 +42,6 @@ Material:
     - _StencilWriteMask: 255
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _GlowColor: {r: 0.14684942, g: 2.6466537, b: 2.8301888, a: 1}
+    - _GlowColor: {r: 3.7785244, g: 3.7785244, b: 3.7785244, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

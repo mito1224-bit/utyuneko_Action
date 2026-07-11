@@ -60,6 +60,8 @@ public class StoryPhaseSceneController : MonoBehaviour
                 if (DataManager.Instance)
                     DataManager.Instance.UpdateCheckpoint(tutorialSpawnPoint.position);
 
+                SoundManager.Instance.PlayBGM(BgmType.StageSelect);
+
                 // チュートリアル要素をON、ステージセレクト要素をOFF
                 if (OpeningEvent) OpeningEvent.SetActive(false);
                 if (RescueEvent) RescueEvent.SetActive(true);
