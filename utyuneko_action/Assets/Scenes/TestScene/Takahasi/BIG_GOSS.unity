@@ -62755,7 +62755,7 @@ GameObject:
   - component: {fileID: 1390327665}
   - component: {fileID: 1390327664}
   m_Layer: 5
-  m_Name: PauseMenuPanel
+  m_Name: SettingMenuPanel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -70045,8 +70045,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PauseMenu
   pauseMenuPanel: {fileID: 1390327662}
-  bitCubeText: {fileID: 0}
-  dataCubeText: {fileID: 0}
   titleSceneName: TitleScene
 --- !u!114 &1562006341
 MonoBehaviour:
