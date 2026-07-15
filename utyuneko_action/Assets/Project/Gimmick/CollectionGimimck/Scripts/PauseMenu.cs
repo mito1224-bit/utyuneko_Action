@@ -8,10 +8,6 @@ public class PauseMenu : MonoBehaviour
     [Header("ポーズ画面のパネルUI")]
     [SerializeField] private GameObject pauseMenuPanel;
 
-    [Header("現在の数グラフUI")]
-    [SerializeField] private TextMeshProUGUI bitCubeText;
-    [SerializeField] private TextMeshProUGUI dataCubeText;
-
     [Header("遷移先の設定")]
     [Tooltip("タイトル画面のシーン名")]
     [SerializeField] private string titleSceneName = "TitleScene";
@@ -69,9 +65,6 @@ public class PauseMenu : MonoBehaviour
         {
             var bitResult = DataManager.Instance.GetNormalCoinResult();
             var dataResult = DataManager.Instance.GetStarCoinResult();
-
-            if (bitCubeText != null) bitCubeText.text = $"Bit: {bitResult.current} / {bitResult.max}";
-            if (dataCubeText != null) dataCubeText.text = $"Data: {dataResult.current} / {dataResult.max}";
         }
     }
 
