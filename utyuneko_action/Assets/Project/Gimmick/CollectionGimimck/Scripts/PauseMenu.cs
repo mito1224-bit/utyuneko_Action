@@ -52,6 +52,13 @@ public class PauseMenu : MonoBehaviour
         // Escキー または Pキーでポーズの開閉切り替え
         if (InputManager.Instance.Player.Pose.triggered || InputManager.Instance.UI.Cancel.triggered)
         {
+            if(settingPanel.activeSelf)
+            {
+                settingPanel.SetActive(false);
+                pauseMenuPanel.SetActive(true);
+                return;
+            }
+
             TogglePause();
         }
     }
