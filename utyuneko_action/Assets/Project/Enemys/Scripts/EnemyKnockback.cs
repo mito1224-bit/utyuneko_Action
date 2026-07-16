@@ -72,6 +72,11 @@ public class EnemyKnockback : MonoBehaviour
     [Tooltip("明滅で最も薄くなるときのアルファ（0=完全透明 / 1=不透明のまま）")]
     [Range(0f, 1f)] public float blinkMinAlpha = 0.3f;
 
+    [Tooltip("死亡（撃破）した瞬間にモデルのアウトラインを消す。" +
+             "アウトラインは RenderingLayerMask で対象を絞っているため、" +
+             "死亡モデルのレンダラーを既定レンダリングレイヤーへ戻してフィルタから外す")]
+    public bool hideOutlineOnDeath = true;
+
     [Header("床ヒットで消滅")]
     [Tooltip("死亡中に着地（床・壁ヒット）したら消滅させる")]
     public bool destroyOnGroundHit = true;
@@ -178,6 +183,11 @@ public class EnemyKnockback : MonoBehaviour
         // 死亡時点の最新モデルを明滅対象に取り直す（実行時に組み替え／生成されたモデル部位も確実に含める）。
         // これで「モデルの一部が明滅しないまま」になるのを防ぐ。
         renderers = CollectModelRenderers();
+
+        // 死亡時はアウトラインを消す（明滅の有無に関わらず）。
+        // アウトラインは RenderingLayerMask フィルタなので、モデルを既定レイヤーへ戻して対象外にする。
+        if (hideOutlineOnDeath) BlinkFade.HideOutline(renderers);
+
         if (blinkOnDeath)
         {
             blinkFade = new BlinkFade(renderers);
