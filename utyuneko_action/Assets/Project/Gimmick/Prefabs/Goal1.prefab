@@ -91,11 +91,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 19b1c8a9d917cde4aa069be9d14f14c0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SceneChanger
+  isGoalObject: 1
   nextSceneName: ResultScene
   warpDuration: 2
   spinSpeed: 1080
   stretchMultiplier: 2
   zoomTargetZ: -10
+  nextStageLookPoint: {fileID: 0}
+  lookPanDuration: 1
+  lookAtDuration: 1
+  returnPanDuration: 1
 --- !u!1 &8465219684286911358
 GameObject:
   m_ObjectHideFlags: 0

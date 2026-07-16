@@ -115,7 +115,7 @@ MonoBehaviour:
   - bgmType: 8
     clip: {fileID: 8300000, guid: 0e8d582768d7f344d981f636cd7c3dc3, type: 3}
     volume: 0.5
-  - bgmType: 6
+  - bgmType: 9
     clip: {fileID: 8300000, guid: 8338d05d5544707419a25a0431095f90, type: 3}
     volume: 0.5
   - bgmType: 7

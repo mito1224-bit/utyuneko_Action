@@ -65,7 +65,7 @@ public class DataCubeController : MonoBehaviour
             OnDataCubeCollected?.Invoke(zeroBasedIndex);
 
             // エフェクトを発生させる（こちらは MainItem になっていますね！）
-            FXManager.Instance.Play(FXType.MainItem, transform.position);
+            FXManager.Instance.Play(FXType.DataGetFlash, transform.position);
 
             // 演出を開始し、終了後に消滅させる
             StartCoroutine(DataCubeCollectEventRoutine(collision.transform));

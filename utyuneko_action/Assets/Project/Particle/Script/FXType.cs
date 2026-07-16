@@ -7,6 +7,9 @@ public enum FXType
     Flash,
     Smoke,
     Explosion,
+    Flash_ItemBit,
+    DataGetFlash,
+
 
     // 将来増えるエフェクトをここに足していく
 }

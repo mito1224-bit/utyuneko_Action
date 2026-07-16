@@ -29,7 +29,8 @@ public class BitCubeController : MonoBehaviour
             OnBitCubeCollected?.Invoke(scoreValue);
 
             // エフェクトはアイテムの現在位置で再生
-            FXManager.Instance.Play(FXType.ItemGet, transform.position);
+            FXManager.Instance.Play(FXType.Flash_ItemBit, transform.position);
+            //FXManager.Instance.Play(FXType.Flash, transform.position);
             StartCoroutine(CollectAnimationRoutine());
         }
     }

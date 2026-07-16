@@ -336,7 +336,7 @@ public class SoundManager : MonoBehaviour
     // ===================================================================
     // ループSE 再生ロジック（既存のまま）
     // ===================================================================
-    public void PlayLoopSE(GameObject owner, SeType type, float basePitch = 1.0f, float pitchRandomness = 0.0f)
+    public void PlayLoopSE(GameObject owner, SeType type, float basePitch = 1.0f, float pitchRandomness = 0.0f, float spatialBlend=1.0f)
     {
         if (owner == null) return;
 
@@ -352,7 +352,7 @@ public class SoundManager : MonoBehaviour
         newSource.clip = data.clip;
         newSource.volume = data.volume;
         newSource.loop = true;
-        newSource.spatialBlend = 1f;
+        newSource.spatialBlend = spatialBlend;
 
         newSource.pitch = basePitch + Random.Range(-pitchRandomness, pitchRandomness);
 
