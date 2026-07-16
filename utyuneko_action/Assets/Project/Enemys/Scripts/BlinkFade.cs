@@ -41,6 +41,13 @@ public class BlinkFade
     private static Shader litShader;
     private static bool litShaderResolved;
 
+    // 透過時のレンダーキュー。あえて Transparent(3000) ではなく Opaque 範囲の末尾 GeometryLast(2500) を使う。
+    //   理由: アウトライン(Linework Lite Free Outline)は対象を「Opaque キュー範囲(0〜2500)」で絞っており、
+    //   Transparent(3000) にするとフィルタ範囲外になってアルファ明滅中だけアウトラインが消える。
+    //   キューを Opaque 範囲に留めても、アルファブレンド/ZWrite off はマテリアルのレンダーステート側で
+    //   効くのでフェード自体はそのまま機能する（＝明滅中もアウトラインが残る）。
+    private const int FadeRenderQueue = (int)UnityEngine.Rendering.RenderQueue.GeometryLast; // 2500
+
     private readonly List<Renderer> renderers = new List<Renderer>();
     private Material[][] instancedMats;   // 透明化した複製マテリアル（レンダラーごと）
     private Material[][] originalMats;     // 元の共有マテリアル（End で戻す）
@@ -127,6 +134,27 @@ public class BlinkFade
 
     public bool IsActive => active;
 
+    /// <summary>
+    /// 渡したレンダラー群のアウトラインを消す。
+    /// アウトライン(Linework Lite Free Outline)は RenderingLayerMask で対象を絞っており
+    /// （本プロジェクトのアウトラインは bit2 / bit4、エネミーのモデルは bit4 に所属）、
+    /// レンダラーを既定レンダリングレイヤー(1=Defaultのみ)へ戻すとアウトラインの
+    /// フィルタから外れて描画されなくなる。死亡時に一度呼ぶ想定（元へは戻さない＝モデルは破棄される）。
+    ///
+    /// 明滅そのもの（Begin/SetAlpha）はアウトラインを維持するため描画キューを Opaque 範囲に留めている。
+    /// スタン明滅ではアウトラインを残したいのでそちらは触らず、死亡時だけこのメソッドで明示的に外す。
+    /// LineRenderer / TrailRenderer はアウトライン対象外なので触らない。
+    /// </summary>
+    public static void HideOutline(IEnumerable<Renderer> targets, uint renderingLayerMask = 1)
+    {
+        if (targets == null) return;
+        foreach (var r in targets)
+        {
+            if (r == null || r is LineRenderer || r is TrailRenderer) continue;
+            r.renderingLayerMask = renderingLayerMask;
+        }
+    }
+
     // ─── マテリアルをフェード可能な状態へ整える ───
 
     /// <summary>
@@ -208,7 +236,7 @@ public class BlinkFade
             if (m.HasProperty("_ZWrite")) m.SetFloat("_ZWrite", 0f);
             m.DisableKeyword("_SURFACE_TYPE_OPAQUE");
             m.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-            m.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+            m.renderQueue = FadeRenderQueue; // アウトライン維持のため Opaque 範囲内に留める
             return;
         }
 
@@ -222,12 +250,12 @@ public class BlinkFade
             m.DisableKeyword("_ALPHATEST_ON");
             m.EnableKeyword("_ALPHABLEND_ON");
             m.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-            m.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+            m.renderQueue = FadeRenderQueue; // アウトライン維持のため Opaque 範囲内に留める
             return;
         }
 
-        // Sprites/Default など、もともと半透明対応のシェーダー。念のため描画順だけ透明へ
-        m.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+        // Sprites/Default など、もともと半透明対応のシェーダー。念のため描画順だけ調整（アウトライン維持のため Opaque 範囲内）
+        m.renderQueue = FadeRenderQueue;
     }
 
     private static Color GetBaseColor(Material m)

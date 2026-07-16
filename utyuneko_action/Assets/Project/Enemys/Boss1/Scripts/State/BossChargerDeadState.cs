@@ -26,10 +26,15 @@ public class BossChargerDeadState : BossChargerBaseState
         boss.SetAllDamageSourcesEnabled(false);
         boss.shield?.SetGuardEnabled(false);
 
+        // 死亡時はアウトラインを消す（明滅の有無に関わらず）。
+        // アウトラインは RenderingLayerMask フィルタなので、モデルを既定レイヤーへ戻して対象外にする。
+        var deathRenderers = boss.GetComponentsInChildren<Renderer>(true);
+        BlinkFade.HideOutline(deathRenderers);
+
         // 死亡明滅（半透明フェード）。LineRenderer/TrailRenderer は BlinkFade 側で除外される。
         if (boss.deathBlinkInterval > 0f)
         {
-            blinkFade = new BlinkFade(boss.GetComponentsInChildren<Renderer>(true));
+            blinkFade = new BlinkFade(deathRenderers);
             blinkFade.Begin(); // マテリアルを透明対応の複製へ差し替え
         }
 

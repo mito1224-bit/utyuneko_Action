@@ -1,7 +1,7 @@
 using UnityEngine;
 
 /// <summary>
-/// 突進×盾ボス（Boss3）のコントローラ。
+/// 突進×盾ボス（Boss1）のコントローラ。
 ///
 /// コアループ（闘牛士型）:
 ///   正面は物理盾で守られている → 突進を誘って避ける → 壁に自滅スタン
@@ -16,8 +16,9 @@ using UnityEngine;
 ///   ②連続突進（フェーズ2で2〜3連、最後だけ自滅）     … 同上（multiChargeCount）
 ///   ③シールドバッシュ（密着対策の近接薙ぎ払い）      … BossChargerShieldBashState
 ///   ④壁ヒット衝撃波（自滅スタン時に地面を走る）      … BossChargerStunState + BossChargerShockwave
-///   ⑤盾投げ（フェーズ2。投擲中は全身無防備）         … BossChargerShieldThrowState
+///   ⑤盾投げ（フェーズ2。投擲中は全身無防備。投擲前に軌道ラインを見せる） … BossChargerShieldThrowState
 ///   ⑥バースト反射カウンター（正面の盾にバースト→反撃突進） … BossChargerCounterState
+///   ⑨必殺技「憤怒の乱舞突進」（HP低下で一度きり確定発動。壁から壁へ連続突進、最後だけ自滅スタン） … BossChargerRampageState
 /// </summary>
 public class BossChargerController : MonoBehaviour
 {
@@ -128,6 +129,14 @@ public class BossChargerController : MonoBehaviour
     public float shieldThrowCooldown = 12f;
     [Tooltip("投擲中の移動速度（無防備な代わりに速く動く）")]
     public float throwMoveSpeed = 5f;
+    [Tooltip("盾を投げる前に軌道ラインを見せるタメ時間（秒）。避ける猶予。0で即投げ")]
+    public float throwTelegraphWindupTime = 0.4f;
+    [Tooltip("投擲前に盾の飛ぶ軌道（LineRenderer）をプレイヤーへ見せる")]
+    public bool showThrowTelegraph = true;
+    [Tooltip("軌道ラインの色：予兆の開始（まだ余裕＝黄）")]
+    public Color throwTelegraphColorStart = new Color(0.4f, 0.9f, 1f, 0.5f);
+    [Tooltip("軌道ラインの色：投擲直前（もう来る＝赤）。予兆の進行に合わせて開始色からここへ変化する")]
+    public Color throwTelegraphColorEnd = new Color(1f, 0.3f, 0.3f, 0.95f);
 
     [Header("カウンター（技⑥）")]
     [Tooltip("盾にバーストされたとき反撃するか")]
@@ -138,6 +147,22 @@ public class BossChargerController : MonoBehaviour
     public float counterDuration = 0.5f;
     [Tooltip("カウンターのクールダウン（連発防止・秒）")]
     public float counterCooldown = 4f;
+
+    [Header("必殺技・憤怒の乱舞突進（技⑨・HP低下で確定発動）")]
+    [Tooltip("必殺技を有効にする")]
+    public bool enableRampage = true;
+    [Tooltip("HPがこの割合以下になったら（フェーズ2中に）一度だけ確定発動する")]
+    [Range(0f, 1f)] public float rampageHpThresholdRatio = 0.25f;
+    [Tooltip("突入時の咆哮タメ時間（秒。1回目の突進前だけの長めの予兆＝『大技が来る』の見せ）")]
+    public float rampageRoarTime = 0.7f;
+    [Tooltip("2回目以降の各突進の予兆時間（秒。短くして怒涛の乱舞感を出す）")]
+    public float rampageWindupTime = 0.3f;
+    [Tooltip("壁から壁へ突進する回数（最後の1回だけ壁で自滅スタン＝反撃チャンス）")]
+    public int rampageChargeCount = 5;
+    [Tooltip("乱舞突進の速度（通常突進より速く）")]
+    public float rampageSpeed = 22f;
+    [Tooltip("壁に当たらなかった場合に1回の突進を打ち切る保険時間（秒）")]
+    public float rampageMaxChargeTime = 2.5f;
 
     [Header("地面叩き→隆起衝撃柱（技⑦）")]
     [Tooltip("この技を選択候補に入れる")]
@@ -226,7 +251,8 @@ public class BossChargerController : MonoBehaviour
     public BossChargerShieldBashState StateShieldBash { get; private set; }
     public BossChargerShieldThrowState StateShieldThrow { get; private set; }
     public BossChargerCounterState StateCounter { get; private set; }
-    public BossChargerGroundSlamState StateGroundSlam { get; private set; }
+    public BossChargerRampageState StateRampage { get; private set; }
+   // public BossChargerGroundSlamState StateGroundSlam { get; private set; }
     public BossChargerLeapSlamState StateLeapSlam { get; private set; }
     public BossChargerPhaseTransitionState StatePhaseTransition { get; private set; }
     public BossChargerDeadState StateDead { get; private set; }
@@ -235,6 +261,7 @@ public class BossChargerController : MonoBehaviour
     public string currentDebugStateName; // Inspector で現在状態を確認する用
 
     public bool IsPhase2 { get; set; }
+    public bool HasUsedRampage { get; set; } // 必殺技は一度きり（発動済みフラグ）
     public float SpeedMultiplier => IsPhase2 ? phase2SpeedMultiplier : 1f;
 
     public Rigidbody2D Rb { get; private set; }
@@ -273,7 +300,7 @@ public class BossChargerController : MonoBehaviour
         StateShieldBash = new BossChargerShieldBashState(this);
         StateShieldThrow = new BossChargerShieldThrowState(this);
         StateCounter = new BossChargerCounterState(this);
-        StateGroundSlam = new BossChargerGroundSlamState(this);
+        StateRampage = new BossChargerRampageState(this);
         StateLeapSlam = new BossChargerLeapSlamState(this);
         StatePhaseTransition = new BossChargerPhaseTransitionState(this);
         StateDead = new BossChargerDeadState(this);
@@ -301,9 +328,10 @@ public class BossChargerController : MonoBehaviour
 
         CurrentState?.Update();
 
-        // 予兆の視線ラインは突進ステート中のみ表示する。突進が終わってどの状態へ移っても
-        // 線が残らないよう、突進ステート以外では毎フレーム確実に消す（消し漏れの保険）。
-        if (CurrentState != StateCharge) HideChargeTelegraph();
+        // 予兆ラインは突進系・盾投げ中のみ表示する。他の状態へ移っても線が残らないよう、
+        // それ以外では毎フレーム確実に消す（消し漏れの保険）。
+        if (CurrentState != StateCharge && CurrentState != StateRampage && CurrentState != StateShieldThrow)
+            HideChargeTelegraph();
 
         // フェーズ2移行（死亡・登場・移行中は除く）
         if (!IsPhase2 && Health != null && Health.CurrentHpRatio <= phase2HpThresholdRatio &&
@@ -311,6 +339,15 @@ public class BossChargerController : MonoBehaviour
         {
             IsPhase2 = true;
             TransitionToState(StatePhaseTransition);
+        }
+
+        // 必殺技「憤怒の乱舞突進」：フェーズ2中にHPが閾値以下へ落ちたら一度だけ確定発動。
+        // 他の技を中断しないよう、待機（Idle）に戻ったタイミングで発動する（ボスは頻繁にIdleへ戻る）。
+        if (enableRampage && !HasUsedRampage && IsPhase2 && Health != null &&
+            Health.CurrentHpRatio <= rampageHpThresholdRatio && CurrentState == StateIdle)
+        {
+            HasUsedRampage = true;
+            TransitionToState(StateRampage);
         }
     }
 
@@ -441,6 +478,33 @@ public class BossChargerController : MonoBehaviour
         telegraphLine.endWidth = chargeTelegraphWidth;
         telegraphLine.startColor = col;
         // 先端はフェードさせて「伸びていく矢印」感を出す
+        telegraphLine.endColor = new Color(col.r, col.g, col.b, 0f);
+
+        float z = transform.position.z;
+        telegraphLine.SetPosition(0, new Vector3(origin.x, origin.y, z));
+        Vector2 end = origin + dir * len;
+        telegraphLine.SetPosition(1, new Vector3(end.x, end.y, z));
+    }
+
+    /// <summary>
+    /// 盾投げの軌道ラインを描く（突進予兆と同じ LineRenderer を流用）。壁があればそこで止まる。
+    /// origin=盾の現在位置 / dir=投げる方向 / maxLen=盾の投擲距離 / progress01=予兆の進行度（黄→赤）。
+    /// 盾は直進投擲なので CircleCast ではなく Raycast（BossChargerShield.Throw の折り返し判定と揃える）。
+    /// </summary>
+    public void ShowThrowTelegraph(Vector2 origin, Vector2 dir, float maxLen, float progress01)
+    {
+        if (telegraphLine == null || !showThrowTelegraph) { HideChargeTelegraph(); return; }
+
+        float len = maxLen;
+        RaycastHit2D hit = Physics2D.Raycast(origin, dir, maxLen, wallLayers);
+        if (hit.collider != null) len = hit.distance;
+
+        Color col = Color.Lerp(throwTelegraphColorStart, throwTelegraphColorEnd, Mathf.Clamp01(progress01));
+
+        telegraphLine.enabled = true;
+        telegraphLine.startWidth = chargeTelegraphWidth;
+        telegraphLine.endWidth = chargeTelegraphWidth;
+        telegraphLine.startColor = col;
         telegraphLine.endColor = new Color(col.r, col.g, col.b, 0f);
 
         float z = transform.position.z;

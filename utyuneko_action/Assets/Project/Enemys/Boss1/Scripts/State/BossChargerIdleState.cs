@@ -70,7 +70,6 @@ public class BossChargerIdleState : BossChargerBaseState
 
         // 遠距離技：クールダウン明けの候補からランダムに選ぶ（突進は常に候補）
         var candidates = new List<BossChargerBaseState> { boss.StateCharge };
-        if (boss.enableGroundSlam && boss.GroundSlamTimer <= 0f) candidates.Add(boss.StateGroundSlam);
         if (boss.enableLeapSlam && boss.LeapSlamTimer <= 0f) candidates.Add(boss.StateLeapSlam);
 
         boss.TransitionToState(candidates[Random.Range(0, candidates.Count)]);
