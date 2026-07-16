@@ -66,3 +66,9 @@ MonoBehaviour:
   - type: 6
     prefab: {fileID: 3682798309762931637, guid: 48643472cb22afd43a85370836a2ed51, type: 3}
     vfxDestroyDelay: 0
+  - type: 7
+    prefab: {fileID: 32436663714381356, guid: 2ab8254e3235d5d41a9e61ec383b21ba, type: 3}
+    vfxDestroyDelay: 0
+  - type: 8
+    prefab: {fileID: 4518946607672401613, guid: a78a851fb4f3c584c9c04a4139205d49, type: 3}
+    vfxDestroyDelay: 0

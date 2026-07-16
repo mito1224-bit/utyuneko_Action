@@ -156,13 +156,16 @@ public class ResultScreen : MonoBehaviour
         yield return StartCoroutine(AnimateBitCubes(GameManager.Instance.FinalBitCurrent));
         yield return new WaitForSeconds(0.2f); // 少し余韻
 
+        //SE場所
+        SoundManager.Instance.PlayLoopSE(this.gameObject,SeType.ResultScoreUp,3.5f,0,0.0f);
         // ① まずはドーナツゲージのアニメーションが終わるのを待つ
         yield return StartCoroutine(AnimateGauge(completionRate));
+       // SoundManager.Instance.StopLoopSE(this.gameObject);
 
         // 少しだけ余韻のためのウェイト
         yield return new WaitForSeconds(0.3f);
 
-        // ② スターコインがピタッとはまっていく演出を開始
+        // ② DataCubeがピタッとはまっていく演出を開始
         yield return StartCoroutine(AnimateDataCubes());
 
         yield return new WaitForSeconds(0.5f);
@@ -217,7 +220,7 @@ public class ResultScreen : MonoBehaviour
         {
             elapsedTime += Time.deltaTime;
             float linearProgress = elapsedTime / animationDuration;
-
+            bool seStopped = false;
             // ★【ここが重要】直線的な進捗を、インスペクターで設定したカーブの進捗に変換する！
             float easedProgress = gaugeEasingCurve.Evaluate(linearProgress);
 
@@ -233,12 +236,19 @@ public class ResultScreen : MonoBehaviour
                 completionText.text = $"{currentRate:F1}%";
             }
 
+            if (!seStopped && easedProgress >= 1.0f)
+            {
+                SoundManager.Instance.StopLoopSE(this.gameObject);
+                seStopped = true;
+            }
+
             yield return null; // 1フレーム待つ
         }
-
+       
         // 最後に完全にターゲットの値に固定する（誤差の補正）
         if (completionGaugeImage != null) completionGaugeImage.fillAmount = targetFill;
         if (completionText != null) completionText.text = $"{targetRate:F1}%";
+       
     }
 
     private IEnumerator AnimateDataCubes()
@@ -262,6 +272,9 @@ public class ResultScreen : MonoBehaviour
 
             // 1. まず本物画像をアクティブにする
             actualImage.gameObject.SetActive(true);
+
+            
+
             // アニメーション全部無効
             //actualImage.color = Color.white;
             actualImage.transform.localScale = Vector3.one;
@@ -300,7 +313,7 @@ public class ResultScreen : MonoBehaviour
             // --- 最後に状態を完全に固定 ---
             actualTransform.localScale = Vector3.one;
             actualImage.color = originalColor; // 元の色（アルファ1）に戻す
-
+            SoundManager.Instance.PlaySE(SeType.ResultDataGet,1.1f);
             displayedObtainedCount++;
             // テキストの更新（スターコインの獲得数を＋１）
             if (dataCubeText != null)

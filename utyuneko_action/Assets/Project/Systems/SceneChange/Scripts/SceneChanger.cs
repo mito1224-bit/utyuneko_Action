@@ -28,6 +28,8 @@ public class SceneChanger : MonoBehaviour
     [SerializeField] private float lookAtDuration = 1.0f;    // 見どころを見せている時間
     [SerializeField] private float returnPanDuration = 1.0f; // プレイヤーへ戻る時間
 
+    private bool playerInRange = false;
+    private PlayerController playerInRangeRef;
 
     private void Start()
     {
@@ -63,10 +65,30 @@ public class SceneChanger : MonoBehaviour
 
             if (player != null)
             {
-                isWarping = true;
-                // 演出コルーチンを開始
-                StartCoroutine(WarpAnimationRoutine(player));
+                playerInRange = true;
+                playerInRangeRef = player;
+                //決定ボタンUIをここで表示
+               // StartCoroutine(WarpAnimationRoutine(playerInRangeRef));
             }
+        }
+    }
+
+    private void OnTriggerExit2D(Collider2D other)
+    {
+        if(other.CompareTag("Player"))
+        {
+            playerInRange = false;
+            playerInRangeRef = null;
+        }
+    }
+
+    private void Update()
+    {
+        if(playerInRange&&!isWarping&&InputManager.Instance.Player.Submit.triggered)
+        {
+            isWarping = true;
+            // 演出コルーチンを開始
+            StartCoroutine(WarpAnimationRoutine(playerInRangeRef));
         }
     }
 
@@ -173,6 +195,8 @@ public class SceneChanger : MonoBehaviour
         }
 
         TransitionManager.Instance.ChangeScene(nextSceneName, TransitionType.Wipe);
+        // 念のため保険としてロック解除しておく（実害はないが安全策）
+        isWarping = false;
     }
 
     // ====================================================================
@@ -255,5 +279,7 @@ public class SceneChanger : MonoBehaviour
         }
 
         if (player.rb2D != null) player.rb2D.simulated = true;
+        //出現演出が終わったら、このゲートを再び「入れる」状態に戻す
+        isWarping = false;
     }
 }

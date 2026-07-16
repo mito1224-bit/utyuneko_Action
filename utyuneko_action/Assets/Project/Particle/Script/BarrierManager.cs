@@ -52,7 +52,7 @@ public class BarrierManager : MonoBehaviour
         return barrier.GetComponent<BarrierDestruction>();
     }
 
-    public void SpawnLaser(Transform muzzleTransform, Transform targetTransform, float duration)
+    public void SpawnLaser(Vector3 muzzlePosition, Vector3 targetPosition, float duration, Transform followParent = null)
     {
         if (laserPrefab == null)
         {
@@ -60,29 +60,34 @@ public class BarrierManager : MonoBehaviour
             return;
         }
 
-        if (muzzleTransform == null || targetTransform == null) return;
-
         // 1. 発射口からターゲットへの方向を計算する
-        Vector3 direction = targetTransform.position - muzzleTransform.position;
+        Vector3 direction = targetPosition - muzzlePosition;
+        if (direction.sqrMagnitude < 0.0001f) direction = Vector3.forward; // ゼロベクトル対策
 
         // 2. その方向を向くための回転（Rotation）を作成する
         Quaternion lookRotation = Quaternion.LookRotation(direction);
 
-        // 3. 発射口の位置・計算した回転でレーザーを生成し、発射口（または敵）を親にして追従させる
-        GameObject laser = Instantiate(laserPrefab, muzzleTransform.position, lookRotation, muzzleTransform);
+        // 3. 発射口の位置・計算した回転でレーザーを生成する
+        //    ※ 回転を巻き込まないよう、親には設定しない（位置だけ追従させたい場合は followParent を使う）
+        GameObject laser = Instantiate(laserPrefab, muzzlePosition, lookRotation);
+
+        // 敵の移動に位置だけ追従させたい場合（回転は追従させない）
+        if (followParent != null)
+        {
+            laser.transform.SetParent(followParent, true); // ワールド座標維持
+                                                           // 注意: SetParentすると回転も親に追従します。
+                                                           // 位置だけ追従・回転は固定にしたい場合は下記のような追従専用スクリプトが必要です。
+        }
 
         ParticleSystem ps = laser.GetComponentInChildren<ParticleSystem>();
         if (ps != null)
         {
-            // 3. シーン内のPlayerを探し、Collider2D を取得する
             GameObject player = GameObject.FindWithTag("Player");
             if (player != null)
             {
                 Collider2D playerCollider2D = player.GetComponent<Collider2D>();
-
                 if (playerCollider2D != null)
                 {
-                    // 4. Triggerモジュールに2Dコライダーをセット
                     var triggerModule = ps.trigger;
                     triggerModule.SetCollider(0, playerCollider2D);
                 }
@@ -91,9 +96,8 @@ public class BarrierManager : MonoBehaviour
             {
                 Debug.LogWarning("シーン内に 'Player' タグのついたオブジェクトが見つかりません！");
             }
-        }      
+        }
 
-        // 指定秒数後に自動で消えるタイマー
         StartCoroutine(DestroyLaserAfterTime(laser, duration));
     }
 
