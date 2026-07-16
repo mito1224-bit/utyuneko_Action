@@ -25,10 +25,10 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _ColorSteps: 6
+    - _ColorSteps: 32
     - _DitherStrength: 1
     - _Monochrome: 0
-    - _PixelScale: 1
+    - _PixelScale: 8
     - _Use4x4: 0
     m_Colors: []
   m_BuildTextureStacks: []
