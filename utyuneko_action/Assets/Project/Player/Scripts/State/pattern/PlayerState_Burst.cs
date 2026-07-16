@@ -1,5 +1,6 @@
 ﻿using Unity.VisualScripting;
 using UnityEngine;
+using static UnityEngine.LowLevelPhysics2D.PhysicsShape;
 
 public class PlayerState_Burst : IPlayerState
 {
@@ -109,6 +110,25 @@ public class PlayerState_Burst : IPlayerState
     {
         if (((1 << collision.gameObject.layer) & p.GetReflectionLayerMask()) != 0)
         {
+            // 死んでいる敵（RefObj）は完全に物理衝突を無視して貫通スルー！
+            if (collision.gameObject.layer == LayerMask.NameToLayer("RefObj"))
+            {
+                // 相手からHP管理コンポーネント（EnemyHealth）を探す
+                EnemyHealth enemyHealth = collision.gameObject.GetComponent<EnemyHealth>();
+                if (enemyHealth == null)
+                {
+                    enemyHealth = collision.gameObject.GetComponentInParent<EnemyHealth>();
+                }
+
+                // 敵が死んでいたら（IsDeadFlg が true だったら）
+                if (enemyHealth != null && enemyHealth.IsDeadFlg)
+                {
+                    // 💡 物理エンジンレベルでコライダー同士の衝突を永久に無視するように設定して即終了！
+                    Physics2D.IgnoreCollision(collision.collider, collision.otherCollider, true);
+                    return;
+                }
+            }
+
             SoundManager.Instance.PlaySE(SeType.PlayerWallHit);
 
             ShakeTarget.Instance.Shake(0.2f, 1.0f);
@@ -117,11 +137,30 @@ public class PlayerState_Burst : IPlayerState
             if (incomingVector.magnitude < 1f) return;
 
             Vector2 wallNormal = Vector2.zero;
-            foreach (var contact in collision.contacts)
+
+            if (collision.gameObject.layer == LayerMask.NameToLayer("RefObj"))
             {
-                wallNormal += contact.normal;
+                Vector2 relativePos = (Vector2)p.transform.position - (Vector2)collision.transform.position;
+
+                if (Mathf.Abs(relativePos.x) > Mathf.Abs(relativePos.y))
+                {
+                    wallNormal = (relativePos.x > 0f) ? Vector2.right : Vector2.left;
+                }
+                else
+                {
+                    wallNormal = (relativePos.y > 0f) ? Vector2.up : Vector2.down;
+                }
+
+                Debug.Log($"<color=cyan>🟥 RefObj四角形擬似反射：法線「{wallNormal}」を強制適用しました！</color>");
             }
-            wallNormal = wallNormal.normalized;
+            else
+            {
+                foreach (var contact in collision.contacts)
+                {
+                    wallNormal += contact.normal;
+                }
+                wallNormal = wallNormal.normalized;
+            }
 
             Vector2 reflectedDirection = Vector3.Reflect(incomingVector.normalized, wallNormal);
 
@@ -131,14 +170,12 @@ public class PlayerState_Burst : IPlayerState
             p.rb2D.linearVelocity = burstDirection * currentSpeed;
             burstTimer = burstDuration;
 
-            // 上下左右固定バウンドの伸縮をセット
             if (p.visualManager != null)
             {
                 p.visualManager.TriggerSquash(wallNormal, incomingVector);
             }
 
             reflectCount++;
-            //反射回数が最大反射回数を超えていたら通常状態に遷移
             if (p.maxReflect < reflectCount)
             {
                 p.TransitionToState(p.StateNormal);
@@ -147,8 +184,6 @@ public class PlayerState_Burst : IPlayerState
 
             Debug.Log($"バースト中衝突反射！ 速度: {currentSpeed}");
         }
-
-        //TimeManager.Instance.TriggerIndividualHitStop(p.gameObject, collision.gameObject, 0.03f);
     }
 
     public void Exit()

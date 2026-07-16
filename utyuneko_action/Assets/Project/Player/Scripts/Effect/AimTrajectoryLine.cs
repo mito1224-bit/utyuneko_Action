@@ -74,29 +74,61 @@ public class AimTrajectoryLine : MonoBehaviour
 
             if (hit.collider != null)
             {
-                // 💥 壁に激突した！
-                linePoints.Add(hit.point); // 衝突点を曲がり角として登録
-                currentPos = hit.point;    // 仮想座標を激突地点に合わせる
+                // ===================================================================
+                // 💀【新設】予測線：死んでいる敵（RefObj）はセンサーをスルーさせてそのまま突き抜ける！
+                // ===================================================================
+                if (hit.collider.gameObject.layer == LayerMask.NameToLayer("RefObj"))
+                {
+                    EnemyHealth enemyHealth = hit.collider.gameObject.GetComponent<EnemyHealth>();
+                    if (enemyHealth == null)
+                    {
+                        enemyHealth = hit.collider.gameObject.GetComponentInParent<EnemyHealth>();
+                    }
 
-                // 残りの反射回数に余裕があれば、速度ベクトルを壁の法線（hit.normal）で反射させる！
+                    // 敵が死んでいたら、この衝突を完全に無効化（スルー）する
+                    if (enemyHealth != null && enemyHealth.IsDeadFlg)
+                    {
+                        // 激突をなかったことにして、通常の空中進行としてシミュレーションを続行！
+                        linePoints.Add(nextPos);
+                        currentPos = nextPos;
+                        elapsedTime += timeStep;
+                        continue; // 💡 これより下の反射処理をすべてスキップして次のコマの計算へ進む！
+                    }
+                }
+
+                // 💥 壁に激突した！ (これより下は生きている敵や地形との衝突)
+                Vector2 normal = hit.normal;
+
+                if (hit.collider.gameObject.layer == LayerMask.NameToLayer("RefObj"))
+                {
+                    Vector2 relativePos = currentPos - (Vector2)hit.collider.transform.position;
+
+                    if (Mathf.Abs(relativePos.x) > Mathf.Abs(relativePos.y))
+                    {
+                        normal = (relativePos.x > 0f) ? Vector2.right : Vector2.left;
+                    }
+                    else
+                    {
+                        normal = (relativePos.y > 0f) ? Vector2.up : Vector2.down;
+                    }
+                }
+
+                linePoints.Add(hit.point);
+                currentPos = hit.point;
+
                 if (bounceCount < maxBounces)
                 {
                     bounceCount++;
-                    // 💡 reflectEfficiency(反射効率)を掛けることで、実際のバウンドの減速まで完璧に再現！
-                    currentVelocity = Vector2.Reflect(currentVelocity, hit.normal) * reflectEfficiency;
-
-                    // 次の出発点が壁にめり込んで連続衝突バグを起こさないように、少しだけ浮かせる
-                    currentPos += hit.normal * 0.01f;
+                    currentVelocity = Vector2.Reflect(currentVelocity, normal) * reflectEfficiency;
+                    currentPos += normal * 0.01f;
                 }
                 else
                 {
-                    // 反射限界に達したらシミュレーションをここで終了する
                     break;
                 }
             }
             else
             {
-                // 🌌 何にも当たらなかったら、そのまま進んだ座標を新しい点として登録
                 linePoints.Add(nextPos);
                 currentPos = nextPos;
             }
