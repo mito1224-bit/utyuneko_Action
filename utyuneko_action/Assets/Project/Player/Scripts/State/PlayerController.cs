@@ -59,6 +59,7 @@ public class PlayerController : MonoBehaviour, IEventActor
     [Header("Visual Manager Reference")]
     [Tooltip("演出管理コンポーネントの参照")]
     public PlayerVisualManager visualManager;
+    public Animator anim;
 
     [Header("Visual Settings")]
     [Tooltip("どれくらい前のめりにするか(最大角度)")]
@@ -74,8 +75,6 @@ public class PlayerController : MonoBehaviour, IEventActor
     [HideInInspector] public AfterImageEffect afterImageEffect;
     [HideInInspector] public int currentChargeLevel = 0;
     [HideInInspector] public float currentChargeTimer = 0f;
-
-    [HideInInspector] public Animator anim;
 
     public AimTrajectoryLine trajectoryLine;
 
@@ -111,7 +110,6 @@ public class PlayerController : MonoBehaviour, IEventActor
     {
         rb2D = GetComponent<Rigidbody2D>();
         circleCollider2D = GetComponent<CircleCollider2D>();
-        anim = GetComponent<Animator>();
 
         damageEffect = GetComponent<PlayerDamageEffect>();
 
