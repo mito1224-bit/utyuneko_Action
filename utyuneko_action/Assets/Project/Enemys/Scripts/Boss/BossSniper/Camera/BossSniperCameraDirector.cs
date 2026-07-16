@@ -464,6 +464,10 @@ public class BossSniperCameraDirector : MonoBehaviour
         // EventPaused 中は再出現しないので、演出後に巡回へ戻ってから自然に湧き直す
         bossSniper.DespawnAllMinions();
 
+        // スタン中（Dynamic ボディ）に強化へ入っていた場合、EventPaused 中も物理は動くため、
+        // このまま中央へテレポートすると演出の間ずっと重力で落下してしまう。飛行ボディへ戻して畳む。
+        bossSniper.RestoreFlightBody();
+
         BossSniperBeamUnit unit = bossSniper.SelfUnit;
         Transform visual = unit != null ? unit.visualTransform : null;
         // ① 中央（StageCenter）へテレポート。展開直前に正面を向かせるので、出現時にはもう正面向き
@@ -518,7 +522,11 @@ public class BossSniperCameraDirector : MonoBehaviour
 
         yield return TeleportWithFacing(bossSniper.RandomPatrolPoint(), faceFront: false, visual);
 
-        // ⑦ 行動再開
+        // ⑦ ステートも巡回へ揃えてから行動再開。
+        //    演出は座標だけを巡回へ戻すが currentState は変えないため、これを呼ばないと
+        //    閾値を跨いだ瞬間の stale なステートがそのまま再開してしまう。
+
+        bossSniper.ResumeToPatrolAfterEvent();
 
         bossSniper.SetEventPaused(false);
 

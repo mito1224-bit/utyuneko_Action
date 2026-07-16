@@ -518,6 +518,11 @@ public class BossSniper : MonoBehaviour
     // 各ユニットの OnBurstHit はここに集約し、現在のステートに反応を委ねる
     private void RouteBurstHit(BossSniperBeamUnit unit, PlayerController pc)
     {
+        // カメラ演出（出現・強化カットイン）中は被弾を受け付けない。
+        // 演出中はステート更新が止まっており、stale な currentState の OnBurstHit を走らせると
+        // 演出側のテレポートと衝突する（強化カットイン中に StunFall へ遷移してしまう等）。
+        if (EventPaused) return;
+
         currentState?.OnBurstHit(unit, pc);
     }
 
@@ -771,6 +776,22 @@ public class BossSniper : MonoBehaviour
         Rb.bodyType = RigidbodyType2D.Kinematic;
         Rb.gravityScale = 0f;
         Rb.linearVelocity = Vector2.zero;
+    }
+
+    /// <summary>
+    /// カメラ演出（強化カットインなど）が終わったあと、確実に巡回状態から行動を再開する。
+    /// 演出は座標だけを巡回へ戻すが currentState は書き換えないため、ここでステートも巡回へ揃える。
+    /// これを呼ばないと、閾値を跨いだ瞬間の stale なステート（分身攻撃の途中など）が、
+    /// 分身が消え・本体が別座標へ移った前提の崩れた状態のまま再開してしまう。
+    /// 併せて飛行ボディへ戻し（スタン中に演出へ入った場合の Dynamic を畳む）、攻撃間隔もリセットして、
+    /// 演出直後に攻撃が暴発しないようにする。TransitionToState 側の撃破ガードにより、
+    /// 万一この時点で撃破済みでも巡回へは戻さない。
+    /// </summary>
+    public void ResumeToPatrolAfterEvent()
+    {
+        RestoreFlightBody();
+        AttackTimer = timeBetweenAttacks;
+        TransitionToState(StatePatrol);
     }
 
     // ─── 行動ループ ─────────────────────────────────
