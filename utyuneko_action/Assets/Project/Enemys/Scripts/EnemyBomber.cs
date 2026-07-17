@@ -74,6 +74,10 @@ public class EnemyBomber : MonoBehaviour
     [Tooltip("エフェクトを爆発範囲に合わせて自動スケールする（1x1ユニット＝直径1のプレハブ想定）")]
     public bool autoScaleEffect = true;
 
+    [Tooltip("自動スケール時の微調整倍率（スケール＝半径×2×この値）。" +
+             "ボス2の爆弾（StageSecondBossTimedBomb）と同じ式・同じ既定値なので、同じ P_Ex を挿せば見た目が揃う")]
+    public float explosionEffectScaleMultiplier = 0.25f;
+
     [Tooltip("爆発フラッシュの表示時間（自滅前の見せ時間）")]
     public float explodeFlashTime = 0.2f;
 
@@ -100,6 +104,13 @@ public class EnemyBomber : MonoBehaviour
     [Tooltip("爆発フラッシュの色")]
     public Color explodeColor = new Color(1f, 1f, 0.6f, 0.9f);
 
+    [Tooltip("予兆円のマテリアル。ボス2の爆弾と同じ Boss_Area を割り当てると見た目が揃う。\n" +
+             "★スプライト前提シェーダーなので telegraphSprite とセットで指定すること。両方未指定なら従来の Sprites/Default")]
+    public Material telegraphMaterial;
+
+    [Tooltip("予兆円のスプライト。ボス2の爆弾と同じ WhiteCircle2 を想定（スケール1＝直径1ユニット）")]
+    public Sprite telegraphSprite;
+
     private enum Phase { Idle, Countdown, Exploding }
     private Phase phase = Phase.Idle;
     private float timer;
@@ -118,11 +129,9 @@ public class EnemyBomber : MonoBehaviour
 
     private bool hasExplodedOnDeath = false; // 死亡吹き飛び中の壁ヒット爆発は1回だけ
 
-    // 可視化用（実行時生成）
+    // 可視化用（実行時生成）。生成物の破棄は TelegraphCircle.Destroy() が面倒を見る
     private Transform rangeVisual;
-    private MeshRenderer rangeRenderer;
-    private Material rangeMaterial;
-    private Mesh rangeMesh;
+    private readonly TelegraphCircle rangeCircle = new TelegraphCircle();
 
     void Awake()
     {
@@ -272,7 +281,11 @@ public class EnemyBomber : MonoBehaviour
         if (explosionEffectPrefab != null)
         {
             GameObject fx = Instantiate(explosionEffectPrefab, transform.position, Quaternion.identity);
-            if (autoScaleEffect) fx.transform.localScale = Vector3.one * (explosionRadius * 2f);
+            if (autoScaleEffect)
+            {
+                float diameter = explosionRadius * 2f * explosionEffectScaleMultiplier;
+                fx.transform.localScale = new Vector3(diameter, diameter, 1f);
+            }
         }
     }
 
@@ -335,60 +348,20 @@ public class EnemyBomber : MonoBehaviour
         blinkFade = null;
     }
 
-    // ─── 可視化（実行時生成の塗りつぶし円。EnemyAreaAttack と同方式） ───
+    // ─── 可視化（予兆円。TelegraphCircle に集約。EnemyAreaAttack / ボスの着地円と同じ） ───
 
     private void CreateRangeVisual()
     {
-        GameObject go = new GameObject("ExplosionRange(仮)");
-        rangeVisual = go.transform;
-        rangeVisual.SetParent(transform, false);
-        rangeVisual.localPosition = Vector3.zero;
-
-        MeshFilter mf = go.AddComponent<MeshFilter>();
-        rangeMesh = BuildDiscMesh(48);
-        mf.sharedMesh = rangeMesh;
-
-        rangeRenderer = go.AddComponent<MeshRenderer>();
-        rangeRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        rangeRenderer.receiveShadows = false;
-        rangeRenderer.sortingOrder = -1;
-
-        rangeMaterial = new Material(Shader.Find("Sprites/Default"));
-        rangeMaterial.renderQueue = 3000; // Transparent
-        rangeRenderer.material = rangeMaterial;
-    }
-
-    private Mesh BuildDiscMesh(int segments)
-    {
-        Mesh mesh = new Mesh { name = "ExplosionDisc(仮)" };
-
-        Vector3[] verts = new Vector3[segments + 1];
-        verts[0] = Vector3.zero;
-        for (int i = 0; i < segments; i++)
-        {
-            float a = (i / (float)segments) * Mathf.PI * 2f;
-            verts[i + 1] = new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f);
-        }
-
-        int[] tris = new int[segments * 3];
-        for (int i = 0; i < segments; i++)
-        {
-            tris[i * 3] = 0;
-            tris[i * 3 + 1] = i + 1;
-            tris[i * 3 + 2] = (i + 1) % segments + 1;
-        }
-
-        mesh.vertices = verts;
-        mesh.triangles = tris;
-        mesh.RecalculateBounds();
-        return mesh;
+        rangeCircle.Create("ExplosionRange(仮)", transform, telegraphSprite, telegraphMaterial, sortingOrder: -1);
+        rangeVisual = rangeCircle.Transform;
+        if (rangeVisual != null) rangeVisual.localPosition = Vector3.zero;
     }
 
     private void UpdateRangeVisual(bool hidden)
     {
         if (rangeVisual == null) return;
 
-        rangeVisual.localScale = Vector3.one * explosionRadius;
+        rangeCircle.SetRadius(explosionRadius);
 
         // 親（モデル/ルート）が進行方向へ回転しても、範囲円は常にカメラ正面（XY平面）を向かせる。
         rangeVisual.rotation = Quaternion.identity;
@@ -409,14 +382,13 @@ public class EnemyBomber : MonoBehaviour
             c = Color.Lerp(idleColor, dangerColor, progress);
         }
 
-        rangeMaterial.color = c;
+        rangeCircle.SetColor(c);
     }
 
     void OnDestroy()
     {
         if (knockback != null) knockback.OnDeathGroundHit -= HandleDeathGroundHit;
-        if (rangeMaterial != null) Destroy(rangeMaterial);
-        if (rangeMesh != null) Destroy(rangeMesh);
+        rangeCircle.Destroy();
     }
 
     private void OnDrawGizmosSelected()

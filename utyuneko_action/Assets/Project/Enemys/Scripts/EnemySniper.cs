@@ -69,6 +69,22 @@ public class EnemySniper : MonoBehaviour
     [Tooltip("レーザー発射中の色")]
     public Color fireColor = new Color(1f, 0.2f, 0.2f, 0.95f);
 
+    [Tooltip("射線・ロック・レーザーを描く LineRenderer のマテリアル。未指定なら従来どおり Sprites/Default を実行時生成する。\n" +
+             "★ラインの形・色（aim/lock/fireColor）のラープはそのまま。色は LineRenderer の頂点カラーで乗るので、" +
+             "Boss_Area（URPHologram）のように頂点カラーを乗算するシェーダーならそのまま効く（ボス2の予兆と見た目が揃う）")]
+    public Material beamMaterial;
+
+    [Header("レーザー演出（任意／Particle フォルダの Lazer）")]
+    [Tooltip("発射の瞬間に再生するレーザーパーティクル。Lazer プレハブを子に置いて LaserVisualController を付けたものを割り当てる。\n" +
+             "未指定なら従来どおり LineRenderer のビームだけで動く")]
+    public LaserVisualController laserVisual;
+
+    [Tooltip("レーザーパーティクルの太さ倍率（1＝プレハブそのまま）。beamWidth（当たり判定の太さ）とは別物なので見た目だけここで合わせる")]
+    public float laserVisualWidthMultiplier = 1f;
+
+    [Tooltip("パーティクルを出す間は LineRenderer のビームを隠す（線とパーティクルが二重に見えるのを防ぐ）。射線・ロックの予兆は隠さない")]
+    public bool hideLineWhileLaserFX = true;
+
     [Header("銃口（照準追従）")]
     [Tooltip("照準方向に合わせて回転・配置する銃口オブジェクト（バレル等）。firePoint をこの子にすると射線原点も追従する")]
     public Transform aimPivot;
@@ -199,7 +215,10 @@ public class EnemySniper : MonoBehaviour
         // 吹き飛び中／死亡中は攻撃を中断
         if (knockback != null && (knockback.IsActive || knockback.IsDying))
         {
-            if (phase != Phase.Idle && phase != Phase.Cooldown) BeginCooldown();
+            if (phase != Phase.Idle && phase != Phase.Cooldown)
+            {
+                BeginCooldown(); // 中断時もレーザーを止める（BeginCooldown内でStopLaserVisual）
+            }
             HideBeam();
             return;
         }
@@ -226,7 +245,9 @@ public class EnemySniper : MonoBehaviour
 
             case Phase.Fire:
                 // レーザー判定＋表示。発射中は毎フレーム当たり判定（無敵は PlayerHealth 側）
-                DrawBeam(lockedDir, fireColor, beamWidth);
+                // パーティクルを出しているなら線は隠す（二重に見えるため）
+                if (laserVisual != null && hideLineWhileLaserFX) HideBeam();
+                else DrawBeam(lockedDir, fireColor, beamWidth);
                 ApplyBeamDamage();
                 Countdown(BeginCooldown);
                 break;
@@ -262,13 +283,40 @@ public class EnemySniper : MonoBehaviour
     {
         phase = Phase.Fire;
         timer = Mathf.Max(0f, fireDuration);
+        PlayLaserVisual();  // 発射の瞬間に1回だけ再生（毎フレーム呼ぶと再生し直しになる）
         ApplyBeamDamage(); // fireDuration=0 でも最低1回は判定
+    }
+
+    // レーザーパーティクルを射線に合わせて配置・再生する。
+    // 当たり判定は従来どおり ApplyBeamDamage の CircleCast が担当＝これは見た目だけ。
+    // （Lazer プレハブに付く LaserParticleTrigger は使わない。使うとダメージが二重になる）
+    private void PlayLaserVisual()
+    {
+        if (laserVisual == null) return;
+
+        Vector2 origin = FireOrigin();
+        float len = ComputeBeamLength(origin, lockedDir);
+
+        // レーザーも銃口と同じ z 平面に置く（DrawBeam と同じ理由＝視差ズレ防止）
+        float z = firePoint != null ? firePoint.position.z : transform.position.z;
+
+        Transform t = laserVisual.transform;
+        t.position = new Vector3(origin.x, origin.y, z);
+
+        // Lazer プレハブの Shape は Cone＝粒はローカル +Z へ飛ぶ。
+        // そのため Z軸回転ではなく、+Z が射線方向を向くように LookRotation で合わせる。
+        t.rotation = Quaternion.LookRotation(new Vector3(lockedDir.x, lockedDir.y, 0f), Vector3.up);
+
+        laserVisual.Configure(len, laserVisualWidthMultiplier);
     }
 
     private void BeginCooldown()
     {
         phase = Phase.Cooldown;
         timer = Mathf.Max(0f, cooldown);
+        // Fire を抜けたらレーザーパーティクルを止める（Lazer は looping なので放置すると出っぱなしになる）。
+        // 正常終了（fireDuration 経過）・中断のどちらもここを通る。
+        StopLaserVisual();
     }
 
     // ─── 索敵・方向 ───────────────────────────────
@@ -492,10 +540,18 @@ public class EnemySniper : MonoBehaviour
         line.receiveShadows = false;
         line.sortingOrder = 10; // 敵・プレイヤーより前に描く
 
-        // ビルトインRP前提。Sprites/Default は頂点カラー＆半透明ブレンド対応
-        lineMaterial = new Material(Shader.Find("Sprites/Default"));
-        lineMaterial.renderQueue = 3000; // Transparent
-        line.material = lineMaterial;
+        if (beamMaterial != null)
+        {
+            // 割り当てがあれば共有マテリアルをそのまま使う（複製しないので破棄も不要＝OnDestroyでlineMaterialはnullのまま）
+            line.sharedMaterial = beamMaterial;
+        }
+        else
+        {
+            // ビルトインRP前提。Sprites/Default は頂点カラー＆半透明ブレンド対応
+            lineMaterial = new Material(Shader.Find("Sprites/Default"));
+            lineMaterial.renderQueue = 3000; // Transparent
+            line.material = lineMaterial;
+        }
 
         HideBeam();
     }
@@ -523,6 +579,14 @@ public class EnemySniper : MonoBehaviour
     private void HideBeam()
     {
         if (line != null) line.enabled = false;
+    }
+
+    // 再生中のレーザーパーティクルを止めて消す（中断用）
+    private void StopLaserVisual()
+    {
+        if (laserVisual == null) return;
+        var ps = laserVisual.GetComponent<ParticleSystem>();
+        if (ps != null) ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
     }
 
     void OnDestroy()
