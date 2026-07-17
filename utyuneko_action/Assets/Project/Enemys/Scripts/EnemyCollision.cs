@@ -131,7 +131,14 @@ public class EnemyCollision : MonoBehaviour
         // ここでは弾いた演出だけ出して抜ける（本体へのダメージ・ノックバック・ヒットストップは出さない）。
         if (myCol != null && collision.otherCollider != myCol)
         {
-            if (isBursting) enemyShield?.PlayBlockEffect();
+            // 接触点から火花を出したいので、衝突の接点を渡す（接点が取れない場合は盾の位置で代用）。
+            if (isBursting)
+            {
+                Vector3 blockPoint = collision.contactCount > 0
+                    ? (Vector3)collision.GetContact(0).point
+                    : collision.otherCollider.bounds.center;
+                enemyShield?.PlayBlockEffect(blockPoint);
+            }
             return;
         }
 

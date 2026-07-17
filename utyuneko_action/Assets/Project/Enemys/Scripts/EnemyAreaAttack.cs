@@ -63,6 +63,13 @@ public class EnemyAreaAttack : MonoBehaviour
     [Tooltip("発動中（攻撃判定が出ている間）の色")]
     public Color strikeColor = new Color(1f, 1f, 1f, 0.85f);
 
+    [Tooltip("予兆円のマテリアル。ボス2の爆弾と同じ Boss_Area を割り当てると見た目が揃う。\n" +
+             "★スプライト前提シェーダーなので telegraphSprite とセットで指定すること。両方未指定なら従来の Sprites/Default")]
+    public Material telegraphMaterial;
+
+    [Tooltip("予兆円のスプライト。ボス2の爆弾と同じ WhiteCircle2 を想定（スケール1＝直径1ユニット）")]
+    public Sprite telegraphSprite;
+
     private enum Phase { Cooldown, Telegraph, Active }
     private Phase phase = Phase.Cooldown;
     private float timer;
@@ -70,11 +77,9 @@ public class EnemyAreaAttack : MonoBehaviour
     private EnemyKnockback knockback;
     private GameObject telegraphInstance;
 
-    // 実行時可視化用（仮）。OnDestroy で破棄する
+    // 実行時可視化用（仮）。生成物の破棄は TelegraphCircle.Destroy() が面倒を見る
     private Transform rangeVisual;
-    private MeshRenderer rangeRenderer;
-    private Material rangeMaterial;
-    private Mesh rangeMesh;
+    private readonly TelegraphCircle rangeCircle = new TelegraphCircle();
 
     void Awake()
     {
@@ -204,51 +209,9 @@ public class EnemyAreaAttack : MonoBehaviour
 
     private void CreateRangeVisual()
     {
-        GameObject go = new GameObject("AreaAttackRange(仮)");
-        rangeVisual = go.transform;
-        rangeVisual.SetParent(transform, false);
-        rangeVisual.localPosition = Vector3.zero;
-
-        MeshFilter mf = go.AddComponent<MeshFilter>();
-        rangeMesh = BuildDiscMesh(48);
-        mf.sharedMesh = rangeMesh;
-
-        rangeRenderer = go.AddComponent<MeshRenderer>();
-        rangeRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        rangeRenderer.receiveShadows = false;
-        rangeRenderer.sortingOrder = -1; // プレイヤー／敵スプライトの後ろに描く
-
-        // ビルトインRP前提。Sprites/Default は _Color で色付け＆半透明ブレンドできる
-        rangeMaterial = new Material(Shader.Find("Sprites/Default"));
-        rangeMaterial.renderQueue = 3000; // Transparent
-        rangeRenderer.material = rangeMaterial;
-    }
-
-    // 中心＋外周の扇メッシュ（半径1の単位円）。実スケールは transform.localScale で合わせる
-    private Mesh BuildDiscMesh(int segments)
-    {
-        Mesh mesh = new Mesh { name = "AreaAttackDisc(仮)" };
-
-        Vector3[] verts = new Vector3[segments + 1];
-        verts[0] = Vector3.zero;
-        for (int i = 0; i < segments; i++)
-        {
-            float a = (i / (float)segments) * Mathf.PI * 2f;
-            verts[i + 1] = new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f);
-        }
-
-        int[] tris = new int[segments * 3];
-        for (int i = 0; i < segments; i++)
-        {
-            tris[i * 3] = 0;
-            tris[i * 3 + 1] = i + 1;
-            tris[i * 3 + 2] = (i + 1) % segments + 1;
-        }
-
-        mesh.vertices = verts;
-        mesh.triangles = tris;
-        mesh.RecalculateBounds();
-        return mesh;
+        rangeCircle.Create("AreaAttackRange(仮)", transform, telegraphSprite, telegraphMaterial, sortingOrder: -1);
+        rangeVisual = rangeCircle.Transform;
+        if (rangeVisual != null) rangeVisual.localPosition = Vector3.zero;
     }
 
     // フェーズに応じて範囲の色／濃さを更新する
@@ -256,8 +219,8 @@ public class EnemyAreaAttack : MonoBehaviour
     {
         if (rangeVisual == null) return;
 
-        // 半径が Inspector で変わっても追従（円メッシュは半径1なので半径そのものを掛ける）
-        rangeVisual.localScale = Vector3.one * attackRadius;
+        // 半径が Inspector で変わっても追従（方式ごとのスケール差は TelegraphCircle が吸収する）
+        rangeCircle.SetRadius(attackRadius);
 
         // 親（モデル/ルート）が進行方向へ回転しても、範囲円は常にカメラ正面（XY平面）を向かせる。
         // ワールド回転を無回転に固定＝親のY軸回転を継承して円が斜めに寝るのを防ぐ。
@@ -285,14 +248,13 @@ public class EnemyAreaAttack : MonoBehaviour
             c = idleColor;
         }
 
-        rangeMaterial.color = c;
+        rangeCircle.SetColor(c);
     }
 
     void OnDestroy()
     {
         // 実行時に生成したマテリアル／メッシュを破棄（リーク対策）
-        if (rangeMaterial != null) Destroy(rangeMaterial);
-        if (rangeMesh != null) Destroy(rangeMesh);
+        rangeCircle.Destroy();
     }
 
     // シーンビューで攻撃範囲を可視化（調整用）

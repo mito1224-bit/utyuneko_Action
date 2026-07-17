@@ -26,8 +26,24 @@ public class BossChargerTrigger : MonoBehaviour
         // テストシーンには SoundManager がいないことがあるので null ガード（CLAUDE.md の流儀）
         if (stopBgm && SoundManager.Instance != null) SoundManager.Instance.StopBGM(1.0f);
 
+        // ① 先に親Canvas（BossUI）をONにする。
+        //    HPバーの出現アニメはコルーチンなので、親が非アクティブのままでは起動できない。
         if (hpBarObject != null) hpBarObject.SetActive(true);
-        if (bossObject != null) bossObject.SetActive(true);
+
+        // ② 親がONになった安全なタイミングで、トリガー側からHPバーの出現アニメを叩く
+        //    （StageSecondBossTrigger と同じ流儀）。ここで最大値が入るので、これを飛ばすとゲージが正しく出ない。
+        if (bossObject != null)
+        {
+            var bossHealth = bossObject.GetComponent<BossChargerHealth>();
+            if (bossHealth != null && bossHealth.hpBar != null)
+            {
+                bossHealth.hpBar.StartAppearAnimation(bossHealth.maxHP, bossHealth.maxHP);
+            }
+
+            // ③ HPバーの準備が整ってからボスを実体化
+            bossObject.SetActive(true);
+        }
+
         if (bossWallObject != null) bossWallObject.SetActive(true);
 
         Destroy(gameObject);

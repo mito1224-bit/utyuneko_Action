@@ -20,10 +20,8 @@ public class BossChargerLeapSlamState : BossChargerBaseState
     private Vector2 targetPos;
     private float leapElapsed;
 
-    private GameObject telegraph;      // 着地予兆の円（実行時生成）
-    private Material telegraphMaterial;
-    private Mesh telegraphMesh;
-    private Transform telegraphVisual;
+    // 着地予兆の円。生成・破棄・方式（スプライト/フォールバック）は TelegraphCircle が面倒を見る
+    private readonly TelegraphCircle telegraph = new TelegraphCircle();
 
     private static readonly Color telegraphColor = new Color(1f, 0.4f, 0.1f, 0.5f);
 
@@ -124,69 +122,25 @@ public class BossChargerLeapSlamState : BossChargerBaseState
         timer = boss.leapRecoverTime / boss.SpeedMultiplier;
     }
 
-    // ─── 着地予兆の円（実行時生成の半透明ディスク） ───
+    // ─── 着地予兆の円（TelegraphCircle。爆弾・雑魚の範囲円と同じ方式） ───
 
     private void CreateTelegraph(Vector3 pos, float radius)
     {
-        telegraph = new GameObject("LeapLandTelegraph(仮)");
-        telegraph.transform.position = pos;
-        telegraphVisual = telegraph.transform;
-
-        MeshFilter mf = telegraph.AddComponent<MeshFilter>();
-        telegraphMesh = BuildDiscMesh(40);
-        mf.sharedMesh = telegraphMesh;
-
-        MeshRenderer mr = telegraph.AddComponent<MeshRenderer>();
-        mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        mr.receiveShadows = false;
-        mr.sortingOrder = -1; // プレイヤー／敵スプライトの後ろ
-
-        telegraphMaterial = new Material(Shader.Find("Sprites/Default"));
-        telegraphMaterial.renderQueue = 3000; // Transparent
-        mr.material = telegraphMaterial;
-
-        telegraphVisual.localScale = Vector3.one * radius;
-        telegraphMaterial.color = telegraphColor;
+        // 親を付けない（ボスが跳んでも着地点に置きっぱなしにするため）
+        telegraph.Create("LeapLandTelegraph(仮)", null, boss.telegraphSprite, boss.telegraphCircleMaterial, sortingOrder: -1);
+        telegraph.SetWorldPosition(pos);
+        telegraph.SetRadius(radius);
+        telegraph.SetColor(telegraphColor);
     }
 
     // 降下が進むほど濃く（着弾が近いのを見せる）
     private void UpdateTelegraph()
     {
-        if (telegraphMaterial == null) return;
+        if (!telegraph.IsCreated) return;
         Color c = telegraphColor;
         c.a = Mathf.Lerp(0.25f, 0.75f, Mathf.Clamp01(leapElapsed / Mathf.Max(0.05f, boss.leapTime)));
-        telegraphMaterial.color = c;
+        telegraph.SetColor(c);
     }
 
-    private void DestroyTelegraph()
-    {
-        if (telegraphMaterial != null) { Object.Destroy(telegraphMaterial); telegraphMaterial = null; }
-        if (telegraphMesh != null) { Object.Destroy(telegraphMesh); telegraphMesh = null; }
-        if (telegraph != null) { Object.Destroy(telegraph); telegraph = null; }
-        telegraphVisual = null;
-    }
-
-    // 中心＋外周の扇メッシュ（半径1の単位円）
-    private Mesh BuildDiscMesh(int segments)
-    {
-        Mesh mesh = new Mesh { name = "LeapTelegraphDisc(仮)" };
-        Vector3[] verts = new Vector3[segments + 1];
-        verts[0] = Vector3.zero;
-        for (int i = 0; i < segments; i++)
-        {
-            float a = (i / (float)segments) * Mathf.PI * 2f;
-            verts[i + 1] = new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f);
-        }
-        int[] tris = new int[segments * 3];
-        for (int i = 0; i < segments; i++)
-        {
-            tris[i * 3] = 0;
-            tris[i * 3 + 1] = i + 1;
-            tris[i * 3 + 2] = (i + 1) % segments + 1;
-        }
-        mesh.vertices = verts;
-        mesh.triangles = tris;
-        mesh.RecalculateBounds();
-        return mesh;
-    }
+    private void DestroyTelegraph() => telegraph.Destroy();
 }

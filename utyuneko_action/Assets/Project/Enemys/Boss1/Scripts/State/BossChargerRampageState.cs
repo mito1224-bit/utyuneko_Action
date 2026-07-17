@@ -14,12 +14,13 @@ using UnityEngine;
 /// </summary>
 public class BossChargerRampageState : BossChargerBaseState
 {
-    private enum Phase { Aim, Dash }
+    private enum Phase { Settle, Aim, Dash }
     private Phase phase;
     private float timer;       // 現フェーズの残り時間
     private float phaseTotal;  // 現フェーズの総時間（予兆進行度の算出に使う）
     private Vector2 chargeDir;
     private int chargesDone;
+    private float settleTimer; // 着地待ちの保険時間
 
     public BossChargerRampageState(BossChargerController boss) : base(boss) { }
 
@@ -28,14 +29,27 @@ public class BossChargerRampageState : BossChargerBaseState
         chargesDone = 0;
         // FixedUpdate が最初の Update より先に走っても方向を持っておく
         chargeDir = boss.DirectionToPlayer(true);
-        // 1回目だけ長めの咆哮タメ
-        BeginAim(boss.rampageRoarTime);
+
+        // 乱舞の突進は水平（DirectionToPlayer(true) が Vector2(±1, 0) を返す）なので、
+        // 空中で始めるとプレイヤーの頭上を延々と往復するだけになり、棒立ちで避けられてしまう。
+        // このボスは GravityScale=0 で自然落下しないため、ここで自前で地面まで降ろしてから始める。
+        if (boss.IsGroundedBelow()) BeginAim(boss.rampageRoarTime);
+        else BeginSettle();
     }
 
     public override void Update()
     {
         switch (phase)
         {
+            case Phase.Settle:
+                // 降下そのものは FixedUpdate。ここでは向きの維持と保険時間だけ見る。
+                boss.SetFacing((int)Mathf.Sign(boss.DirectionToPlayer(true).x));
+                boss.UpdateModelFacing();
+                settleTimer -= Time.deltaTime;
+                // 真下に床が無い（奈落・場外）と永久に落ち続けるので、保険時間で打ち切って始める
+                if (settleTimer <= 0f) BeginAim(boss.rampageRoarTime);
+                break;
+
             case Phase.Aim:
                 // 狙い続け、向き・視線を突進方向へ見せる（予兆進行度で黄→赤）
                 chargeDir = boss.DirectionToPlayer(true);
@@ -58,6 +72,14 @@ public class BossChargerRampageState : BossChargerBaseState
 
     public override void FixedUpdate()
     {
+        if (phase == Phase.Settle)
+        {
+            // MoveSweep は wallLayers（＝壁・床）へのスイープなので、下向きに使えばそのまま着地処理になる
+            bool landed = boss.MoveSweep(Vector2.down, boss.rampageSettleSpeed * boss.SpeedMultiplier);
+            if (landed) BeginAim(boss.rampageRoarTime);
+            return;
+        }
+
         if (phase != Phase.Dash) return;
 
         bool hitWall = boss.MoveSweep(chargeDir, boss.rampageSpeed * boss.SpeedMultiplier);
@@ -91,6 +113,14 @@ public class BossChargerRampageState : BossChargerBaseState
 
         // まだ残り → 短い狙い直しを挟んで、プレイヤー方向へ突進し直す（乱舞継続）
         BeginAim(boss.rampageWindupTime);
+    }
+
+    // 空中で発動したときに地面まで降りるフェーズ。着地したら咆哮タメへ進む。
+    private void BeginSettle()
+    {
+        phase = Phase.Settle;
+        settleTimer = Mathf.Max(0.05f, boss.rampageSettleMaxTime);
+        boss.HideChargeTelegraph(); // 降下中は予兆を出さない（狙いは着地後に定める）
     }
 
     private void BeginAim(float duration)

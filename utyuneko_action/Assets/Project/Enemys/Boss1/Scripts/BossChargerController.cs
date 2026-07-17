@@ -98,6 +98,19 @@ public class BossChargerController : MonoBehaviour
     [Tooltip("視線ラインの最大長（壁があればそこで止まる）")]
     public float chargeTelegraphMaxLength = 20f;
 
+    [Tooltip("視線ライン（LineRenderer）のマテリアル。未指定なら従来どおり Sprites/Default を実行時生成する。\n" +
+             "★ラインの形・黄→赤のラープはそのまま。色は LineRenderer の頂点カラーで乗るので、" +
+             "Boss_Area（URPHologram）のように頂点カラーを乗算するシェーダーならそのまま効く")]
+    public Material chargeTelegraphMaterial;
+
+    [Header("予兆の円（範囲技の共通見た目）")]
+    [Tooltip("柱・着地円などの予兆円マテリアル。ボス2の爆弾と同じ Boss_Area を割り当てると見た目が揃う。\n" +
+             "★スプライト前提シェーダーなので telegraphSprite とセットで指定すること。両方未指定なら従来の Sprites/Default")]
+    public Material telegraphCircleMaterial;
+
+    [Tooltip("予兆円のスプライト。ボス2の爆弾と同じ WhiteCircle2 を想定（スケール1＝直径1ユニット）")]
+    public Sprite telegraphSprite;
+
     [Header("スタン（技④の衝撃波もここから出す）")]
     [Tooltip("壁に当たって自滅したときのスタン時間（＝攻撃チャンス）")]
     public float stunDuration = 3f;
@@ -130,7 +143,7 @@ public class BossChargerController : MonoBehaviour
     [Tooltip("投擲中の移動速度（無防備な代わりに速く動く）")]
     public float throwMoveSpeed = 5f;
     [Tooltip("盾を投げる前に軌道ラインを見せるタメ時間（秒）。避ける猶予。0で即投げ")]
-    public float throwTelegraphWindupTime = 0.4f;
+    public float throwTelegraphWindupTime = 2f;
     [Tooltip("投擲前に盾の飛ぶ軌道（LineRenderer）をプレイヤーへ見せる")]
     public bool showThrowTelegraph = true;
     [Tooltip("軌道ラインの色：予兆の開始（まだ余裕＝黄）")]
@@ -164,47 +177,14 @@ public class BossChargerController : MonoBehaviour
     [Tooltip("壁に当たらなかった場合に1回の突進を打ち切る保険時間（秒）")]
     public float rampageMaxChargeTime = 2.5f;
 
-    [Header("地面叩き→隆起衝撃柱（技⑦）")]
-    [Tooltip("この技を選択候補に入れる")]
-    public bool enableGroundSlam = true;
-    [Tooltip("叩く前のタメ時間（秒）")]
-    public float groundSlamWindupTime = 0.7f;
-    [Tooltip("柱を撒き終えてから待機へ戻るまでの追加硬直（秒）")]
-    public float groundSlamRecoverTime = 0.6f;
-    [Tooltip("この技のクールダウン（秒。連発防止）")]
-    public float groundSlamCooldown = 8f;
-    [Tooltip("並べる衝撃柱の本数")]
-    public int groundSlamPillarCount = 5;
-    [Tooltip("柱と柱の間隔")]
-    public float groundSlamPillarSpacing = 1.6f;
-    [Tooltip("足元から1本目までの距離")]
-    public float groundSlamPillarStartOffset = 1.5f;
-    [Tooltip("隣の柱が起きるまでの時間差（波及感。0で一斉）")]
-    public float groundSlamPillarStagger = 0.1f;
-    [Tooltip("各柱の予兆時間（足元に印を出す秒数）")]
-    public float pillarTelegraphTime = 0.35f;
-    [Tooltip("各柱が0→全高へ隆起する時間（秒）")]
-    public float pillarRiseTime = 0.12f;
-    [Tooltip("各柱が全高で当たり判定を残す時間（秒）")]
-    public float pillarActiveTime = 0.2f;
-    [Tooltip("各柱の幅")]
-    public float pillarWidth = 0.9f;
-    [Tooltip("各柱の高さ")]
-    public float pillarHeight = 2.6f;
-    [Tooltip("柱に当たったプレイヤーへのダメージ")]
-    public int pillarDamage = 1;
-    [Tooltip("柱の見た目に使うマテリアル（未指定なら従来どおり実行時生成の Sprites/Default 板を使う）。" +
-             "隆起アニメ（下端固定で上へ伸びる）はこのマテリアルのまま効く")]
-    public Material pillarMaterial;
-    [Tooltip("柱マテリアルを予兆色（黄→赤）で色付けする。OFF ならマテリアルの見た目をそのまま出す")]
-    public bool tintPillarMaterial = true;
-    [Tooltip("柱予兆の色：出始め（まだ余裕＝黄）")]
-    public Color pillarTelegraphColorStart = new Color(1f, 0.9f, 0.15f, 0.5f);
-    [Tooltip("柱予兆の色：隆起直前（もう来る＝赤）")]
-    public Color pillarTelegraphColorEnd = new Color(1f, 0.15f, 0.1f, 0.85f);
-    [Tooltip("柱が隆起して当たり判定を出している間の色（危険＝赤）")]
-    public Color pillarActiveColor = new Color(1f, 0.2f, 0.15f, 0.9f);
+    [Tooltip("必殺技の開始前に地面へ降りる速度。乱舞の突進は水平（DirectionToPlayer(true)）なので、" +
+             "空中で始めるとプレイヤーの頭上を素通りして棒立ちで避けられてしまう。必ず接地させてから始める")]
+    public float rampageSettleSpeed = 18f;
 
+    [Tooltip("地面へ降りるのを諦めるまでの保険時間（秒）。真下に床が無い（奈落・場外）ときここで打ち切って通常どおり開始する")]
+    public float rampageSettleMaxTime = 1.5f;
+
+   
     [Header("飛び上がり叩きつけAoE（技⑧）")]
     [Tooltip("この技を選択候補に入れる")]
     public bool enableLeapSlam = true;
@@ -449,9 +429,18 @@ public class BossChargerController : MonoBehaviour
         telegraphLine.receiveShadows = false;
         telegraphLine.sortingOrder = 10; // 敵・プレイヤーより前に描く
 
-        telegraphMaterial = new Material(Shader.Find("Sprites/Default"));
-        telegraphMaterial.renderQueue = 3000; // Transparent
-        telegraphLine.material = telegraphMaterial;
+        if (chargeTelegraphMaterial != null)
+        {
+            // 割り当てがあれば共有マテリアルをそのまま使う（複製しないので破棄も不要）
+            telegraphLine.sharedMaterial = chargeTelegraphMaterial;
+        }
+        else
+        {
+            // 従来どおりの実行時生成。これだけ OnDestroy で破棄が要る
+            telegraphMaterial = new Material(Shader.Find("Sprites/Default"));
+            telegraphMaterial.renderQueue = 3000; // Transparent
+            telegraphLine.material = telegraphMaterial;
+        }
 
         HideChargeTelegraph();
     }
@@ -537,6 +526,18 @@ public class BossChargerController : MonoBehaviour
         }
         Rb.MovePosition(Rb.position + dir * step);
         return false;
+    }
+
+    /// <summary>
+    /// 足元に床があるか。wallLayers は「壁・床とみなすレイヤー」なので、そのまま接地判定に使える。
+    /// ★このボスの Rigidbody2D は Dynamic だが GravityScale=0 なので、一度浮くと自然落下では戻らない。
+    ///   高さを前提にする技（水平突進など）は、この判定で接地を確かめてから始めること。
+    /// </summary>
+    public bool IsGroundedBelow()
+    {
+        if (Rb == null) return true;
+        RaycastHit2D hit = Physics2D.CircleCast(Rb.position, BodyRadius(), Vector2.down, wallSkin * 2f, wallLayers);
+        return hit.collider != null;
     }
 
     private Collider2D bodyCol;

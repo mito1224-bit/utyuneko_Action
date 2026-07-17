@@ -269,6 +269,7 @@ MonoBehaviour:
   blinkOnDeath: 1
   blinkInterval: 0.08
   blinkMinAlpha: 0.3
+  hideOutlineOnDeath: 1
   destroyOnGroundHit: 1
   groundLayers:
     serializedVersion: 2
@@ -344,16 +345,19 @@ MonoBehaviour:
     m_Bits: 128
   destroyOnExplode: 1
   explodeOnDeathWallHit: 1
-  explosionEffectPrefab: {fileID: 0}
+  explosionEffectPrefab: {fileID: 8499438699532638891, guid: d06ef5b9b6b4f3b47a2d5b7393eed43b, type: 3}
   autoScaleEffect: 1
+  explosionEffectScaleMultiplier: 0.25
   explodeFlashTime: 0.2
   blinkIntervalStart: 0.3
   blinkIntervalEnd: 0.05
   blinkMinAlpha: 0.3
   showRuntimeRange: 1
-  idleColor: {r: 1, g: 0.3, b: 0, a: 0.08}
-  dangerColor: {r: 1, g: 0.2, b: 0, a: 0.55}
-  explodeColor: {r: 1, g: 1, b: 0.6, a: 0.9}
+  idleColor: {r: 1, g: 0.8527355, b: 0.13396227, a: 0.08}
+  dangerColor: {r: 0.9169811, g: 0.3772684, b: 0, a: 0.55}
+  explodeColor: {r: 0.98490566, g: 0.02787452, b: 0.02787452, a: 0.9}
+  telegraphMaterial: {fileID: 2100000, guid: 9d14f1567a1d25248a493dc6367da1f3, type: 2}
+  telegraphSprite: {fileID: 21300000, guid: 0686451d2cfcfaf4dbede1ade10d4971, type: 3}
 --- !u!114 &2182378406006850682
 MonoBehaviour:
   m_ObjectHideFlags: 0

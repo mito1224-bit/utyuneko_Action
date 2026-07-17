@@ -28,6 +28,14 @@ public class BossChargerShield : MonoBehaviour
     [Tooltip("投擲中の回転速度（度/秒・見た目）")]
     public float spinSpeed = 720f;
 
+    [Header("演出（任意）")]
+    [Tooltip("バーストを弾いた接触点にパーティクルを出す（FXManager 経由）。雑魚の EnemyShield と同じ流儀。" +
+             "FXManager が無いテストシーンでは自動でスキップ")]
+    public bool playBlockFX = true;
+
+    [Tooltip("弾いたときに出すエフェクトの種類。FXManager の登録リストに存在するものを指定すること")]
+    public FXType blockFXType = FXType.Spark;
+
     public enum ShieldMode { Held, ThrowOut, ThrowReturn }
     public ShieldMode Mode { get; private set; } = ShieldMode.Held;
     public bool IsHeld => Mode == ShieldMode.Held;
@@ -80,10 +88,28 @@ public class BossChargerShield : MonoBehaviour
 
         // バースト中に盾へ突っ込んできた → 反射はプレイヤー側（壁と同じ扱い）、こちらはカウンターを起動
         PlayerController p = collision.gameObject.GetComponent<PlayerController>();
-        if (p != null && p.CurrentState == p.StateBurst && IsHeld)
+        if (p != null && p.CurrentState == p.StateBurst)
         {
-            controller.OnShieldBurstHit();
+            // 弾いた火花は構え中／投擲中を問わず出す（どちらも壁のように反射して弾かれるため）
+            PlayBlockEffect(collision);
+
+            // カウンター（技⑥）は構えているときだけ。投擲中は正面が無防備という設計なので起動させない
+            if (IsHeld) controller.OnShieldBurstHit();
         }
+    }
+
+    /// <summary>盾でバーストを弾いた瞬間、接触点に火花を出す（雑魚の EnemyShield.PlayBlockEffect と同じ流儀）</summary>
+    private void PlayBlockEffect(Collision2D collision)
+    {
+        // FXManager はシーンに置かれたシングルトン。テストシーンには無いこともあるので null 許容。
+        if (!playBlockFX || FXManager.Instance == null) return;
+
+        // 盾の中心ではなく実際に当たった位置から出す
+        Vector3 hitPoint = collision.contactCount > 0
+            ? (Vector3)collision.GetContact(0).point
+            : transform.position;
+
+        FXManager.Instance.Play(blockFXType, hitPoint);
     }
 
     /// <summary>向き（-1=左 / +1=右）に合わせて構え位置を反転する。構え中のみ有効</summary>
