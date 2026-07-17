@@ -9,6 +9,8 @@ public enum FXType
     Explosion,
     Flash_ItemBit,
     DataGetFlash,
+    SuctionGreen,
+    SuctionRed,
 
 
     // 将来増えるエフェクトをここに足していく

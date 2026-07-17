@@ -189,6 +189,12 @@ public class GameManager : MonoBehaviour
             }
             Debug.Log($"【GameManager】死亡リロード検知：本番データをチェックポイント時点に巻き戻しました。");
         }
+        else if (stage.isCoreCubeCollected)
+        {
+            // 【クリア済みステージの再挑戦時】★新規追加
+            // チェックポイントのキャッシュだけ初期化し、dataCubeFlags には触らない
+            LastCheckpoint = new CheckpointCache();
+        }
         else
         {
             // 【新規ステージ開始時、または一度もチェックポイントを踏んでいない場合】
@@ -224,6 +230,19 @@ public class GameManager : MonoBehaviour
         }
 
         Debug.Log("【GameManager】チェックポイントのデータをキャッシュ（確定）しました。");
+    }
+
+    public bool IsStageCoreCubeCollected(string stageId)
+    {
+        StageProgressData stage = currentSaveData.stageList.Find(x => x.stageId == stageId);
+        return stage != null && stage.isCoreCubeCollected;
+    }
+
+    // ★追加：指定ステージの、本番セーブデータ上のDataCube取得済みフラグを外部から取得するための関数
+    public List<bool> GetStageDataCubeFlags(string stageId)
+    {
+        StageProgressData stage = currentSaveData.stageList.Find(x => x.stageId == stageId);
+        return stage != null ? new List<bool>(stage.dataCubeFlags) : new List<bool>();
     }
 
     public void CollectDataCube(int cubeIndex)

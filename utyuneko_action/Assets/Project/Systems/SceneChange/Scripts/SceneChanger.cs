@@ -28,6 +28,9 @@ public class SceneChanger : MonoBehaviour
     [SerializeField] private float lookAtDuration = 1.0f;    // 見どころを見せている時間
     [SerializeField] private float returnPanDuration = 1.0f; // プレイヤーへ戻る時間
 
+    [Header("UI")]
+    [SerializeField] private ButtonPromptUI buttonPrompt;
+
     private bool playerInRange = false;
     private PlayerController playerInRangeRef;
 
@@ -68,7 +71,10 @@ public class SceneChanger : MonoBehaviour
                 playerInRange = true;
                 playerInRangeRef = player;
                 //決定ボタンUIをここで表示
-               // StartCoroutine(WarpAnimationRoutine(playerInRangeRef));
+                if (buttonPrompt != null) buttonPrompt.Show(player);
+
+
+                // StartCoroutine(WarpAnimationRoutine(playerInRangeRef));
             }
         }
     }
@@ -79,6 +85,7 @@ public class SceneChanger : MonoBehaviour
         {
             playerInRange = false;
             playerInRangeRef = null;
+            if (buttonPrompt != null) buttonPrompt.Hide();
         }
     }
 
@@ -87,6 +94,8 @@ public class SceneChanger : MonoBehaviour
         if(playerInRange&&!isWarping&&InputManager.Instance.Player.Submit.triggered)
         {
             isWarping = true;
+            SoundManager.Instance.PlaySE(SeType.GimmickWarp);
+            if (buttonPrompt != null) buttonPrompt.Hide();
             // 演出コルーチンを開始
             StartCoroutine(WarpAnimationRoutine(playerInRangeRef));
         }
