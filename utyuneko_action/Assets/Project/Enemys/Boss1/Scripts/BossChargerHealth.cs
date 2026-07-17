@@ -29,6 +29,8 @@ public class BossChargerHealth : MonoBehaviour
     public float throwDamageMultiplier = 1.5f;
     [Tooltip("フェーズ2移行（咆哮）中の被弾ダメージ倍率。0.2なら80%カット")]
     public float phaseTransitionDamageMultiplier = 0.2f;
+    [Tooltip("必殺技（乱舞突進）中の被弾ダメージ倍率。大技の見せ場を途中で潰されないよう極端に下げる。0.1なら90%カット")]
+    public float rampageDamageMultiplier = 0.1f;
 
     [Header("被弾インターバル")]
     [Tooltip("連続ヒットを防ぐ無敵時間（秒）")]
@@ -119,6 +121,7 @@ public class BossChargerHealth : MonoBehaviour
         if (controller.CurrentState == controller.StateStun) return stunDamageMultiplier;
         if (controller.CurrentState == controller.StateShieldThrow) return throwDamageMultiplier;
         if (controller.CurrentState == controller.StatePhaseTransition) return phaseTransitionDamageMultiplier;
+        if (controller.CurrentState == controller.StateRampage) return rampageDamageMultiplier;
         return 1f;
     }
 }

@@ -29,6 +29,11 @@ public class BossChargerController : MonoBehaviour
     [Tooltip("左右の向きを当てるモデル（Rotation層の子。コライダーと同居するルートには当てない）")]
     public Transform visualTransform;
 
+    [Tooltip("脈動（登場・フェーズ2のスケール演出）を当てる専用オブジェクト。未指定なら visualTransform(Rot) に当てる。\n" +
+             "★回転(Rot)にスケールを同居させたくない場合、root直下→この空オブジェクト→Rot の順に挟んでここへ割り当てる" +
+             "（Boss2/GlitchHosa の squashOffsetObject 方式）。★盾はこの下に入れない（2Dコライダーが潰れる）")]
+    public Transform scaleOffsetObject;
+
     [Tooltip("物理盾（子オブジェクト）。正面ガード・投擲・カウンター検知を担当")]
     public BossChargerShield shield;
 
@@ -114,6 +119,8 @@ public class BossChargerController : MonoBehaviour
     [Header("スタン（技④の衝撃波もここから出す）")]
     [Tooltip("壁に当たって自滅したときのスタン時間（＝攻撃チャンス）")]
     public float stunDuration = 3f;
+    [Tooltip("必殺技（乱舞突進）後のスタンは通常スタンの何倍にするか（反撃チャンスを長く）")]
+    public float ultimateStunMultiplier = 2f;
     [Tooltip("スタン中にモデルを半透明フェードで明滅させる1往復の時間（秒）。0以下で明滅なし")]
     public float stunBlinkInterval = 0.12f;
     [Tooltip("スタン明滅で最も薄くなるときのアルファ（0=完全透明 / 1=不透明のまま）")]
@@ -216,12 +223,44 @@ public class BossChargerController : MonoBehaviour
     public float phaseTransitionTime = 1.5f;
     [Tooltip("死亡してから消滅するまでの時間（秒）")]
     public float deathDestroyDelay = 2f;
+    [Tooltip("死亡演出のあとにボス自身を Destroy するか。OFF なら消滅させず死体として残す" +
+             "（イベントで使う NextFlg 起動などに引き継ぐ用途。演出後は棒立ちの死亡状態でその場に留まる）")]
+    public bool destroyOnDeath = true;
     [Tooltip("死亡中の半透明フェード明滅の1往復の時間（秒）。0以下で明滅なし")]
     public float deathBlinkInterval = 0.12f;
     [Tooltip("死亡明滅で最も薄くなるときのアルファ（0=完全透明 / 1=不透明のまま）")]
     [Range(0f, 1f)] public float deathBlinkMinAlpha = 0.3f;
-    [Tooltip("死亡時に発火するイベント（扉を開ける・イベントトリガー起動など）")]
+    [Tooltip("死亡時（死亡演出の開始＝DeadState.Enter）に発火するイベント（扉を開ける・イベントトリガー起動など）")]
     public UnityEngine.Events.UnityEvent onDefeated;
+    [Tooltip("死亡演出が完了したとき（deathDestroyDelay 経過後）に発火するイベント。" +
+             "NextFlg の起動など『演出が終わってから』動かしたい処理をここに配線する。" +
+             "destroyOnDeath の ON/OFF に関わらず、消滅/留まる直前に一度だけ鳴る")]
+    public UnityEngine.Events.UnityEvent onDeathSequenceComplete;
+
+    [Header("演出（Boss2から流用。テストシーンにシングルトンが無ければ自動でスキップ）")]
+    [Tooltip("登場・フェーズ2・死亡でカメラをボスへズームロックする（CameraFollowWithZoom があるときのみ）")]
+    public bool useCameraDirection = true;
+    [Tooltip("登場・フェーズ2・死亡の演出でモデルを脈動させる（0で脈動なし。visualTransform のスケールを触る）")]
+    public bool usePulse = true;
+    [Tooltip("登場演出：カメラシェイクの時間/強さ")]
+    public float appearShakeDuration = 2.5f;
+    public float appearShakeMagnitude = 2.5f;
+    [Tooltip("登場演出：モデル脈動の強さ（1に対する増分。0.12なら最大+12%）")]
+    public float appearPulseAmount = 0.12f;
+    [Tooltip("フェーズ2移行：カメラシェイクの時間/強さ")]
+    public float phaseShakeDuration = 2.5f;
+    public float phaseShakeMagnitude = 2.5f;
+    [Tooltip("フェーズ2移行：モデル脈動の強さ（登場より大きめの威嚇感）")]
+    public float phasePulseAmount = 0.35f;
+    [Tooltip("必殺技の咆哮：カメラシェイクの時間/強さ")]
+    public float rampageShakeDuration = 1.5f;
+    public float rampageShakeMagnitude = 2f;
+    [Tooltip("死亡演出：全体スローの倍率と時間（0.2=5倍スロー）")]
+    public float deathSlowScale = 0.2f;
+    public float deathSlowDuration = 1f;
+    [Tooltip("死亡演出：カメラシェイクの時間/強さ")]
+    public float deathShakeDuration = 2f;
+    public float deathShakeMagnitude = 2f;
 
     // ─── 状態インスタンス ───
     public BossChargerAppearState StateAppear { get; private set; }
@@ -242,6 +281,7 @@ public class BossChargerController : MonoBehaviour
 
     public bool IsPhase2 { get; set; }
     public bool HasUsedRampage { get; set; } // 必殺技は一度きり（発動済みフラグ）
+    public bool NextStunIsUltimate { get; set; } // 次のスタンを必殺技後の長いスタンにするか（乱舞→スタンで立て、StunStateが消費）
     public float SpeedMultiplier => IsPhase2 ? phase2SpeedMultiplier : 1f;
 
     public Rigidbody2D Rb { get; private set; }
@@ -587,5 +627,68 @@ public class BossChargerController : MonoBehaviour
     {
         foreach (var src in GetComponentsInChildren<DamageSource>(true))
             if (src != null) src.enabled = enabled;
+    }
+
+    // ─── 演出ヘルパー（Boss2から流用。すべて null 安全＝テストシーンにシングルトンが無ければ何もしない） ───
+
+    /// <summary>カメラシェイク（ShakeTarget）。無ければスキップ</summary>
+    public void PlayShake(float duration, float magnitude)
+    {
+        if (ShakeTarget.Instance != null) ShakeTarget.Instance.Shake(duration, magnitude);
+    }
+
+    /// <summary>効果音（SoundManager）。無ければスキップ</summary>
+    public void PlaySE(SeType se)
+    {
+        if (SoundManager.Instance != null) SoundManager.Instance.PlaySE(se);
+    }
+
+    /// <summary>戦闘BGMを流す（登場演出の締め。トリガーが開始時に StopBGM しているので、ここで戦闘BGMへ）</summary>
+    public void PlayBattleBgm()
+    {
+        if (SoundManager.Instance != null) SoundManager.Instance.PlayBGM(BgmType.BossBattle, 1f);
+    }
+
+    /// <summary>
+    /// カメラをボスへズームロックする（useCameraDirection かつ CameraFollowWithZoom があるときのみ）。
+    /// 演出終了時に EndCameraFocus へ渡すため、掴んだカメラを返す（無ければ null）。
+    /// </summary>
+    public CameraFollowWithZoom BeginCameraFocus(float positionSpeed, float zoomSpeed)
+    {
+        if (!useCameraDirection) return null;
+        var cam = Object.FindFirstObjectByType<CameraFollowWithZoom>();
+        if (cam != null) cam.StartTrackTarget(transform, positionSpeed, zoomSpeed);
+        return cam;
+    }
+
+    /// <summary>BeginCameraFocus で掴んだカメラをプレイヤーへ戻す</summary>
+    public void EndCameraFocus(CameraFollowWithZoom cam, float timeToReturn = 1f)
+    {
+        if (cam != null) cam.ReturnToPlayerFromEvent(timeToReturn);
+    }
+
+    /// <summary>
+    /// 脈動（スケール演出）を当てる先。scaleOffsetObject があればそこ、無ければ visualTransform(Rot) にフォールバック。
+    /// scaleOffsetObject を root→Rot の間に挟めば、回転(Rot)とスケールを別Transformに分離できる。
+    /// </summary>
+    private Transform ScaleTarget => scaleOffsetObject != null ? scaleOffsetObject : visualTransform;
+
+    /// <summary>演出開始時に脈動対象の現在スケールを控える（脈動の基準）。対象未設定なら Vector3.one</summary>
+    public Vector3 CaptureVisualScale() => ScaleTarget != null ? ScaleTarget.localScale : Vector3.one;
+
+    /// <summary>脈動対象を baseScale 基準で脈動させる（usePulse かつ対象があるときのみ）。回転は別Transform(visualTransform)なので競合しない</summary>
+    public void ApplyVisualPulse(Vector3 baseScale, float amount, float frequency = 16f)
+    {
+        Transform t = ScaleTarget;
+        if (!usePulse || t == null || amount <= 0f) return;
+        float pulse = 1f + Mathf.Abs(Mathf.Sin(Time.time * frequency)) * amount;
+        t.localScale = baseScale * pulse;
+    }
+
+    /// <summary>脈動で触ったスケールを baseScale へ確実に戻す（演出終了時）</summary>
+    public void RestoreVisualScale(Vector3 baseScale)
+    {
+        Transform t = ScaleTarget;
+        if (t != null) t.localScale = baseScale;
     }
 }
