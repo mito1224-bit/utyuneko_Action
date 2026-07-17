@@ -31,6 +31,7 @@ public class BitCubeController : MonoBehaviour
             // エフェクトはアイテムの現在位置で再生
             FXManager.Instance.Play(FXType.Flash_ItemBit, transform.position);
             //FXManager.Instance.Play(FXType.Flash, transform.position);
+            SoundManager.Instance.PlaySE(SeType.ItemBitGet);
             StartCoroutine(CollectAnimationRoutine());
         }
     }

@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.SceneManagement;
+using System.Collections;
 
 public class PlayerHealth : MonoBehaviour
 {
@@ -15,6 +16,18 @@ public class PlayerHealth : MonoBehaviour
     [Header("バースト中の無敵設定")]
     [SerializeField] private bool isInvincibleDuringBurst = true; // バースト突進中は無敵にするか
 
+    [Header("死亡演出の設定")]
+    [SerializeField] private TransitionType deathTransitionType = TransitionType.Fade;
+    [SerializeField] private float deathHangTimeScale = 0.05f;     // タメ中のtimeScale
+    [SerializeField] private float deathHangRealDuration = 0.4f;   // タメの実時間（timeScaleの影響を受けない）
+    [SerializeField] private float deathShakeDuration = 0.6f;
+    [SerializeField] private float deathShakeMagnitude = 4.0f;
+    [SerializeField] private Color deathFlashColor = new Color(1f, 0.2f, 0.2f, 1f);
+    [SerializeField] private float deathFlashDuration = 0.15f;
+    [SerializeField] private float deathFallRotationSpeed = 260f;  // 頽れる回転速度(度/秒)
+    [SerializeField] private LayerMask groundLayerMask; // 地面のレイヤーを指定
+    [SerializeField] private float deathFallSpeed = 15f; // 疑似落下速度
+    [SerializeField] private GameObject glassShatterPrefab;
     private PlayerController p;
 
     // 2.5Dゲームの見た目用コンポーネント（3DモデルならMeshRenderer、2DならSpriteRenderer）
@@ -119,7 +132,7 @@ public class PlayerHealth : MonoBehaviour
         // 6. 死亡判定
         if (currentHealth <= 0)
         {
-            p.damageEffect.PlayDamageEffect(DamageType.Player);
+            //p.damageEffect.PlayDamageEffect(DamageType.Player);
             Die();
         }
         else
@@ -151,15 +164,89 @@ public class PlayerHealth : MonoBehaviour
         if (SoundManager.Instance != null)
         {
             SoundManager.Instance.StopLoopSE(p.gameObject);
+            SoundManager.Instance.PlaySE(SeType.PlayerDie);
         }
 
-        SoundManager.Instance.PlaySE(SeType.PlayerDie);
+        
 
         Debug.Log("プレイヤー死亡。ゲームオーバー処理を実行します");
-        gameObject.SetActive(false);
 
+        if (p != null) p.enabled = false;
+        var col2D = GetComponent<Collider2D>();
+        if (col2D != null) col2D.enabled = false;
+
+        if (visualRenderer != null) visualRenderer.enabled = true; // 点滅が途中で止まっても表示は戻す
+
+        StartCoroutine(DeathSequence());
+
+        ////gameObject.SetActive(false);
+
+        //string currentSceneName = SceneManager.GetActiveScene().name;
+        //SceneManager.LoadScene(currentSceneName);
+    }
+
+    private IEnumerator DeathSequence()
+    {
         string currentSceneName = SceneManager.GetActiveScene().name;
-        SceneManager.LoadScene(currentSceneName);
+
+        // 1. 既存の被弾エフェクト
+        if (p != null && p.damageEffect != null)
+            p.damageEffect.PlayDamageEffect(DamageType.Player);
+
+        // 2. 一瞬の赤フラッシュ
+        Color originalColor = default;
+        bool hasColor = false;
+        if (visualRenderer != null)
+        {
+            originalColor = visualRenderer.material.color;
+            hasColor = true;
+            visualRenderer.material.color = deathFlashColor;
+        }
+
+        // 3. 強めのシェイク＋タメのスロー
+        if (ShakeTarget.Instance != null)
+            ShakeTarget.Instance.Shake(deathShakeDuration, deathShakeMagnitude);
+
+        TimeManager.Instance.StopSlowMotion();
+        TimeManager.Instance.TriggerGlobalSlowMotion(deathHangTimeScale, deathHangRealDuration);
+
+        yield return new WaitForSecondsRealtime(deathFlashDuration);
+        if (hasColor) visualRenderer.material.color = originalColor;
+        //if (visualRenderer != null)
+        //{
+        //    float fallTimer = 0f;
+        //    const float maxFallTime = 2f; // 万が一地面が見つからない時の安全装置
+        //    RaycastHit2D groundHit;
+
+        //    do
+        //    {
+        //        groundHit = Physics2D.Raycast(
+        //            new Vector2(transform.position.x, visualRenderer.bounds.min.y),
+        //            Vector2.down, 0.15f, groundLayerMask);
+
+        //        if (groundHit.collider == null)
+        //        {
+        //            transform.position += Vector3.down * deathFallSpeed * Time.unscaledDeltaTime;
+        //            fallTimer += Time.unscaledDeltaTime;
+        //            yield return null;
+        //        }
+        //    } while (groundHit.collider == null && fallTimer < maxFallTime);
+        //}
+        yield return new WaitForSecondsRealtime(deathHangRealDuration - deathFlashDuration);
+        if (glassShatterPrefab != null)
+        {
+            Instantiate(glassShatterPrefab, transform.position, transform.rotation);
+        }
+        
+        // 5. 時間を戻してからフェードへバトンタッチ
+        TimeManager.Instance.StopSlowMotion();
+
+        if (TransitionManager.Instance != null)
+            TransitionManager.Instance.ChangeScene(currentSceneName, deathTransitionType);
+        else
+            SceneManager.LoadScene(currentSceneName); // 保険
+
+        gameObject.SetActive(false);
     }
 
     // ─── 2D用の衝突判定（Physics 2D） ───
