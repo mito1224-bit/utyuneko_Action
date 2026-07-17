@@ -163,6 +163,12 @@ public class BossSniperBeamUnit : MonoBehaviour
 
     public float shrunkenScale = 0.02f;
 
+    [Header("発射エフェクト（子パーティクルへの差し替え）")]
+    [Tooltip("発射ビームの見た目に使うパーティクルのプレハブ（仲間作成のレーザー）。" +
+             "未設定なら従来の LineRenderer 板ポリゴンで描く。" +
+             "ダメージ・当たり判定・長さ・向きはボス側のまま。太さだけ現行 beamWidth に合わせる")]
+    public GameObject fireBeamEffectPrefab;
+
 
 
     /// <summary>
@@ -266,6 +272,16 @@ public class BossSniperBeamUnit : MonoBehaviour
 
     private Coroutine fadeCoroutine;
 
+    // 発射エフェクト（差し替え用パーティクル）。ユニットごとに1インスタンスを使い回す
+    private ParticleSystem fireBeamPfx;
+    private Transform fireBeamTf;
+    private bool fireBeamPlaying;
+    private bool fireBeamInitTried;   // 生成失敗を毎フレーム繰り返さないためのフラグ
+    private float fireBeamBaseSize = 1f;  // widthMultiplier=1 相当の素の太さ（均一サイズ）
+    private float fireBeamBaseSizeY = 1f; // 同上（3D Start Size 使用時の Y）
+    private float fireBeamBaseSizeZ = 1f; // 同上（Z）
+    private int fireBeamLastTickFrame = -1; // 最後に FireTick が発射描画したフレーム
+
 
 
     void Awake()
@@ -366,6 +382,8 @@ public class BossSniperBeamUnit : MonoBehaviour
         tiltRotationSpeed = src.tiltRotationSpeed;
 
         shrunkenScale = src.shrunkenScale;
+
+        fireBeamEffectPrefab = src.fireBeamEffectPrefab; // 分身・砲台にも同じ発射エフェクトを持たせる
 
     }
 
@@ -517,7 +535,7 @@ public class BossSniperBeamUnit : MonoBehaviour
 
     {
 
-        DrawBeam(lockedDir, fireColor, beamWidth);
+        DrawFireBeam(); // 発射ビームの見た目（プレハブがあれば子パーティクル、無ければ従来描画）
 
         ApplyBeamDamage();
 
@@ -529,11 +547,112 @@ public class BossSniperBeamUnit : MonoBehaviour
 
 
 
+    // 発射ビームの見た目：プレハブ未設定なら従来の板ポリゴン、設定済みなら子パーティクルを再生。
+    // 原点＝FireOrigin、向き＝lockedDir（XY平面）。長さ・壁停止はプレハブ任せ、太さだけ beamWidth に合わせる。
+    // ダメージは従来どおり ApplyBeamDamage が担当（このメソッドは描画のみ）。
+    private void DrawFireBeam()
+    {
+        if (fireBeamEffectPrefab == null)
+        {
+            DrawBeam(lockedDir, fireColor, beamWidth); // フォールバック：従来の LineRenderer
+            return;
+        }
+
+        EnsureFireBeamInstance();
+        if (fireBeamPfx == null)
+        {
+            DrawBeam(lockedDir, fireColor, beamWidth); // 生成失敗時も従来描画で保険
+            return;
+        }
+
+        // 原点と向きを毎フレーム合わせる（発射中は本体・壁とも静止だが、確実に追従させる）
+        Vector2 o = FireOrigin();
+        fireBeamTf.position = new Vector3(o.x, o.y, fireBeamTf.position.z);
+        if (lockedDir.sqrMagnitude > 0.0001f)
+            fireBeamTf.rotation = Quaternion.LookRotation(new Vector3(lockedDir.x, lockedDir.y, 0f), Vector3.forward);
+
+        // このフレームは発射描画をした（LateUpdate の自動停止判定に使う）
+        fireBeamLastTickFrame = Time.frameCount;
+
+        if (!fireBeamPlaying)
+        {
+            // 発射開始：太さだけ現行 beamWidth に合わせて再生する（速度・寿命＝長さはプレハブ既定のまま）。
+            // widthMultiplier=1 のワールド幅が 0.5 なので、beamWidth/0.5 が現行幅に一致する倍率。
+            // 3D Start Size の ON/OFF どちらでも効くよう、均一 startSize と Y/Z の両方に掛ける（X＝長さは触らない）。
+            float mult = beamWidth / 0.5f;
+            var main = fireBeamPfx.main;
+
+            var size = main.startSize; size.constant = fireBeamBaseSize * mult; main.startSize = size;
+            var sizeY = main.startSizeY; sizeY.constant = fireBeamBaseSizeY * mult; main.startSizeY = sizeY;
+            var sizeZ = main.startSizeZ; sizeZ.constant = fireBeamBaseSizeZ * mult; main.startSizeZ = sizeZ;
+
+            fireBeamPfx.Clear(true);
+            fireBeamPfx.Play(true);
+            fireBeamPlaying = true;
+        }
+
+        // 従来の LineRenderer 発射ビームは出さない
+        if (line != null && line.enabled) line.enabled = false;
+    }
+
+    // 発射エフェクトのインスタンスを（初回だけ）生成し、ダメージ用トリガーを無効化する。
+    // ユニットごとに1つを使い回す。ユニット破棄時に子ごと自動で消える。
+    private void EnsureFireBeamInstance()
+    {
+        if (fireBeamPfx != null || fireBeamInitTried) return;
+        fireBeamInitTried = true;
+
+        if (fireBeamEffectPrefab == null) return;
+
+        GameObject go = Instantiate(fireBeamEffectPrefab, FireOrigin(), Quaternion.identity, transform);
+        fireBeamTf = go.transform;
+        fireBeamPfx = go.GetComponentInChildren<ParticleSystem>();
+
+        // ダメージはボスの ApplyBeamDamage に一本化：エフェクト側の接触ダメージは無効化（スクリプトは改変しない）
+        LaserParticleTrigger trig = go.GetComponentInChildren<LaserParticleTrigger>();
+        if (trig != null) trig.enabled = false;
+
+        if (fireBeamPfx != null)
+        {
+            var main = fireBeamPfx.main;
+            fireBeamBaseSize = main.startSize.constant;  // 均一 startSize の素の値
+            fireBeamBaseSizeY = main.startSizeY.constant; // 3D Start Size 使用時の Y
+            fireBeamBaseSizeZ = main.startSizeZ.constant;
+            fireBeamPfx.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear); // 発射時まで止めておく
+        }
+    }
+
+    // 発射エフェクトを即座に止めて消す（発射中だった場合のみ）。
+    private void StopFireBeam()
+    {
+        if (!fireBeamPlaying) return;
+        if (fireBeamPfx != null)
+            fireBeamPfx.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        fireBeamPlaying = false;
+    }
+
+    // 発射は「FireTick が呼ばれているフレームだけ」続く。1フレームでも FireTick が来なければ止める。
+    // これで連射攻撃の弾と弾の間・攻撃終了後・巡回中に発射エフェクトが出っぱなしになるのを防ぐ。
+    // ヒットストップ中だけは本体の内部時間が止まっている（FireTick が来ない）が、発射の見た目は
+    // 凍結したまま保持したいので止めない。演出ポーズ中は逆に消したいので止める（抑止しない）。
+    void LateUpdate()
+    {
+        if (!fireBeamPlaying) return;
+        if (bossRoot != null && bossRoot.HitStopActive) return;
+        if (Time.frameCount - fireBeamLastTickFrame >= 1)
+        {
+            StopFireBeam();
+        }
+    }
+
     /// <summary>ビームを消す。beamFadeTime > 0 のときはフェードアウト、0 のときは瞬間消去。</summary>
 
     public void HideBeam()
 
     {
+
+        // 差し替えた発射パーティクルを即座に止めて消す（発射中だった場合）
+        StopFireBeam();
 
         if (line == null || !line.enabled) return;
 
