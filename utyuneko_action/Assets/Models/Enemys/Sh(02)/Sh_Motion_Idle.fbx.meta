@@ -1,24 +1,9 @@
 fileFormatVersion: 2
-guid: 8b8447d7845807b49b76aecfcb009d1f
+guid: 17db3c84aa5f6cb48a83cccc35968c7a
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
-  externalObjects:
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: Black
-    second: {fileID: 2100000, guid: 7b578f734f7ac524da800559aff34263, type: 2}
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: Face
-    second: {fileID: 2100000, guid: 78f4156af3c7d3449a9900a0c5eb9d8e, type: 2}
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: Pp
-    second: {fileID: 2100000, guid: 8d250d9af4331634b90b78966030e6e7, type: 2}
+  externalObjects: {}
   materials:
     materialImportMode: 2
     materialName: 0

@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 8b8447d7845807b49b76aecfcb009d1f
+guid: c92f2541023e079468d8858425e08eda
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
@@ -8,17 +8,17 @@ ModelImporter:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
       name: Black
-    second: {fileID: 2100000, guid: 7b578f734f7ac524da800559aff34263, type: 2}
+    second: {fileID: 2100000, guid: f84542efae527494f9aead2fd7089e2d, type: 2}
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
       name: Face
-    second: {fileID: 2100000, guid: 78f4156af3c7d3449a9900a0c5eb9d8e, type: 2}
+    second: {fileID: 2100000, guid: f2ba6c84d3cae68409dda2982e27c62b, type: 2}
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
-      name: Pp
-    second: {fileID: 2100000, guid: 8d250d9af4331634b90b78966030e6e7, type: 2}
+      name: Sh
+    second: {fileID: 2100000, guid: d983d6407c98b164faee2b84ca936e5e, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0
