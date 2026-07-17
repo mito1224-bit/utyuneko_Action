@@ -99,6 +99,8 @@ MonoBehaviour:
   throwSpeed: 14
   returnSpeed: 10
   spinSpeed: 720
+  playBlockFX: 1
+  blockFXType: 2
 --- !u!114 &7572175799709088673
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -273,6 +275,9 @@ MonoBehaviour:
   chargeTelegraphColorEnd: {r: 1, g: 0.15, b: 0.15, a: 0.95}
   chargeTelegraphWidth: 1
   chargeTelegraphMaxLength: 20
+  chargeTelegraphMaterial: {fileID: 0}
+  telegraphCircleMaterial: {fileID: 2100000, guid: abd7787c8f3a433479cb3dce1689cca3, type: 2}
+  telegraphSprite: {fileID: 0}
   stunDuration: 1
   stunBlinkInterval: 0.12
   stunBlinkMinAlpha: 0.3
@@ -286,29 +291,23 @@ MonoBehaviour:
   bashKnockbackForce: 18
   shieldThrowCooldown: 12
   throwMoveSpeed: 5
+  throwTelegraphWindupTime: 2
+  showThrowTelegraph: 1
+  throwTelegraphColorStart: {r: 0.4, g: 0.9, b: 1, a: 0.5}
+  throwTelegraphColorEnd: {r: 1, g: 0.3, b: 0.3, a: 0.95}
   enableCounter: 1
   counterSpeed: 20
   counterDuration: 0.5
   counterCooldown: 4
-  enableGroundSlam: 1
-  groundSlamWindupTime: 0.7
-  groundSlamRecoverTime: 0.6
-  groundSlamCooldown: 8
-  groundSlamPillarCount: 5
-  groundSlamPillarSpacing: 1.6
-  groundSlamPillarStartOffset: 1.5
-  groundSlamPillarStagger: 0.1
-  pillarTelegraphTime: 0.35
-  pillarRiseTime: 0.12
-  pillarActiveTime: 0.2
-  pillarWidth: 0.9
-  pillarHeight: 2.6
-  pillarDamage: 1
-  pillarMaterial: {fileID: -876546973899608171, guid: 0d12e714efcd9474f9f3bd3613ba5f9a, type: 3}
-  tintPillarMaterial: 1
-  pillarTelegraphColorStart: {r: 1, g: 0.9, b: 0.15, a: 0.5}
-  pillarTelegraphColorEnd: {r: 1, g: 0.15, b: 0.1, a: 0.85}
-  pillarActiveColor: {r: 1, g: 0.2, b: 0.15, a: 0.9}
+  enableRampage: 1
+  rampageHpThresholdRatio: 0.25
+  rampageRoarTime: 0.7
+  rampageWindupTime: 0.3
+  rampageChargeCount: 5
+  rampageSpeed: 22
+  rampageMaxChargeTime: 2.5
+  rampageSettleSpeed: 18
+  rampageSettleMaxTime: 1.5
   enableLeapSlam: 1
   leapWindupTime: 0.45
   leapTime: 0.7
@@ -411,7 +410,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 8536620846180335531}
+  - {fileID: 2922904922738923139}
   m_Father: {fileID: 8300000000000000002}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &8300000000000000030
@@ -466,6 +465,8 @@ MonoBehaviour:
   throwSpeed: 14
   returnSpeed: 10
   spinSpeed: 720
+  playBlockFX: 1
+  blockFXType: 2
 --- !u!114 &8300000000000000034
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -536,7 +537,7 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!1001 &8210785682033514560
+--- !u!1001 &3394174768376017256
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -584,29 +585,9 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: -5883419668783312777, guid: 8a93e7a1fc4828d48a9cd13990673367, type: 3}
-      propertyPath: m_RenderingLayerMask
-      value: 4
-      objectReference: {fileID: 0}
-    - target: {fileID: -4714940556959137731, guid: 8a93e7a1fc4828d48a9cd13990673367, type: 3}
-      propertyPath: m_RenderingLayerMask
-      value: 4
-      objectReference: {fileID: 0}
-    - target: {fileID: -2531633914618653412, guid: 8a93e7a1fc4828d48a9cd13990673367, type: 3}
-      propertyPath: m_RenderingLayerMask
-      value: 4
-      objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 8a93e7a1fc4828d48a9cd13990673367, type: 3}
       propertyPath: m_Name
       value: Bv
-      objectReference: {fileID: 0}
-    - target: {fileID: 7561841190998345602, guid: 8a93e7a1fc4828d48a9cd13990673367, type: 3}
-      propertyPath: m_RenderingLayerMask
-      value: 4
-      objectReference: {fileID: 0}
-    - target: {fileID: 8042846741258655450, guid: 8a93e7a1fc4828d48a9cd13990673367, type: 3}
-      propertyPath: m_RenderingLayerMask
-      value: 4
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -614,26 +595,21 @@ PrefabInstance:
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 8a93e7a1fc4828d48a9cd13990673367, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 8752232645218161589}
+      addedObject: {fileID: 8780862805457232505}
   m_SourcePrefab: {fileID: 100100000, guid: 8a93e7a1fc4828d48a9cd13990673367, type: 3}
---- !u!4 &8536620846180335531 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 8a93e7a1fc4828d48a9cd13990673367, type: 3}
-  m_PrefabInstance: {fileID: 8210785682033514560}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &9021831291954636049 stripped
+--- !u!1 &2583920658650516537 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 8a93e7a1fc4828d48a9cd13990673367, type: 3}
-  m_PrefabInstance: {fileID: 8210785682033514560}
+  m_PrefabInstance: {fileID: 3394174768376017256}
   m_PrefabAsset: {fileID: 0}
---- !u!95 &8752232645218161589
+--- !u!95 &8780862805457232505
 Animator:
   serializedVersion: 7
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9021831291954636049}
+  m_GameObject: {fileID: 2583920658650516537}
   m_Enabled: 1
   m_Avatar: {fileID: 0}
   m_Controller: {fileID: 9100000, guid: 10fe6cca8010c574a9e224abdfad0696, type: 2}
@@ -648,3 +624,8 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!4 &2922904922738923139 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 8a93e7a1fc4828d48a9cd13990673367, type: 3}
+  m_PrefabInstance: {fileID: 3394174768376017256}
+  m_PrefabAsset: {fileID: 0}

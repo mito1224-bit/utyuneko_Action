@@ -42,6 +42,12 @@ public class EnemyShield : MonoBehaviour
     [Tooltip("盾でバーストを弾いた瞬間に光らせる HitFlash（未指定なら shieldPivot 配下から自動取得）。EnemyCollision から叩かれる")]
     public HitFlash shieldFlash;
 
+    [Tooltip("盾で弾いた接触点にパーティクルを出す（FXManager 経由）。テストシーンに FXManager が無い場合は自動でスキップ")]
+    public bool playBlockFX = true;
+
+    [Tooltip("弾いたときに出すエフェクトの種類。FXManager の登録リストに存在するものを指定すること")]
+    public FXType blockFXType = FXType.Spark;
+
     private EnemyMovement movement;
     private Vector3 heldLocalPos;   // 構え位置（右向き時。左向きは x 反転）
     private int facing = -1;        // -1=左 / +1=右
@@ -71,8 +77,20 @@ public class EnemyShield : MonoBehaviour
         shieldPivot.localPosition = lp;
     }
 
-    /// <summary>盾でバーストを弾いた瞬間の演出（盾のみ白フラッシュ）。EnemyCollision から呼ばれる。</summary>
-    public void PlayBlockEffect() => shieldFlash?.Flash();
+    /// <summary>
+    /// 盾でバーストを弾いた瞬間の演出（盾のみ白フラッシュ＋接触点にスパーク）。EnemyCollision から呼ばれる。
+    /// hitPoint には衝突の接触点（ワールド座標）を渡す。盾の中心ではなく実際に当たった位置から火花を出すため。
+    /// </summary>
+    public void PlayBlockEffect(Vector3 hitPoint)
+    {
+        shieldFlash?.Flash();
+
+        // FXManager はシーンに置かれたシングルトン。テストシーンには無いこともあるので null 許容。
+        if (playBlockFX && FXManager.Instance != null)
+        {
+            FXManager.Instance.Play(blockFXType, hitPoint);
+        }
+    }
 
     // 現在の前方向き（盾の向き）。移動方向に追従するか、固定値を使う。
     private Vector2 GetFacing()

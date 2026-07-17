@@ -9,7 +9,7 @@ using UnityEngine;
 public class BossChargerHealth : MonoBehaviour
 {
     [Header("基礎ステータス")]
-    public float maxHP = 100f;
+    public float maxHP = 300f;
     public float currentHP;
 
     [Header("被弾条件")]
@@ -39,8 +39,11 @@ public class BossChargerHealth : MonoBehaviour
     public HitFlash hitFlash;
 
     [Header("UI")]
-    [Tooltip("HPバー（未設定でも動く。テストシーン用）")]
-    public BossChargerHPBar hpBar;
+    [Tooltip("HPバー（未設定でも動く。テストシーン用）。ボス2と同じ StageSecondBossHPBar を流用する＝" +
+             "赤ゲージ＋白の残像ゲージ・出現アニメ・被弾シェイク・死亡フェードがそのまま使える。\n" +
+             "★出現アニメ（StartAppearAnimation）は BossChargerTrigger が叩くので、" +
+             "トリガー無しで直接置くテストシーンではゲージの最大値が入らず正しく表示されない")]
+    public StageSecondBossHPBar hpBar;
 
     public float CurrentHpRatio => maxHP > 0f ? currentHP / maxHP : 0f;
     public bool IsDead { get; private set; }
@@ -82,7 +85,14 @@ public class BossChargerHealth : MonoBehaviour
 
         currentHP = Mathf.Max(0f, currentHP - damage);
         invincibilityTimer = damageInterval;
-        hpBar?.SetRatio(CurrentHpRatio);
+
+        // ボス2（StageSecondBossHealth）と同じ流儀：HP反映＋被弾シェイク。
+        // HPが0になったときのフェードアウトは UpdateHP の内部が面倒を見る。
+        if (hpBar != null)
+        {
+            hpBar.UpdateHP(currentHP);
+            hpBar.ShakeBar(0.2f, 12f);
+        }
 
         if (currentHP <= 0f)
         {
