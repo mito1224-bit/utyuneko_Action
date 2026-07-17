@@ -377,7 +377,8 @@ public class PauseMenu : MonoBehaviour
             Destroy(DataManager.Instance.gameObject);
         }
 
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        //SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        TransitionManager.Instance.ChangeScene(SceneManager.GetActiveScene().name, TransitionType.Fade);
     }
 
     /// <summary>
