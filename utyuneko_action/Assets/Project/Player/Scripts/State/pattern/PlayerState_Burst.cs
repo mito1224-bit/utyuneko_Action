@@ -108,8 +108,18 @@ public class PlayerState_Burst : IPlayerState
 
     private void OnCollisionStay(Collision2D collision)
     {
+
         if (((1 << collision.gameObject.layer) & p.GetReflectionLayerMask()) != 0)
         {
+            var boss = Object.FindFirstObjectByType<GlitchHosaController>();
+            if (boss != null && boss.isReflectionStolen)
+            {
+                Debug.Log("<color=red>⚠️ REFLECTION LOCKED: 反射能力がジャックされているため、壁バウンドできません！</color>");
+                p.TransitionToState(p.StateNormal);
+                p.rb2D.linearVelocity = lastVelocity * 0.2f; // ドスッと壁にぶつかって失速するリアルな挙動
+                return; // 反射の計算をここで完全に遮断！
+            }
+
             // 死んでいる敵（RefObj）は完全に物理衝突を無視して貫通スルー！
             if (collision.gameObject.layer == LayerMask.NameToLayer("RefObj"))
             {

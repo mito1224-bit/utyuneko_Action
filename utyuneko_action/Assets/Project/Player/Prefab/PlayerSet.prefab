@@ -183,7 +183,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5390690581133846593}
   - component: {fileID: 8975072255084986831}
-  - component: {fileID: 5409888921802695820}
+  - component: {fileID: 7140004866671491916}
   m_Layer: 0
   m_Name: PlayerImageBubble
   m_TagString: Untagged
@@ -265,7 +265,7 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 0
   m_SpriteSortPoint: 0
---- !u!114 &5409888921802695820
+--- !u!114 &7140004866671491916
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -277,26 +277,26 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 93a5b1c627855234486ca04df44f1e4e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ImageBubble
-  imgOK: {fileID: -2023548143, guid: 0791263bb7bd45a4bba03d13d617a424, type: 3}
-  imgQuestion: {fileID: -2024518168, guid: d4f8dddf187e88d44ac4e5bfa2ac3fd4, type: 3}
-  imgSurprise: {fileID: -1259598198, guid: 0791263bb7bd45a4bba03d13d617a424, type: 3}
-  imgDoya: {fileID: 347554350, guid: d4f8dddf187e88d44ac4e5bfa2ac3fd4, type: 3}
+  imgOK: {fileID: 21300000, guid: bac26ae57823a2b41a219636cfa018b0, type: 3}
+  imgQuestion: {fileID: 21300000, guid: d44b414bd17d5104ba82f85e24fb8464, type: 3}
+  imgSurprise: {fileID: 21300000, guid: 7784fb26fa327594ea17a713d0bb6140, type: 3}
+  imgDoya: {fileID: 21300000, guid: 928412d7be50f884a978f780679bbf78, type: 3}
   imgSweat: {fileID: 1366236493, guid: 0791263bb7bd45a4bba03d13d617a424, type: 3}
   imgHatena: {fileID: 2000081217, guid: d4f8dddf187e88d44ac4e5bfa2ac3fd4, type: 3}
-  imgJoy: {fileID: 1628391786, guid: 0791263bb7bd45a4bba03d13d617a424, type: 3}
+  imgJoy: {fileID: 21300000, guid: ed6f37cf5c4c1c14db8a708ab62f0ed2, type: 3}
   imgGift: {fileID: 1162724430, guid: d4f8dddf187e88d44ac4e5bfa2ac3fd4, type: 3}
   imgStar: {fileID: -2082027710, guid: d4f8dddf187e88d44ac4e5bfa2ac3fd4, type: 3}
-  imgGo: {fileID: 1920459602, guid: d4f8dddf187e88d44ac4e5bfa2ac3fd4, type: 3}
-  imgEnemy: {fileID: -1123801233, guid: d4f8dddf187e88d44ac4e5bfa2ac3fd4, type: 3}
-  imgMaru: {fileID: 269235345, guid: d4f8dddf187e88d44ac4e5bfa2ac3fd4, type: 3}
-  imgBatu: {fileID: -1513336517, guid: d4f8dddf187e88d44ac4e5bfa2ac3fd4, type: 3}
-  imgRight: {fileID: 238922887, guid: d4f8dddf187e88d44ac4e5bfa2ac3fd4, type: 3}
-  imgLeft: {fileID: -609865758, guid: d4f8dddf187e88d44ac4e5bfa2ac3fd4, type: 3}
-  imgBottom: {fileID: 966025082, guid: d4f8dddf187e88d44ac4e5bfa2ac3fd4, type: 3}
-  imgConfusion: {fileID: -14985355, guid: d4f8dddf187e88d44ac4e5bfa2ac3fd4, type: 3}
-  imgDenger: {fileID: -635088807, guid: d4f8dddf187e88d44ac4e5bfa2ac3fd4, type: 3}
-  imgFellow: {fileID: 266145314, guid: d4f8dddf187e88d44ac4e5bfa2ac3fd4, type: 3}
-  imgDokuro: {fileID: -1542753200, guid: d4f8dddf187e88d44ac4e5bfa2ac3fd4, type: 3}
+  imgGo: {fileID: 21300000, guid: f64baf77b19b70d4d807460e6736a01b, type: 3}
+  imgEnemy: {fileID: 21300000, guid: 78a6e6fa14aa70143896ad8d3e68769e, type: 3}
+  imgMaru: {fileID: 21300000, guid: f72177c1bdaed3544b273ac4a827002d, type: 3}
+  imgBatu: {fileID: 21300000, guid: 42116ad12f301184eb3f50d90c7ed263, type: 3}
+  imgRight: {fileID: 21300000, guid: 714d81dceaa30b441b1881a2f5e75f3b, type: 3}
+  imgLeft: {fileID: 21300000, guid: f0ec3bcd075140648a908051175ebb95, type: 3}
+  imgBottom: {fileID: 21300000, guid: ff6c674b0d68ae141b5fbd9dbc8538b6, type: 3}
+  imgConfusion: {fileID: 21300000, guid: 88bfc81801a6b05498eecaf20e1a0912, type: 3}
+  imgDenger: {fileID: 21300000, guid: 7a8ba69cd006ccd40ae5d651135e9648, type: 3}
+  imgFellow: {fileID: 21300000, guid: 4e93d11635f588f45aa66ecb2cf5185d, type: 3}
+  imgDokuro: {fileID: 21300000, guid: c19c7135239e98942ab182d2e3ef634f, type: 3}
 --- !u!1 &2193017370689105528
 GameObject:
   m_ObjectHideFlags: 0
