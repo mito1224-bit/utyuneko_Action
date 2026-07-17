@@ -140,14 +140,10 @@ public class BossSniperBeamUnit : MonoBehaviour
     private Color lastBeamColor;
     private Coroutine fadeCoroutine;
 
-    // 発射エフェクト（差し替え用パーティクル）。ユニットごとに1インスタンスを使い回す
+    // 👑【修正】発射エフェクト管理：攻撃ごとに都度生成・破棄するためプール用のフラグ類は削除
     private ParticleSystem fireBeamPfx;
     private Transform fireBeamTf;
     private bool fireBeamPlaying;
-    private bool fireBeamInitTried;   // 生成失敗を毎フレーム繰り返さないためのフラグ
-    private float fireBeamBaseSize = 1f;  // widthMultiplier=1 相当の素の太さ（均一サイズ）
-    private float fireBeamBaseSizeY = 1f; // 同上（3D Start Size 使用時の Y）
-    private float fireBeamBaseSizeZ = 1f; // 同上（Z）
     private int fireBeamLastTickFrame = -1; // 最後に FireTick が発射描画したフレーム
 
     void Awake()
@@ -284,8 +280,6 @@ public class BossSniperBeamUnit : MonoBehaviour
     }
 
     // 発射ビームの見た目：プレハブ未設定なら従来の板ポリゴン、設定済みなら子パーティクルを再生。
-    // 原点＝FireOrigin、向き＝lockedDir（XY平面）。長さ・壁停止はプレハブ任せ、太さだけ beamWidth に合わせる。
-    // ダメージは従来どおり ApplyBeamDamage が担当（このメソッドは描画のみ）。
     private void DrawFireBeam()
     {
         if (fireBeamEffectPrefab == null)
@@ -294,83 +288,85 @@ public class BossSniperBeamUnit : MonoBehaviour
             return;
         }
 
-        EnsureFireBeamInstance();
+        // 👑【修正】発射が始まった最初のフレームで都度インスタンスを生成する
+        if (!fireBeamPlaying)
+        {
+            SpawnFireBeamInstance();
+        }
+
         if (fireBeamPfx == null)
         {
             DrawBeam(lockedDir, fireColor, beamWidth); // 生成失敗時も従来描画で保険
             return;
         }
 
-        // 原点と向きを毎フレーム合わせる（発射中は本体・壁とも静止だが、確実に追従させる）
+        // 原点と向きを毎フレーム合わせる
         Vector2 o = FireOrigin();
         fireBeamTf.position = new Vector3(o.x, o.y, fireBeamTf.position.z);
         if (lockedDir.sqrMagnitude > 0.0001f)
             fireBeamTf.rotation = Quaternion.LookRotation(new Vector3(lockedDir.x, lockedDir.y, 0f), Vector3.forward);
 
-        // このフレームは発射描画をした（LateUpdate の自動停止判定に使う）
+        // このフレームは発射描画をした（LateUpdate の自動停止・破棄判定に使う）
         fireBeamLastTickFrame = Time.frameCount;
-
-        if (!fireBeamPlaying)
-        {
-            // 発射開始：太さだけ現行 beamWidth に合わせて再生する（速度・寿命＝長さはプレハブ既定のまま）。
-            // widthMultiplier=1 のワールド幅が 0.5 なので、beamWidth/0.5 が現行幅に一致する倍率。
-            // 3D Start Size の ON/OFF どちらでも効くよう、均一 startSize と Y/Z の両方に掛ける（X＝長さは触らない）。
-            float mult = beamWidth / 0.5f;
-            var main = fireBeamPfx.main;
-
-            var size = main.startSize; size.constant = fireBeamBaseSize * mult; main.startSize = size;
-            var sizeY = main.startSizeY; sizeY.constant = fireBeamBaseSizeY * mult; main.startSizeY = sizeY;
-            var sizeZ = main.startSizeZ; sizeZ.constant = fireBeamBaseSizeZ * mult; main.startSizeZ = sizeZ;
-
-            fireBeamPfx.Clear(true);
-            fireBeamPfx.Play(true);
-            fireBeamPlaying = true;
-        }
 
         // 従来の LineRenderer 発射ビームは出さない
         if (line != null && line.enabled) line.enabled = false;
     }
 
-    // 発射エフェクトのインスタンスを（初回だけ）生成し、ダメージ用トリガーを無効化する。
-    // ユニットごとに1つを使い回す。ユニット破棄時に子ごと自動で消える。
-    private void EnsureFireBeamInstance()
+    // 👑【修正】攻撃開始時にエフェクトを動的生成し、サイズを適用して即再生するメソッド
+    private void SpawnFireBeamInstance()
     {
-        if (fireBeamPfx != null || fireBeamInitTried) return;
-        fireBeamInitTried = true;
-
         if (fireBeamEffectPrefab == null) return;
 
         GameObject go = Instantiate(fireBeamEffectPrefab, FireOrigin(), Quaternion.identity, transform);
         fireBeamTf = go.transform;
         fireBeamPfx = go.GetComponentInChildren<ParticleSystem>();
 
-        // ダメージはボスの ApplyBeamDamage に一本化：エフェクト側の接触ダメージは無効化（スクリプトは改変しない）
+        // ダメージはボスの ApplyBeamDamage に一本化：エフェクト側の接触ダメージは無効化
         LaserParticleTrigger trig = go.GetComponentInChildren<LaserParticleTrigger>();
         if (trig != null) trig.enabled = false;
 
         if (fireBeamPfx != null)
         {
             var main = fireBeamPfx.main;
-            fireBeamBaseSize = main.startSize.constant;  // 均一 startSize の素の値
-            fireBeamBaseSizeY = main.startSizeY.constant; // 3D Start Size 使用時の Y
-            fireBeamBaseSizeZ = main.startSizeZ.constant;
-            fireBeamPfx.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear); // 発射時まで止めておく
+
+            // 生成されたプレハブの素のサイズから倍率を計算して適用
+            float baseSize = main.startSize.constant;
+            float baseSizeY = main.startSizeY.constant;
+            float baseSizeZ = main.startSizeZ.constant;
+
+            float mult = beamWidth / 2.0f;
+            var size = main.startSize; size.constant = baseSize * mult; main.startSize = size;
+            var sizeY = main.startSizeY; sizeY.constant = baseSizeY * mult; main.startSizeY = sizeY;
+            var sizeZ = main.startSizeZ; sizeZ.constant = baseSizeZ * mult; main.startSizeZ = sizeZ;
+
+            fireBeamPfx.Clear(true);
+            fireBeamPfx.Play(true);
         }
+
+        fireBeamPlaying = true;
     }
 
-    // 発射エフェクトを即座に止めて消す（発射中だった場合のみ）。
+    // 👑【修正】発射エフェクトを即座にストップし、オブジェクトごと完全に破棄する
     private void StopFireBeam()
     {
         if (!fireBeamPlaying) return;
-        if (fireBeamPfx != null)
-            fireBeamPfx.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
+        if (fireBeamTf != null)
+        {
+            if (fireBeamPfx != null)
+            {
+                fireBeamPfx.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            }
+            Destroy(fireBeamTf.gameObject);
+            fireBeamTf = null;
+            fireBeamPfx = null;
+        }
+
         fireBeamPlaying = false;
     }
 
-    // 発射は「FireTick が呼ばれているフレームだけ」続く。1フレームでも FireTick が来なければ止める。
-    // これで連射攻撃の弾と弾の間・攻撃終了後・巡回中に発射エフェクトが出っぱなしになるのを防ぐ。
-    // ヒットストップ中だけは本体の内部時間が止まっている（FireTick が来ない）が、発射の見た目は
-    // 凍結したまま保持したいので止めない。演出ポーズ中は逆に消したいので止める（抑止しない）。
+    // 発射は「FireTick が呼ばれているフレームだけ」続く。1フレームでも FireTick が来なければ止めて破棄。
     void LateUpdate()
     {
         if (!fireBeamPlaying) return;
@@ -384,7 +380,7 @@ public class BossSniperBeamUnit : MonoBehaviour
     /// <summary>ビームを消す。beamFadeTime > 0 のときはフェードアウト、0 のときは瞬間消去。</summary>
     public void HideBeam()
     {
-        // 差し替えた発射パーティクルを即座に止めて消す（発射中だった場合）
+        // 差し替えた発射パーティクルを即座に止めて破棄する（発射中だった場合）
         StopFireBeam();
         if (line == null || !line.enabled) return;
         if (fadeCoroutine != null) StopCoroutine(fadeCoroutine);
@@ -582,9 +578,6 @@ public class BossSniperBeamUnit : MonoBehaviour
     }
 
     // ─── プレイヤーのバースト体当たり検知 ─────────────
-    // 本体（非Trigger）と分身（Trigger）のどちらの構成でも拾えるよう両方受ける。
-    // 受けた通知にどう反応するか（無敵扱いを含む）は、ボスの現在のステートが決める。
-
     void OnCollisionEnter2D(Collision2D collision)
     {
         HandleContact(collision.collider);
@@ -600,14 +593,9 @@ public class BossSniperBeamUnit : MonoBehaviour
         PlayerController pc = col.GetComponentInParent<PlayerController>();
         if (pc == null) return;
 
-        // 形態変化などのカメラ演出中（SetEventPaused(true)）は接触ダメージもバースト通知も無効。
-        // プレイヤーは操作を奪われて避けられないので、この間は無害化する
         if (bossRoot != null && bossRoot.EventPaused) return;
-
         if (bossHealth != null && bossHealth.CurrentHP <= 0) return;
 
-        // 破壊不可の設置ユニット：バーストかどうかに関わらず、触れたプレイヤーが接触ダメージを受けるだけ。
-        // OnBurstHit は通知しない＝バーストで壊せない
         if (IsHazardUnit)
         {
             if (contactDamage > 0)
@@ -620,23 +608,16 @@ public class BossSniperBeamUnit : MonoBehaviour
 
         if (pc.CurrentState == pc.StateBurst)
         {
-            // 殴られた方向（プレイヤー→このユニット）を記録。通常ダメージのシェイク軸に使う
             Vector2 dir = (Vector2)transform.position - (Vector2)pc.transform.position;
             if (dir.sqrMagnitude > 0.0001f) LastHitDirection = dir.normalized;
 
-            // 「バースト状態の体当たり」は攻撃としてボスのステートへ通知（無敵扱いはステートが判断）
             if (OnBurstHit != null) OnBurstHit.Invoke(this, pc);
         }
         else
         {
-            // バースト以外で本物に触れたら、プレイヤーがダメージを受ける（偽物は無害）。
-            // スタン中も含めて常に有害。ただし瞬間移動で消えている間は当たり判定自体が無効。
             if (IsReal && contactDamage > 0)
             {
-                if (bossHealth != null && bossHealth.IsInvincible)
-                {
-                    return;
-                }
+                if (bossHealth != null && bossHealth.IsInvincible) return;
 
                 PlayerHealth hp = col.GetComponentInParent<PlayerHealth>();
                 if (hp != null) hp.TakeDamage(contactDamage);
@@ -645,7 +626,6 @@ public class BossSniperBeamUnit : MonoBehaviour
     }
 
     // ─── モデルの向き（EnemySniper と同じY軸振り向き） ───
-
     private void UpdateModelFacing()
     {
         if (visualTransform == null) return;
@@ -666,9 +646,6 @@ public class BossSniperBeamUnit : MonoBehaviour
             currentVisualAngle = target;
         }
 
-        // 照準方向への傾き（Z回転）。ビームを出しているフレーム（aimTiltActive）だけ射線の角度へ傾け、
-        // 出していない間は 0（水平）へ戻る。右向きなら射線の角度そのまま、
-        // 左向きなら「左（180度）からのずれ」を傾きにする（左右の振り向きと矛盾しないように）
         float targetTilt = 0f;
         if (aimTiltActive)
         {
@@ -677,11 +654,10 @@ public class BossSniperBeamUnit : MonoBehaviour
         }
         currentTilt = Mathf.MoveTowardsAngle(currentTilt, targetTilt, tiltRotationSpeed * Time.deltaTime);
 
-        // まず左右へ振り向き（Y回転）、その上から射線の角度へ傾ける（画面の回転軸＝Z回転）
         visualTransform.localRotation =
             Quaternion.AngleAxis(currentTilt, Vector3.forward) * Quaternion.Euler(0f, currentVisualAngle, 0f);
 
-        aimTiltActive = false; // 毎フレームの終わりに倒す。次フレームも攻撃中なら各Tickが立て直す
+        aimTiltActive = false;
     }
 
     private float TargetVisualAngle()
@@ -692,7 +668,6 @@ public class BossSniperBeamUnit : MonoBehaviour
     }
 
     // ─── 可視化（LineRenderer 実行時生成） ──────────
-
     private void CreateBeamVisual()
     {
         GameObject go = new GameObject("BossBeam");
@@ -707,19 +682,18 @@ public class BossSniperBeamUnit : MonoBehaviour
         line.receiveShadows = false;
         line.sortingOrder = 10;
 
-        // カスタムマテリアルが指定されていればそれを使う。無ければ Sprites/Default を実行時生成
         if (customBeamMaterial != null)
         {
-            line.material = customBeamMaterial; // 外部管理なので OnDestroy では破棄しない
+            line.material = customBeamMaterial;
         }
         else
         {
-            lineMaterial = new Material(Shader.Find("Sprites/Default")); // ビルトインRP前提
+            lineMaterial = new Material(Shader.Find("Sprites/Default"));
             lineMaterial.renderQueue = 3000;
             line.material = lineMaterial;
         }
 
-        line.enabled = false; // 初期状態は非表示
+        line.enabled = false;
     }
 
     private void DrawBeam(Vector2 dir, Color color, float width)
@@ -742,6 +716,8 @@ public class BossSniperBeamUnit : MonoBehaviour
 
     private void OnDestroy()
     {
+        // 👑【修正】破棄時の安全弁として、もし発射中のままユニットが消えても確実にエフェクトインスタンスを消去する
+        StopFireBeam();
         if (lineMaterial != null) Destroy(lineMaterial);
     }
 }
