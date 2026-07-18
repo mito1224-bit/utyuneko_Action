@@ -68,7 +68,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 32d7022d00368d34aafc5222c7bc6c0e, type: 2}
+  - {fileID: 2100000, guid: 07110f0865a076942bfdd58215ef8f05, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -196,3 +196,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cbf5a53adf4245a4e9f85c12b9ab2e13, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Checkpoint
+  activatedColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  targetRenderer: {fileID: 7913885655296509727}

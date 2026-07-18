@@ -123,13 +123,11 @@ public class DataManager : MonoBehaviour
         }
     }
 
-
-
-    /// <summary>
-    /// シーンリロードで復活してしまった「獲得済みスターコイン」を破壊する
-    /// </summary>
-    // --- DataManager.cs の該当箇所 ---
-    private void CleanUpCollectedStarCoins()
+/// <summary>
+/// シーンリロードで復活してしまった「獲得済みスターコイン」を破壊する
+/// </summary>
+// --- DataManager.cs の該当箇所 ---
+private void CleanUpCollectedStarCoins()
     {
         var starCoins = Object.FindObjectsByType<DataCubeController>(FindObjectsSortMode.None);
         foreach (var coin in starCoins)
@@ -137,11 +135,11 @@ public class DataManager : MonoBehaviour
             // ★ coin.id だった部分を、先ほど作った DataCubeIndex に書き換える！
             int coinId = coin.DataCubeIndex;
 
-            if (IsStarCoinCollected(coinId))
-            {
-                Destroy(coin.gameObject); // すでに取っているので消す
-            }
+        if (IsStarCoinCollected(coinId))
+        {
+            Destroy(coin.RootObject);
         }
+    }
     }
 
     // ==========================================

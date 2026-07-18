@@ -105,7 +105,7 @@ public class StageSecondBossPhaseTransitionState : StageSecondBossBaseState
 
             ShakeTarget.Instance.Shake(2.5f, 2.5f);
 
-            SoundManager.Instance.PlaySE(SeType.EnemyConfusion);
+            SoundManager.Instance.PlaySE(SeType.EnemyRangeAttack);
             Debug.Log("<color=red>📢 ボス：目的地に到着、大咆哮！ 巨大化威嚇中！</color>");
         }
 

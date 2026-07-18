@@ -28,24 +28,24 @@ public class GlitchHosaIdleState : GlitchHosaBaseState
 
             if (boss.hosaCurrentPhase == 1)
             {
-                boss.TransitionToState(boss.StateP2_HackingSteal);
+                //boss.TransitionToState(boss.StateP2_HackingSteal);
                 // 【第1形態】4択の25%均等確率で完全動作！
-                //if (rand < 0.25f)
-                //{
-                //    boss.TransitionToState(boss.StateP1_Beam);       // 技①：四方回転極太ビーム
-                //}
-                //else if (rand < 0.50f)
-                //{
-                //    boss.TransitionToState(boss.StateP1_Clones);     // 技②：分身交互スナイパービーム
-                //}
-                //else if (rand < 0.75f)
-                //{
-                //    boss.TransitionToState(boss.StateP1_BackBombs);  // 技③：奥逃げ爆弾投げ（打ち返しラリー）
-                //}
-                //else
-                //{
-                //    boss.TransitionToState(boss.StateP1_WallDash);   // 技④：3往復予測ダッシュ＆壁大激突
-                //}
+                if (rand < 0.25f)
+                {
+                    boss.TransitionToState(boss.StateP1_Beam);       // 技①：四方回転極太ビーム
+                }
+                else if (rand < 0.50f)
+                {
+                    boss.TransitionToState(boss.StateP1_Clones);     // 技②：分身交互スナイパービーム
+                }
+                else if (rand < 0.75f)
+                {
+                    boss.TransitionToState(boss.StateP1_BackBombs);  // 技③：奥逃げ爆弾投げ（打ち返しラリー）
+                }
+                else
+                {
+                    boss.TransitionToState(boss.StateP1_WallDash);   // 技④：3往復予測ダッシュ＆壁大激突
+                }
             }
             else if (boss.hosaCurrentPhase >= 2)
             {

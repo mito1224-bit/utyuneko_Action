@@ -24,6 +24,7 @@ MonoImporter:
   - imgDenger: {fileID: 21300000, guid: 7a8ba69cd006ccd40ae5d651135e9648, type: 3}
   - imgFellow: {fileID: 21300000, guid: 4e93d11635f588f45aa66ecb2cf5185d, type: 3}
   - imgDokuro: {fileID: 21300000, guid: c19c7135239e98942ab182d2e3ef634f, type: 3}
+  - customMaterial: {fileID: 2100000, guid: 1e92e15c2421cb04c8f54feb71f36d59, type: 2}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 

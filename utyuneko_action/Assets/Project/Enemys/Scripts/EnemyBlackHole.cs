@@ -62,6 +62,7 @@ public class EnemyBlackHole : MonoBehaviour
     private Transform player;
     private Rigidbody2D playerRb;
     private EnemyKnockback knockback;
+    private bool suctionPlaying; // 吸引ループSEが鳴っているか（範囲内外の切り替わりで開始/停止）
 
     // 可視化用（実行時生成）
     private Transform rangeVisual;
@@ -93,6 +94,33 @@ public class EnemyBlackHole : MonoBehaviour
         // 見た目（渦の回転・範囲色）は通常フレームで更新。吸引そのものは FixedUpdate
         bool suppressed = knockback != null && (knockback.IsActive || knockback.IsDying);
         UpdateRangeVisual(suppressed);
+        UpdateSuctionLoop(suppressed);
+    }
+
+    // プレイヤーが吸引範囲に入っている間だけ吸引ループSEを鳴らす（範囲外・吹き飛び中は止める）。
+    // SoundManager が無いテストシーンでは何もしない。
+    private void UpdateSuctionLoop(bool suppressed)
+    {
+        bool pulling = false;
+        if (!suppressed && playerRb != null)
+        {
+            Vector2 toCenter = (Vector2)transform.position - playerRb.position;
+            if (horizontalOnly) toCenter.y = 0f;
+            float dist = toCenter.magnitude;
+            pulling = dist <= pullRadius && dist > 0.0001f;
+        }
+
+        if (pulling && !suctionPlaying)
+        {
+            suctionPlaying = true;
+            // spatialBlend=0＝2Dサウンド（単発 PlaySE と同じ非定位）。カメラ移動で音量が揺れないように
+            if (SoundManager.Instance != null) SoundManager.Instance.PlayLoopSE(gameObject, SeType.EnemySuction, 1f, 0f, 0f);
+        }
+        else if (!pulling && suctionPlaying)
+        {
+            suctionPlaying = false;
+            if (SoundManager.Instance != null) SoundManager.Instance.StopLoopSE(gameObject);
+        }
     }
 
     void FixedUpdate()
@@ -206,6 +234,9 @@ public class EnemyBlackHole : MonoBehaviour
 
     void OnDestroy()
     {
+        // 吸引ループSEが鳴りっぱなしのまま破棄されないよう止める（SoundManager 側の後始末も兼ねる）
+        if (suctionPlaying && SoundManager.Instance != null) SoundManager.Instance.StopLoopSE(gameObject);
+
         if (rangeMaterial != null) Destroy(rangeMaterial);
         if (rangeMesh != null) Destroy(rangeMesh);
     }

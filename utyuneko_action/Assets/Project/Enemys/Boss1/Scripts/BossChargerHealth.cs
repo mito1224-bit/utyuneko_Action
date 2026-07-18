@@ -11,6 +11,7 @@ public class BossChargerHealth : MonoBehaviour
     [Header("基礎ステータス")]
     public float maxHP = 300f;
     public float currentHP;
+    public GameObject damagekEffect;
 
     [Header("被弾条件")]
     [Tooltip("バースト中の体当たりのみダメージを受ける")]
@@ -29,6 +30,8 @@ public class BossChargerHealth : MonoBehaviour
     public float throwDamageMultiplier = 1.5f;
     [Tooltip("フェーズ2移行（咆哮）中の被弾ダメージ倍率。0.2なら80%カット")]
     public float phaseTransitionDamageMultiplier = 0.2f;
+    [Tooltip("必殺技（乱舞突進）中の被弾ダメージ倍率。大技の見せ場を途中で潰されないよう極端に下げる。0.1なら90%カット")]
+    public float rampageDamageMultiplier = 0.1f;
 
     [Header("被弾インターバル")]
     [Tooltip("連続ヒットを防ぐ無敵時間（秒）")]
@@ -85,6 +88,8 @@ public class BossChargerHealth : MonoBehaviour
 
         currentHP = Mathf.Max(0f, currentHP - damage);
         invincibilityTimer = damageInterval;
+        if (damagekEffect) Instantiate(damagekEffect, controller.transform.position, Quaternion.identity);
+
 
         // ボス2（StageSecondBossHealth）と同じ流儀：HP反映＋被弾シェイク。
         // HPが0になったときのフェードアウトは UpdateHP の内部が面倒を見る。
@@ -119,6 +124,7 @@ public class BossChargerHealth : MonoBehaviour
         if (controller.CurrentState == controller.StateStun) return stunDamageMultiplier;
         if (controller.CurrentState == controller.StateShieldThrow) return throwDamageMultiplier;
         if (controller.CurrentState == controller.StatePhaseTransition) return phaseTransitionDamageMultiplier;
+        if (controller.CurrentState == controller.StateRampage) return rampageDamageMultiplier;
         return 1f;
     }
 }

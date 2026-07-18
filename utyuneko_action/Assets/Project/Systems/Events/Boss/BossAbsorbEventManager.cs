@@ -75,7 +75,9 @@ public class BossAbsorbEventManager : BaseEventManager
         {
             bossController = targetBoss.GetComponent<StageSecondBossController>();
 
-            if (bossController.BossStatgeCamera)
+            // Boss1(BossChargerController)には StageSecondBossController が無いので bossController は null。
+            // その場合は Boss2 専用のステージカメラ切替をスキップする（Boss1 は BossStatgeCamera を持たない）。
+            if (bossController != null && bossController.BossStatgeCamera)
             {
                 bossController.BossStatgeCamera.gameObject.SetActive(false);
             }
@@ -194,7 +196,7 @@ public class BossAbsorbEventManager : BaseEventManager
         // ===================================================================
         if (coreCubePrefab != null && hosa != null)
         {
-            SoundManager.Instance.PlaySE(SeType.EnemyRangeAttack); // 投射音
+            SoundManager.Instance.PlaySE(SeType.PlayerIconPop); // 投射音
 
             // ステージの中心X座標の計算（安全ガード付き）
             float stageCenterX = (bossController != null) ? (bossController.stageMinX + bossController.stageMaxX) / 2f : hosa.transform.position.x;
@@ -298,7 +300,7 @@ public class BossAbsorbEventManager : BaseEventManager
         {
             cameraController.ReturnToPlayerFromEvent(0.1f);
         }
-        if (bossController.BossStatgeCamera)
+        if (bossController != null && bossController.BossStatgeCamera)
         {
             bossController.BossStatgeCamera.gameObject.SetActive(false);
         }
@@ -365,7 +367,7 @@ public class BossAbsorbEventManager : BaseEventManager
         // StateFollow（追従ステート）への遷移コードは完全に消去された状態をキープ！
         currentPhase = EventPhase.Finished;
 
-        if (bossController.BossStatgeCamera)
+        if (bossController != null && bossController.BossStatgeCamera)
         {
             bossController.BossStatgeCamera.gameObject.SetActive(false);
         }

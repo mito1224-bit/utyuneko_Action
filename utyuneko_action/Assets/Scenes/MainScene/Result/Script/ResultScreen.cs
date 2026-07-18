@@ -41,6 +41,8 @@ public class ResultScreen : MonoBehaviour
     void Start()
     {
 
+        SoundManager.Instance.PlayBGM(BgmType.Result, 1.0f);
+
         if (enterPromptUI != null)
         {
             enterPromptUI.SetActive(false);
@@ -105,8 +107,11 @@ public class ResultScreen : MonoBehaviour
             // 例: InputManager.Instance.SubmitAction.WasPressedThisFrame() など
             if (InputManager.Instance.UI.Submit.WasPressedThisFrame())
             {
+                SoundManager.Instance.StopBGM(0.5f);
+
                 // 連打防止のためにフラグを折る
                 isResultSequenceFinished = false;
+                SoundManager.Instance.PlaySE(SeType.UiEnter);
 
                 Debug.Log("Enterが押されました！次の画面へ進みます。");
                 TransitionManager.Instance.ChangeScene("IntroStage", TransitionType.Wipe);

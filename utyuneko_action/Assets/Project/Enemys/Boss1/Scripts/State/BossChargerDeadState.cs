@@ -10,6 +10,7 @@ public class BossChargerDeadState : BossChargerBaseState
     private float timer;
     private float blinkPhase;
     private BlinkFade blinkFade;
+    private bool held; // destroyOnDeath=OFF で演出を締めて留まったあと、以降の処理を止めるフラグ
 
     public BossChargerDeadState(BossChargerController boss) : base(boss) { }
 
@@ -21,6 +22,11 @@ public class BossChargerDeadState : BossChargerBaseState
         // 進行中の白フラッシュを止めてマテリアルを元へ戻してから死亡フェードに入る
         // （HitFlash と BlinkFade がどちらもマテリアルを差し替えるので競合＝ピンク化を防ぐ）。
         boss.Health?.StopFlash();
+
+        // 死亡演出（Boss2 の流儀を流用）：全体スロー＋カメラシェイク。シングルトンが無ければスキップ。
+        // ★カメラのズームロックはしない（ボスは deathDestroyDelay 後に Destroy されるため戻せない）。
+        if (TimeManager.Instance != null) TimeManager.Instance.TriggerGlobalSlowMotion(boss.deathSlowDuration, boss.deathSlowScale);
+        boss.PlayShake(boss.deathShakeDuration, boss.deathShakeMagnitude);
 
         // 死体に触れてもダメージを受けないように（EnemyKnockback の死亡処理と同じ流儀）
         boss.SetAllDamageSourcesEnabled(false);
@@ -43,10 +49,29 @@ public class BossChargerDeadState : BossChargerBaseState
 
     public override void Update()
     {
+        if (held) return; // 演出を締めて留まったあとは何もしない（イベント側へ引き継ぎ）
+
         UpdateBlink();
 
         timer -= Time.deltaTime;
-        if (timer <= 0f) Object.Destroy(boss.gameObject);
+        if (timer <= 0f)
+        {
+            // 死亡演出が完了した合図。NextFlg起動など「演出後」の処理へ引き継ぐ（消滅/留まるより先に一度だけ）。
+            boss.onDeathSequenceComplete?.Invoke();
+
+            if (boss.destroyOnDeath)
+            {
+                Object.Destroy(boss.gameObject);
+            }
+            else
+            {
+                // 消滅させず死体として残す（イベントで NextFlg 起動などに引き継ぐ）。
+                // 明滅を止めてマテリアルを元へ戻し、以降は棒立ちの死亡状態でその場に留まる。
+                blinkFade?.End();
+                blinkFade = null;
+                held = true;
+            }
+        }
     }
 
     // モデルのアルファを不透明↔半透明で脈動させる（Animator の m_Enabled 上書きの影響を受けない）

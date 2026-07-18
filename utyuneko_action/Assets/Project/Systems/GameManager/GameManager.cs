@@ -303,6 +303,12 @@ public class GameManager : MonoBehaviour
             Debug.Log("【ストーリー進行】ステージ3を初クリア！フェーズが Stage3_Cleared に進みました。");
             SaveGame();
         }
+        else if (clearedSceneName == "BossStage" && currentSaveData.currentPhase == StoryPhase.Stage3_Cleared)
+        {
+            currentSaveData.currentPhase = StoryPhase.GameClear;
+            Debug.Log("【ストーリー進行】ボス撃破！フェーズが GameClear に進みました。");
+            SaveGame();
+        }
         else
         {
             // すでに先のステージに進んでいる場合や、過去ステージの再クリア時はここに来る

@@ -78,3 +78,6 @@ MonoBehaviour:
   - type: 10
     prefab: {fileID: 2202954077026415052, guid: 340bc9792640994418f4bde0e26dade1, type: 3}
     vfxDestroyDelay: 0
+  - type: 11
+    prefab: {fileID: 32436663714381356, guid: 627d22c7c3b508d43b5755d805170be0, type: 3}
+    vfxDestroyDelay: 0
