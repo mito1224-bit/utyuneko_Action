@@ -107,7 +107,7 @@ MonoBehaviour:
     clip: {fileID: 8300000, guid: 7c0da6b8c14c04e4190336a708bb8fd1, type: 3}
     volume: 0.3
   - bgmType: 5
-    clip: {fileID: 8300000, guid: 0b4cc522f3d5d0746b5b7a2aa18f63cf, type: 3}
+    clip: {fileID: 8300000, guid: 0950b79f234945848b188fa07871e366, type: 3}
     volume: 0.3
   - bgmType: 6
     clip: {fileID: 8300000, guid: 57d00de1c9f18b94da52d68bfc36b9e8, type: 3}
@@ -449,7 +449,6 @@ GameObject:
   - component: {fileID: 602109535505354693}
   - component: {fileID: 2115825123118132970}
   - component: {fileID: 1353988914025696706}
-  - component: {fileID: 8357568181695198290}
   m_Layer: 0
   m_Name: TransitionManager
   m_TagString: Untagged
@@ -566,23 +565,6 @@ MonoBehaviour:
   zoomTargetZ: -5
   eventPositionSpeed: 3
   eventZoomSpeed: 2
---- !u!114 &8357568181695198290
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8741556381754363572}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 76f331ddcec042c4c9a5ced20773bbe9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::TransitionDebugger
-  targetSceneName: Stage_TAKA_01
-  wipeKey: 107
-  digitalRainKey: 108
-  fadeRainKey: 109
-  squareStepKey: 110
 --- !u!1001 &9168061431498294192
 PrefabInstance:
   m_ObjectHideFlags: 0

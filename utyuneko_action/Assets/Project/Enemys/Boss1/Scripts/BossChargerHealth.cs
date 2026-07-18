@@ -11,6 +11,7 @@ public class BossChargerHealth : MonoBehaviour
     [Header("基礎ステータス")]
     public float maxHP = 300f;
     public float currentHP;
+    public GameObject damagekEffect;
 
     [Header("被弾条件")]
     [Tooltip("バースト中の体当たりのみダメージを受ける")]
@@ -87,6 +88,8 @@ public class BossChargerHealth : MonoBehaviour
 
         currentHP = Mathf.Max(0f, currentHP - damage);
         invincibilityTimer = damageInterval;
+        if (damagekEffect) Instantiate(damagekEffect, controller.transform.position, Quaternion.identity);
+
 
         // ボス2（StageSecondBossHealth）と同じ流儀：HP反映＋被弾シェイク。
         // HPが0になったときのフェードアウトは UpdateHP の内部が面倒を見る。
