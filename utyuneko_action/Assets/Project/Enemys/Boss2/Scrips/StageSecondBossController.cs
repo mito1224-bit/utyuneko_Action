@@ -235,8 +235,6 @@ public class StageSecondBossController : MonoBehaviour
             isPhase2Started = true;
             TransitionToState(StatePhaseTransition);
         }
-
-        if (Input.GetKeyDown(KeyCode.P)) TakeDamage(10f);
     }
 
     void FixedUpdate() { if (currentState != null) currentState.FixedUpdate(); }

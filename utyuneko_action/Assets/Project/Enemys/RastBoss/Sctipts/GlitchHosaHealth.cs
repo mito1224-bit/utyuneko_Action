@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 
 /// <summary>
-/// 崩壊した補佐：HPおよびバリアシステム管理（ダメージ白飛び完全復旧・最終決定版）
+/// 👑 崩壊した補佐：HPおよびバリアシステム管理（死亡ステート完全紐付け版）
 /// </summary>
 public class GlitchHosaHealth : MonoBehaviour
 {
@@ -49,7 +49,6 @@ public class GlitchHosaHealth : MonoBehaviour
     void Awake()
     {
         currentHP = maxHP;
-        // 👑【バグ修正①】子オブジェクト階層にアタッチされていても確実に親からコントローラーを検出できるようにガードロック！
         controller = GetComponent<GlitchHosaController>();
         if (controller == null) controller = GetComponentInParent<GlitchHosaController>();
     }
@@ -66,6 +65,11 @@ public class GlitchHosaHealth : MonoBehaviour
         foreach (var mr in visualRoot.GetComponentsInChildren<MeshRenderer>(true)) if (mr != null) defaultMaterials.Add(new RendererDefaultMat { mr = mr, origMat = mr.sharedMaterial });
 
         ResetBarrier();
+    }
+
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.P)) TakeDamage(20f);
     }
 
     public void UpdateBarrierVisual() { if (barrierVisualObject != null) barrierVisualObject.SetActive(hasBarrier); }
@@ -131,7 +135,7 @@ public class GlitchHosaHealth : MonoBehaviour
 
     public void ProcessDirectRallyHit(float damage)
     {
-        if (controller != null && controller.currentDebugStateName == "GlitchHosaStunState") return;
+        if (controller != null && (controller.currentDebugStateName == "GlitchHosaStunState" || controller.currentDebugStateName == "GlitchHosaDeadState")) return;
 
         if (hasBarrier)
         {
@@ -146,12 +150,24 @@ public class GlitchHosaHealth : MonoBehaviour
 
         TakeDamage(damage);
 
+        // 撃破された場合はラリー衝突後の通常スタン移動などの計算を完全カットして脱出
+        if (currentHP <= 0f) return;
+
+        float hpRatio = currentHP / maxHP;
+        bool isChangingPhaseNow = (hpRatio <= controller.phase2Threshold && controller.hosaCurrentPhase < 2) ||
+                                  (hpRatio <= controller.phase3Threshold && controller.hosaCurrentPhase < 3);
+
         if (controller != null && controller.isBackRallyMode)
         {
             controller.StartCoroutine(controller.KnockbackToStageFrontRoutine());
         }
         else
         {
+            if (isChangingPhaseNow || (controller != null && controller.currentDebugStateName == "GlitchHosaPhaseTransitionState"))
+            {
+                return;
+            }
+
             controller.TransitionToState(controller.StateStun);
         }
     }
@@ -181,6 +197,14 @@ public class GlitchHosaHealth : MonoBehaviour
         {
             currentHP = 0f;
             Debug.Log("💀 補佐撃破！");
+
+            // ===================================================================
+            // 👑【今回の重要紐付け】HPが0以下になった瞬間に最優先で死亡ステートへ叩き込む！
+            // ===================================================================
+            if (controller != null && controller.currentDebugStateName != "GlitchHosaDeadState")
+            {
+                controller.TransitionToState(controller.StateDead);
+            }
         }
         else
         {
@@ -193,8 +217,6 @@ public class GlitchHosaHealth : MonoBehaviour
         isFlashing = true;
         Material matToUse = customFlashMaterial != null ? customFlashMaterial : defaultFlashMaterial;
 
-        // 👑【バグ修正②】ボス2と全く同じ方法に修正！
-        // 全てパーツに対してフラッシュ用マテリアル（matToUse）が完璧に適用されるように直しました！
         if (matToUse != null)
         {
             foreach (var dm in defaultMaterials)

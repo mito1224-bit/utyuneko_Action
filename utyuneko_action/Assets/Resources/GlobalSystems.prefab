@@ -102,24 +102,36 @@ MonoBehaviour:
     volume: 0.3
   - bgmType: 3
     clip: {fileID: 8300000, guid: 8338d05d5544707419a25a0431095f90, type: 3}
-    volume: 0.5
+    volume: 0.3
   - bgmType: 4
     clip: {fileID: 8300000, guid: 7c0da6b8c14c04e4190336a708bb8fd1, type: 3}
-    volume: 0.5
+    volume: 0.3
   - bgmType: 5
-    clip: {fileID: 8300000, guid: 57d00de1c9f18b94da52d68bfc36b9e8, type: 3}
-    volume: 0.5
+    clip: {fileID: 8300000, guid: 0b4cc522f3d5d0746b5b7a2aa18f63cf, type: 3}
+    volume: 0.3
   - bgmType: 6
-    clip: {fileID: 8300000, guid: de704193d4ca14d439a18b997aca7974, type: 3}
-    volume: 0.5
-  - bgmType: 8
-    clip: {fileID: 8300000, guid: 0e8d582768d7f344d981f636cd7c3dc3, type: 3}
-    volume: 0.5
-  - bgmType: 9
-    clip: {fileID: 8300000, guid: 8338d05d5544707419a25a0431095f90, type: 3}
-    volume: 0.5
+    clip: {fileID: 8300000, guid: 57d00de1c9f18b94da52d68bfc36b9e8, type: 3}
+    volume: 0.3
   - bgmType: 7
+    clip: {fileID: 8300000, guid: 1d452252b77899e4eb4e0cb57c3a437e, type: 3}
+    volume: 0.3
+  - bgmType: 8
     clip: {fileID: 8300000, guid: de704193d4ca14d439a18b997aca7974, type: 3}
+    volume: 0.3
+  - bgmType: 9
+    clip: {fileID: 8300000, guid: ca3897cf61153bf49997571a33f29b56, type: 3}
+    volume: 0.3
+  - bgmType: 10
+    clip: {fileID: 8300000, guid: c0fb7709de32cc04c8b0729fb3ad2f8a, type: 3}
+    volume: 0.3
+  - bgmType: 11
+    clip: {fileID: 8300000, guid: 0e8d582768d7f344d981f636cd7c3dc3, type: 3}
+    volume: 0.3
+  - bgmType: 12
+    clip: {fileID: 8300000, guid: 6a4664f83ad441e45b47d369a3f27a4f, type: 3}
+    volume: 0.3
+  - bgmType: 13
+    clip: {fileID: 8300000, guid: 55a4b190c06e7ff40a3430c3cada67a4, type: 3}
     volume: 0.3
   audioBanks:
   - {fileID: 11400000, guid: 57f0c12ceabe99b409a00ad9bc6a4f9c, type: 2}

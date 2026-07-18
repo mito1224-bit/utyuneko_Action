@@ -3,9 +3,10 @@ using System.Collections;
 using System.Collections.Generic;
 
 /// <summary>
-/// 👑 崩壊した補佐：全体を管理するメインブレイン（突進速度安全ロック・白飛び完全復旧版）
+/// 👑 崩壊した補佐：全体を管理するメインブレイン（物理更新パイプライン完全復旧版）
 /// </summary>
-public class GlitchHosaController : MonoBehaviour
+[RequireComponent(typeof(GlitchHosaVisual))]
+public class GlitchHosaController : MonoBehaviour, IEventActor
 {
     private GlitchHosaHealth healthComponent;
     public float currentHP => healthComponent != null ? healthComponent.currentHP : 100f;
@@ -15,15 +16,8 @@ public class GlitchHosaController : MonoBehaviour
     public Quaternion originalVisualLocalRotation { get; private set; }
     public Vector3 originalVisualLocalScale { get; private set; }
 
-    private List<RendererData> originalRendererData = new List<RendererData>();
-
-    private struct RendererData
-    {
-        public SpriteRenderer spriteRenderer;
-        public SkinnedMeshRenderer skinnedRenderer;
-        public MeshRenderer meshRenderer;
-        public Material originalMaterial;
-    }
+    // 分離した演出専門クラスへの参照枠
+    public GlitchHosaVisual Visual { get; private set; }
 
     [Header("😈 崩壊した補佐 - 形態設定")]
     public float phase2Threshold = 0.7f;
@@ -31,9 +25,7 @@ public class GlitchHosaController : MonoBehaviour
     public int hosaCurrentPhase { get; private set; } = 1;
 
     [Header("🏎️ 突進（ダッシュ）移動速度の安全ロック設定")]
-    [Tooltip("突進技の基本移動速度（すり抜け防止のため 18〜22 あたりが2Dアクションの限界値としてオススメです）")]
     public float baseDashSpeed = 20f;
-    [Tooltip("第3形態（怒り）の時、突進スピードを何倍にするか。ここを 1.0 にすれば後半もすり抜けを100%防止できます")]
     public float dashSpeedPhase3Multiplier = 1.1f;
 
     [Header("💀 プレイヤーから強奪した能力フラグ")]
@@ -60,7 +52,7 @@ public class GlitchHosaController : MonoBehaviour
     public GameObject timedBombPrefab;
     public Transform tossLaunchPoint;
 
-    [Header("⚡ 激激突・衝撃波（ショックウェーブ）専用設定")]
+    [Header("⚡ 激突・衝撃波（ショックウェーブ）専用設定")]
     public GameObject shockwavePrefab;
 
     [Header("🎯 各攻撃専用・設定")]
@@ -86,15 +78,13 @@ public class GlitchHosaController : MonoBehaviour
     public float dashYRotationRight = 310.0f;
     public float dashYRotationLeft = 50.0f;
 
+    public float stunXRotation = -45.0f;
+    public float deadXRotation = 15.0f;
+
     public float stageMinX => topLeftBoundary != null ? topLeftBoundary.position.x : -15f;
     public float stageMaxX => bottomRightBoundary != null ? bottomRightBoundary.position.x : 15f;
     public float stageMaxY => topLeftBoundary != null ? topLeftBoundary.position.y : 10f;
     public float stageMinY => bottomRightBoundary != null ? bottomRightBoundary.position.y : 0f;
-
-    [Header("⚙️ 演出用パラメータ")]
-    public float afterimageDuration = 0.5f;
-    public float afterimageInterval = 0.02f;
-    public Color afterimageColor = new Color(1f, 0.15f, 0.15f, 0.65f);
 
     [Header("🎯 突進・警告インジケーター設定")]
     public Sprite dashWarningSprite;
@@ -102,13 +92,30 @@ public class GlitchHosaController : MonoBehaviour
     public Color dashWarningColor = new Color(1f, 0f, 0f, 0.35f);
     public float dashWarningDuration = 0.6f;
 
+    [Header("🎥 カメラ干渉防止設定")]
+    [Tooltip("カメラの境界線制限トリガー")]
+    public CameraBoundsTrigger stageCamera;
+
+    [Header("🎬 撃破後シネマティックイベント設定")]
+    [Tooltip("ボス撃破・着地後に自動でActive(true)にしたいトリガーオブジェクト")]
+    public GameObject postBossEventTrigger;
+
+    public bool isDeadGrounded { get; set; }
+
+    public System.Action<Collision2D> OnCollisionEnterEvent;
+
+    private ImageBubble bossImageBubble;
+
+    public int pendingNextPhase { get; private set; }
+    public float pendingSpeedMultiplier { get; private set; }
+
     [HideInInspector] public bool isBackRallyMode = false;
-    private bool isPhaseTransitioning = false;
     [HideInInspector] public bool isKnockbacking { get; private set; } = false;
 
     [HideInInspector] public float targetXRotation;
     [HideInInspector] public float targetYRotation;
     [HideInInspector] public float targetZRotation;
+
     [HideInInspector] public Vector3 targetScale;
     [HideInInspector] public Vector3 targetVisualOffset;
 
@@ -122,14 +129,21 @@ public class GlitchHosaController : MonoBehaviour
     public HosaP2_CloneDashState StateP2_CloneDash { get; private set; }
     public HosaP2_BeamBombsState StateP2_BeamBombs { get; private set; }
     public HosaP2_HackingStealState StateP2_HackingSteal { get; private set; }
+    public GlitchHosaAppearState StateAppear { get; private set; }
+    public GlitchHosaPhaseTransitionState StatePhaseTransition { get; private set; }
+    public GlitchHosaDeadState StateDead { get; private set; }
 
     private GlitchHosaBaseState currentState;
     public string currentDebugStateName;
     private Transform playerTransform;
     private Rigidbody2D playerRb2D;
 
+    private float afterimageTimer = 0f;
+
     void Awake()
     {
+        Visual = GetComponent<GlitchHosaVisual>();
+
         StateIdle = new GlitchHosaIdleState(this);
         StateP1_Beam = new HosaP1_BeamState(this);
         StateP1_Clones = new HosaP1_ClonesState(this);
@@ -140,6 +154,9 @@ public class GlitchHosaController : MonoBehaviour
         StateP2_CloneDash = new HosaP2_CloneDashState(this);
         StateP2_BeamBombs = new HosaP2_BeamBombsState(this);
         StateP2_HackingSteal = new HosaP2_HackingStealState(this);
+        StateAppear = new GlitchHosaAppearState(this);
+        StatePhaseTransition = new GlitchHosaPhaseTransitionState(this);
+        StateDead = new GlitchHosaDeadState(this);
 
         healthComponent = GetComponent<GlitchHosaHealth>();
         if (healthComponent == null) healthComponent = GetComponentInChildren<GlitchHosaHealth>();
@@ -157,12 +174,6 @@ public class GlitchHosaController : MonoBehaviour
         targetScale = originalVisualLocalScale;
         targetVisualOffset = Vector3.zero;
         rotationTarget.localRotation = originalVisualLocalRotation;
-
-        Transform visualRoot = ultVisualOffsetObject != null ? ultVisualOffsetObject : transform;
-        originalRendererData.Clear();
-        foreach (var sr in visualRoot.GetComponentsInChildren<SpriteRenderer>(true)) if (sr != null) originalRendererData.Add(new RendererData { spriteRenderer = sr, originalMaterial = sr.sharedMaterial });
-        foreach (var smr in visualRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true)) if (smr != null) originalRendererData.Add(new RendererData { skinnedRenderer = smr, originalMaterial = smr.sharedMaterial });
-        foreach (var mr in visualRoot.GetComponentsInChildren<MeshRenderer>(true)) if (mr != null) originalRendererData.Add(new RendererData { meshRenderer = mr, originalMaterial = mr.sharedMaterial });
     }
 
     void Start()
@@ -174,29 +185,57 @@ public class GlitchHosaController : MonoBehaviour
             playerObj.TryGetComponent<Rigidbody2D>(out playerRb2D);
         }
         if (bossAnimator == null) bossAnimator = GetComponentInChildren<Animator>();
-        TransitionToState(StateIdle);
+
+        if (ultVisualOffsetObject == null && bossAnimator != null) ultVisualOffsetObject = bossAnimator.transform;
+        if (squashOffsetObject == null) squashOffsetObject = ultVisualOffsetObject;
+        if (rotationOffsetObject == null) rotationOffsetObject = ultVisualOffsetObject;
+
+        Visual.Initialize(this);
+
+        bossImageBubble = GetComponentInChildren<ImageBubble>(true);
+        if (postBossEventTrigger != null) postBossEventTrigger.SetActive(false);
+
+        TransitionToState(StateAppear);
     }
 
     void Update()
     {
         if (currentState != null) currentState.Update();
 
-        if (currentDebugStateName != "GlitchHosaStunState" && !isKnockbacking)
+        if (currentDebugStateName != "GlitchHosaStunState" &&
+            currentDebugStateName != "GlitchHosaAppearState" &&
+            currentDebugStateName != "GlitchHosaPhaseTransitionState" &&
+            currentDebugStateName != "GlitchHosaDeadState" &&
+            !isKnockbacking)
         {
             float hoverY = Mathf.Sin(Time.time * hoverSpeed) * hoverAmount;
             targetVisualOffset = new Vector3(0f, hoverY, 0f);
         }
 
+        if (currentDebugStateName == "GlitchHosaPhaseTransitionState" ||
+            currentDebugStateName == "GlitchHosaDeadState" ||
+            isKnockbacking) return;
+
         float hpRatio = currentHP / maxHP;
 
-        if (hpRatio <= phase3Threshold && hosaCurrentPhase < 3 && !isPhaseTransitioning && !isKnockbacking)
+        if (hpRatio <= phase3Threshold && hosaCurrentPhase < 3)
         {
-            StartCoroutine(PhaseTransitionSequence(3, 1.5f, "<color=red>🔥 崩壊した補佐：最終形態突入！攻撃速度が1.5倍に超加速！</color>"));
+            pendingNextPhase = 3;
+            pendingSpeedMultiplier = 1.5f;
+            TransitionToState(StatePhaseTransition);
         }
-        else if (hpRatio <= phase2Threshold && hosaCurrentPhase < 2 && !isPhaseTransitioning && !isKnockbacking)
+        else if (hpRatio <= phase2Threshold && hosaCurrentPhase < 2)
         {
-            StartCoroutine(PhaseTransitionSequence(2, 1.0f, "<color=orange>⚡ 崩壊した補佐：第2形態突入！能力強奪ハッキングシーケンスを開始！</color>"));
+            pendingNextPhase = 2;
+            pendingSpeedMultiplier = 1.0f;
+            TransitionToState(StatePhaseTransition);
         }
+    }
+
+    // 👑【超重要：心臓部復旧】これが消えていたため各Stateの物理移動が一切動いていませんでした！
+    void FixedUpdate()
+    {
+        if (currentState != null) currentState.FixedUpdate();
     }
 
     void LateUpdate()
@@ -217,31 +256,36 @@ public class GlitchHosaController : MonoBehaviour
         }
     }
 
-    private IEnumerator PhaseTransitionSequence(int nextPhase, float speedMultiplier, string debugLogText)
+    private void OnCollisionEnter2D(Collision2D collision)
     {
-        isPhaseTransitioning = true;
-        hosaCurrentPhase = nextPhase;
-        attackSpeedMultiplier = speedMultiplier;
-        Debug.Log(debugLogText);
-
-        if (isBackRallyMode || Mathf.Abs(transform.position.z) > 0.1f)
+        if (currentDebugStateName == "GlitchHosaDeadState")
         {
-            isBackRallyMode = false;
-            SetAllCollidersEnabled(true);
-            SetAllDamageSourcesEnabled(true);
-
-            Vector3 frontAirPos = new Vector3(transform.position.x, transform.position.y, 0f);
-            yield return StartCoroutine(TeleportWithSquashRoutine(frontAirPos, 0.15f));
+            isDeadGrounded = true;
         }
 
-        isPhaseTransitioning = false;
-        TransitionToState(StateStun);
+        OnCollisionEnterEvent?.Invoke(collision);
     }
 
-    void FixedUpdate() { if (currentState != null) currentState.FixedUpdate(); }
+    private void OnCollisionStay2D(Collision2D collision)
+    {
+        OnCollisionEnterEvent?.Invoke(collision);
+    }
 
     public void TransitionToState(GlitchHosaBaseState newState)
     {
+        if (currentState is GlitchHosaDeadState) return;
+
+        if (newState is GlitchHosaStunState)
+        {
+            float hpRatio = currentHP / maxHP;
+            if ((hpRatio <= phase2Threshold && hosaCurrentPhase < 2) ||
+                (hpRatio <= phase3Threshold && hosaCurrentPhase < 3) ||
+                currentState is GlitchHosaPhaseTransitionState)
+            {
+                return;
+            }
+        }
+
         if (currentState == newState) return;
         if (currentState != null) currentState.Exit();
 
@@ -260,11 +304,28 @@ public class GlitchHosaController : MonoBehaviour
         targetScale = originalVisualLocalScale;
         targetVisualOffset = Vector3.zero;
 
+        Rigidbody2D rb = GetComponent<Rigidbody2D>();
+        if (rb != null)
+        {
+            rb.bodyType = RigidbodyType2D.Kinematic; // 安全のため通常時はKinematicへ
+            rb.gravityScale = 0f;
+            rb.linearVelocity = Vector2.zero;
+            rb.angularVelocity = 0f;
+            rb.constraints = RigidbodyConstraints2D.FreezeRotation;
+        }
+
         StopAllCoroutines();
 
         currentState = newState;
         currentDebugStateName = newState.GetType().Name;
         if (currentState != null) currentState.Enter();
+    }
+
+    public void ConfirmPhaseActivation(int phase, float speedMult)
+    {
+        hosaCurrentPhase = phase;
+        attackSpeedMultiplier = speedMult;
+        Debug.Log($"<color=green>⚙️ システム：フェーズ {phase} への内部 data 同期が安全に完了しました。</color>");
     }
 
     public void SetAllCollidersEnabled(bool enabled)
@@ -342,61 +403,45 @@ public class GlitchHosaController : MonoBehaviour
         }
     }
 
-    public IEnumerator TeleportOutRoutine(float duration = 0.12f)
+    public IEnumerator HoverMoveRoutine(Vector3 targetPos, float duration)
     {
-        Vector3 origScale = originalVisualLocalScale;
-        SoundManager.Instance.PlaySE(SeType.EnemyCharge);
-
+        Vector3 startPos = transform.position;
         float t = 0f;
+        afterimageTimer = 0f;
+
+        Vector3 origScale = originalVisualLocalScale;
+        float dirX = targetPos.x - startPos.x;
+
+        Visual.CreateAfterimage();
         while (t < duration)
         {
             t += Time.deltaTime;
             float ratio = Mathf.Clamp01(t / duration);
             float smoothRatio = Mathf.SmoothStep(0f, 1f, ratio);
+            transform.position = Vector3.Lerp(startPos, targetPos, smoothRatio);
 
-            float x = Mathf.Lerp(origScale.x, 0.01f, smoothRatio);
-            float y = Mathf.Lerp(origScale.y, origScale.y * 1.5f, smoothRatio);
-            targetScale = new Vector3(x, y, origScale.z);
+            targetScale = origScale;
+            if (Mathf.Abs(dirX) > 0.01f)
+            {
+                targetXRotation = defaultXRotation;
+                targetYRotation = dirX > 0f ? dashYRotationRight : dashYRotationLeft;
+                targetZRotation = dirX > 0f ? -dashZTiltAngle : dashZTiltAngle;
+            }
+
+            afterimageTimer += Time.deltaTime;
+            if (afterimageTimer >= Visual.afterimageInterval)
+            {
+                afterimageTimer = 0f;
+                Visual.CreateAfterimage();
+            }
             yield return null;
         }
-        targetScale = new Vector3(0.01f, origScale.y * 1.5f, origScale.z);
-    }
-
-    public IEnumerator TeleportInRoutine(Vector3 targetPos, float duration = 0.12f)
-    {
-        Vector3 origScale = originalVisualLocalScale;
-
-        targetScale = new Vector3(0.01f, origScale.y * 1.5f, origScale.z);
         transform.position = targetPos;
-
-        float t = 0f;
-        while (t < duration)
-        {
-            t += Time.deltaTime;
-            float ratio = Mathf.Clamp01(t / duration);
-            float smoothRatio = Mathf.SmoothStep(0f, 1f, ratio);
-
-            float x = Mathf.Lerp(0.01f, origScale.x, smoothRatio);
-            float y = Mathf.Lerp(origScale.y, origScale.y * 1.5f, smoothRatio);
-            targetScale = new Vector3(x, y, origScale.z);
-            yield return null;
-        }
-        targetScale = origScale;
-        targetXRotation = defaultXRotation;
-        targetYRotation = defaultYRotation;
-        targetZRotation = 0f;
-    }
-
-    public IEnumerator TeleportWithSquashRoutine(Vector3 targetPos, float duration = 0.12f)
-    {
-        yield return StartCoroutine(TeleportOutRoutine(duration));
-        yield return StartCoroutine(TeleportInRoutine(targetPos, duration));
     }
 
     public IEnumerator KnockbackToStageFrontRoutine()
     {
         isKnockbacking = true;
-        isBackRallyMode = false;
 
         Vector3 origScale = originalVisualLocalScale;
         Vector3 startPos = transform.position;
@@ -440,7 +485,7 @@ public class GlitchHosaController : MonoBehaviour
             yield return null;
         }
 
-        targetXRotation = -40f;
+        targetXRotation = stunXRotation;
         targetYRotation = defaultYRotation;
         targetZRotation = 10f;
 
@@ -455,99 +500,41 @@ public class GlitchHosaController : MonoBehaviour
         TransitionToState(StateStun);
     }
 
-    public void ForceResetAllMaterials()
-    {
-        if (healthComponent != null && healthComponent.isFlashing) return;
+    public void ForceResetAllMaterials() => Visual.ForceResetAllMaterials(healthComponent != null && healthComponent.isFlashing);
+    public void ApplyGlobalFlashMaterial(Material mat) => Visual.ApplyGlobalFlashMaterial(mat);
+    public IEnumerator TeleportOutRoutine(float duration = 0.12f) => Visual.TeleportOutRoutine(duration);
+    public IEnumerator TeleportInRoutine(Vector3 targetPos, float duration = 0.12f) => Visual.TeleportInRoutine(targetPos, duration);
+    public IEnumerator TeleportWithSquashRoutine(Vector3 targetPos, float duration = 0.12f) => Visual.TeleportWithSquashRoutine(targetPos, duration);
 
-        foreach (var data in originalRendererData)
-        {
-            if (data.spriteRenderer != null) { data.spriteRenderer.sharedMaterial = data.originalMaterial; data.spriteRenderer.color = Color.white; }
-            if (data.skinnedRenderer != null) data.skinnedRenderer.sharedMaterial = data.originalMaterial;
-            if (data.meshRenderer != null) data.meshRenderer.sharedMaterial = data.originalMaterial;
-        }
-    }
-
-    public void ApplyGlobalFlashMaterial(Material mat)
-    {
-        if (mat == null) return;
-        foreach (var data in originalRendererData)
-        {
-            if (data.spriteRenderer != null)
-            {
-                data.spriteRenderer.sharedMaterial = mat;
-                data.spriteRenderer.color = Color.white;
-            }
-            if (data.skinnedRenderer != null) data.skinnedRenderer.sharedMaterial = mat;
-            if (data.meshRenderer != null) data.meshRenderer.sharedMaterial = mat;
-        }
-    }
-
-    public IEnumerator HoverMoveRoutine(Vector3 targetPos, float duration)
-    {
-        Vector3 startPos = transform.position;
-        float t = 0f;
-        float afterimageTimer = 0f;
-
-        Transform squashTarget = GetSquashTarget();
-        Transform rotationTarget = GetRotationTarget();
-        Vector3 origScale = originalVisualLocalScale;
-
-        float dirX = targetPos.x - startPos.x;
-
-        CreateAfterimage();
-        while (t < duration)
-        {
-            t += Time.deltaTime;
-            float ratio = Mathf.Clamp01(t / duration);
-            float smoothRatio = Mathf.SmoothStep(0f, 1f, ratio);
-            transform.position = Vector3.Lerp(startPos, targetPos, smoothRatio);
-
-            targetScale = origScale;
-
-            if (Mathf.Abs(dirX) > 0.01f)
-            {
-                targetXRotation = defaultXRotation;
-                if (dirX > 0f)
-                {
-                    targetYRotation = dashYRotationRight;
-                    targetZRotation = -dashZTiltAngle;
-                }
-                else
-                {
-                    targetYRotation = dashYRotationLeft;
-                    targetZRotation = dashZTiltAngle;
-                }
-            }
-
-            afterimageTimer += Time.deltaTime;
-            if (afterimageTimer >= afterimageInterval)
-            {
-                afterimageTimer = 0f;
-                CreateAfterimage();
-            }
-            yield return null;
-        }
-        transform.position = targetPos;
-    }
-
-    private void CreateAfterimage()
-    {
-        Transform visualTarget = ultVisualOffsetObject != null ? visualTarget = ultVisualOffsetObject : transform;
-        if (visualTarget == null) return;
-        GameObject clone = Instantiate(visualTarget.gameObject, visualTarget.position, visualTarget.rotation);
-        clone.name = "HosaHoverAfterimage_Clone";
-        clone.transform.SetParent(null);
-        clone.transform.localScale = visualTarget.lossyScale;
-        if (clone.TryGetComponent<GlitchHosaController>(out var c)) Destroy(c);
-        if (clone.TryGetComponent<Rigidbody2D>(out var rb)) Destroy(rb);
-        if (clone.TryGetComponent<Collider2D>(out var col)) Destroy(col);
-        if (clone.TryGetComponent<Animator>(out var anim)) Destroy(anim);
-        foreach (var childAnim in clone.GetComponentsInChildren<Animator>()) Destroy(childAnim);
-        foreach (var childCol in clone.GetComponentsInChildren<Collider2D>()) Destroy(childCol);
-
-        clone.AddComponent<StageSecondBossAfterimageFade>().Initialize(afterimageDuration, afterimageColor);
-    }
+    public void ShowBossStamp(ImageBubble.StampType type) { if (bossImageBubble != null) bossImageBubble.ShowStamp(type); }
+    public void HideBossStamp() { if (bossImageBubble != null) bossImageBubble.StartFadeOut(); }
 
     public Transform GetPlayerTransform() => playerTransform;
     public Rigidbody2D GetPlayerRigidbody() => playerRb2D;
+
+    private Coroutine hosaReactionCoroutine;
+    private IEnumerator HosaBobbingLocalRoutine(float duration, float speed, float amount) { Transform bossAnimatorTransform = bossAnimator != null ? bossAnimator.transform : transform; float elapsed = 0f; while (elapsed < duration) { elapsed += Time.deltaTime; float offsetY = Mathf.Sin(elapsed * speed) * amount; bossAnimatorTransform.localPosition = new Vector3(0f, offsetY, 0f); yield return null; } bossAnimatorTransform.localPosition = Vector3.zero; }
+    private IEnumerator HosaSpinLocalRoutine(float duration, float speed) { Transform bossAnimatorTransform = bossAnimator != null ? bossAnimator.transform : transform; float elapsed = 0f; while (elapsed < duration) { elapsed += Time.deltaTime; bossAnimatorTransform.Rotate(Vector3.up, speed * Time.deltaTime); yield return null; } Quaternion startRot = bossAnimatorTransform.localRotation; float lerpT = 0f; while (lerpT < 1f) { lerpT += Time.deltaTime * 5f; bossAnimatorTransform.localRotation = Quaternion.Slerp(startRot, Quaternion.identity, Mathf.Clamp01(lerpT)); yield return null; } bossAnimatorTransform.localRotation = Quaternion.identity; }
+    private IEnumerator HosaSurpriseJumpLocalRoutine(float duration, float height, float twitchMagnitude) { Transform bossAnimatorTransform = bossAnimator != null ? bossAnimator.transform : transform; float elapsed = 0f; while (elapsed < duration) { elapsed += Time.deltaTime; float t = Mathf.Clamp01(elapsed / duration); float arcY = Mathf.Sin(t * Mathf.PI) * height; float twitchX = Random.Range(-twitchMagnitude, twitchMagnitude); float twitchY = Random.Range(-twitchMagnitude, twitchMagnitude); bossAnimatorTransform.localPosition = new Vector3(twitchX, arcY + twitchY, 0f); yield return null; } bossAnimatorTransform.localPosition = Vector3.zero; }
+    private IEnumerator HosaTwitchLocalRoutine(float duration, float magnitude) { Transform bossAnimatorTransform = bossAnimator != null ? bossAnimator.transform : transform; float elapsed = 0f; while (elapsed < duration) { elapsed += Time.deltaTime; float offsetX = Random.Range(-magnitude, magnitude); float offsetY = Random.Range(-magnitude, magnitude); bossAnimatorTransform.localPosition = new Vector3(offsetX, offsetY, 0f); yield return null; } bossAnimatorTransform.localPosition = Vector3.zero; }
+    private IEnumerator HosaDarkSlideLocalRoutine(float dirX, float duration) { Transform bossAnimatorTransform = bossAnimator != null ? bossAnimator.transform : transform; float elapsed = 0f; while (elapsed < duration) { elapsed += Time.deltaTime; float t = Mathf.Clamp01(elapsed / duration); float smoothT = Mathf.Sin(t * Mathf.PI); bossAnimatorTransform.localPosition = new Vector3(dirX * smoothT, 0f, 0f); yield return null; } bossAnimatorTransform.localPosition = Vector3.zero; }
+
+    public void PlayReaction(ImageBubble.StampType type, float duration = 2.0f)
+    {
+        if (hosaReactionCoroutine != null) StopCoroutine(hosaReactionCoroutine);
+        if (bossAnimator != null) { bossAnimator.transform.localPosition = Vector3.zero; bossAnimator.transform.localRotation = Quaternion.identity; }
+
+        switch (type)
+        {
+            case ImageBubble.StampType.OK: case ImageBubble.StampType.Maru: hosaReactionCoroutine = StartCoroutine(HosaBobbingLocalRoutine(0.4f, 25f, 0.2f)); break;
+            case ImageBubble.StampType.Question: case ImageBubble.StampType.Hatena: hosaReactionCoroutine = StartCoroutine(FuncHosaTilt()); IEnumerator FuncHosaTilt() { float t = 0f; Transform bossAnimatorTransform = bossAnimator != null ? bossAnimator.transform : transform; Quaternion origRot = bossAnimatorTransform.localRotation; while (t < 0.3f) { t += Time.deltaTime; bossAnimatorTransform.Rotate(Vector3.forward, 60f * Time.deltaTime); yield return null; } yield return new WaitForSeconds(0.2f); t = 0f; while (t < 0.3f) { t += Time.deltaTime; bossAnimatorTransform.localRotation = Quaternion.Slerp(bossAnimatorTransform.localRotation, origRot, t / 0.3f); yield return null; } bossAnimatorTransform.localRotation = origRot; } break;
+            case ImageBubble.StampType.Surprise: case ImageBubble.StampType.Denger: case ImageBubble.StampType.Enemy: hosaReactionCoroutine = StartCoroutine(HosaSurpriseJumpLocalRoutine(0.35f, 1.0f, 0.08f)); break;
+            case ImageBubble.StampType.Doya: hosaReactionCoroutine = StartCoroutine(HosaBobbingLocalRoutine(0.5f, 8f, 0.05f)); break;
+            case ImageBubble.StampType.Sweat: case ImageBubble.StampType.Confusion: case ImageBubble.StampType.Dokuro: hosaReactionCoroutine = StartCoroutine(HosaTwitchLocalRoutine(0.8f, 0.12f)); break;
+            case ImageBubble.StampType.Joy: hosaReactionCoroutine = StartCoroutine(HosaBobbingLocalRoutine(0.8f, 20f, 0.3f)); break;
+            case ImageBubble.StampType.Star: hosaReactionCoroutine = StartCoroutine(HosaSpinLocalRoutine(0.4f, 1080f)); break;
+            case ImageBubble.StampType.Go: case ImageBubble.StampType.Right: case ImageBubble.StampType.Left: float slideDir = (type == ImageBubble.StampType.Left) ? -0.8f : 0.8f; hosaReactionCoroutine = StartCoroutine(HosaDarkSlideLocalRoutine(slideDir, 0.3f)); break;
+            case ImageBubble.StampType.Batu: hosaReactionCoroutine = StartCoroutine(HosaBobbingLocalRoutine(0.5f, 10f, -0.25f)); break;
+        }
+    }
 }

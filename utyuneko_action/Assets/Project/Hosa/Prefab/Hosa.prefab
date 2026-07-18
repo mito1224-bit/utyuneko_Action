@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7340675984209213075}
   - component: {fileID: 9048880916642582650}
-  - component: {fileID: 1130758579840809426}
+  - component: {fileID: 4655523397617421272}
   m_Layer: 0
   m_Name: HosaImageBubble
   m_TagString: Untagged
@@ -27,7 +27,7 @@ Transform:
   m_GameObject: {fileID: 2923654008622944970}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: 0}
+  m_LocalPosition: {x: 0, y: 1.2, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -92,7 +92,7 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 0
   m_SpriteSortPoint: 0
---- !u!114 &1130758579840809426
+--- !u!114 &4655523397617421272
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -124,6 +124,7 @@ MonoBehaviour:
   imgDenger: {fileID: 21300000, guid: 7a8ba69cd006ccd40ae5d651135e9648, type: 3}
   imgFellow: {fileID: 21300000, guid: 4e93d11635f588f45aa66ecb2cf5185d, type: 3}
   imgDokuro: {fileID: 21300000, guid: c19c7135239e98942ab182d2e3ef634f, type: 3}
+  customMaterial: {fileID: 0}
 --- !u!1 &3481983698656331888
 GameObject:
   m_ObjectHideFlags: 0

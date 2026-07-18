@@ -183,7 +183,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5390690581133846593}
   - component: {fileID: 8975072255084986831}
-  - component: {fileID: 7140004866671491916}
+  - component: {fileID: 5509158002578681826}
   m_Layer: 0
   m_Name: PlayerImageBubble
   m_TagString: Untagged
@@ -200,7 +200,7 @@ Transform:
   m_GameObject: {fileID: 2133574078727010423}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: 0}
+  m_LocalPosition: {x: 0, y: 1.2, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -265,7 +265,7 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 0
   m_SpriteSortPoint: 0
---- !u!114 &7140004866671491916
+--- !u!114 &5509158002578681826
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -297,6 +297,7 @@ MonoBehaviour:
   imgDenger: {fileID: 21300000, guid: 7a8ba69cd006ccd40ae5d651135e9648, type: 3}
   imgFellow: {fileID: 21300000, guid: 4e93d11635f588f45aa66ecb2cf5185d, type: 3}
   imgDokuro: {fileID: 21300000, guid: c19c7135239e98942ab182d2e3ef634f, type: 3}
+  customMaterial: {fileID: 0}
 --- !u!1 &2193017370689105528
 GameObject:
   m_ObjectHideFlags: 0
@@ -1049,6 +1050,19 @@ MonoBehaviour:
   maxHealth: 5
   iFrameDuration: 1
   isInvincibleDuringBurst: 0
+  deathTransitionType: 2
+  deathHangTimeScale: 0.05
+  deathHangRealDuration: 0.4
+  deathShakeDuration: 0.6
+  deathShakeMagnitude: 4
+  deathFlashColor: {r: 1, g: 0.2, b: 0.2, a: 1}
+  deathFlashDuration: 0.15
+  deathFallRotationSpeed: 260
+  groundLayerMask:
+    serializedVersion: 2
+    m_Bits: 0
+  deathFallSpeed: 15
+  glassShatterPrefab: {fileID: 0}
 --- !u!114 &2124018989443290954
 MonoBehaviour:
   m_ObjectHideFlags: 0
