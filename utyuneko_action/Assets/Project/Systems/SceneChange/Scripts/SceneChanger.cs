@@ -94,7 +94,7 @@ public class SceneChanger : MonoBehaviour
         if(playerInRange&&!isWarping&&InputManager.Instance.Player.Submit.triggered)
         {
             isWarping = true;
-            SoundManager.Instance.PlaySE(SeType.GimmickWarp);
+            SoundManager.Instance.PlaySE(SeType.StageGateIn);
             if (buttonPrompt != null) buttonPrompt.Hide();
             // 演出コルーチンを開始
             StartCoroutine(WarpAnimationRoutine(playerInRangeRef));

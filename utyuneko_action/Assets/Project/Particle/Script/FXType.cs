@@ -11,6 +11,7 @@ public enum FXType
     DataGetFlash,
     SuctionGreen,
     SuctionRed,
+    ChackPoint,
 
 
     // 将来増えるエフェクトをここに足していく

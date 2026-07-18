@@ -53,7 +53,7 @@ public class CoreCubeController : MonoBehaviour
             {
                 col.enabled = false;
             }
-            SoundManager.Instance.PlaySE(SeType.ItemCoreGet);
+            SoundManager.Instance.PlaySE(SeType.ItemDataGet,0.7f);
             StartCoroutine(GoalAppearEventRoutine(collision.gameObject));
         }
     }
