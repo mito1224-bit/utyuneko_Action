@@ -109,6 +109,18 @@ public class EnemyKnockback : MonoBehaviour
     [Tooltip("バウンド時に接触面からめり込まないよう押し出す距離")]
     public float bouncePushOut = 0.02f;
 
+    [Header("消滅パーティクル（スモーク等）")]
+    [Tooltip("死亡した敵が実際に消滅する瞬間・その地点に出すパーティクル（任意）。未設定なら何も出さない。" +
+             "着地消滅・保険タイマー消滅のどちらの経路でも、消えた位置に出る（親子付けせず独立生成）")]
+    public GameObject despawnEffectPrefab;
+
+    [Tooltip("despawnEffectPrefab を敵の向きに合わせて回転させる。OFF なら回転なし（Quaternion.identity）")]
+    public bool matchRotationForDespawnEffect = false;
+
+    [Tooltip("生成したパーティクルを強制的に消すまでの秒数（保険）。" +
+             "プレハブ側で自壊する場合（ParticleSystem の Stop Action=Destroy / AutoDestroy 付き）は 0 でOK")]
+    public float despawnEffectLifetime = 0f;
+
     private Vector3 currentVelocity = Vector3.zero;
     private bool isDying = false;
     private bool active = false;
@@ -399,5 +411,25 @@ public class EnemyKnockback : MonoBehaviour
         currentVelocity = Vector3.zero;
 
         Destroy(gameObject, lingerAfterLanding);
+    }
+
+    /// <summary>
+    /// 敵が実際に破棄される瞬間に、消滅地点へスモーク等のパーティクルを出す。
+    /// 着地消滅（lingerAfterLanding）・保険タイマー消滅（deathDestroyDelay）のどちらの経路でも
+    /// この一点で発火するため、消えた位置に確実に一致する。敵本体は消えるので親子付けせず独立生成する。
+    /// </summary>
+    void OnDestroy()
+    {
+        // 死亡消滅のときだけ出す（生存中に別要因で破棄された場合は出さない）
+        if (!isDying) return;
+        if (despawnEffectPrefab == null) return;
+        // シーン遷移・アプリ終了によるアンロード時の破棄では出さない（実際の撃破消滅のみ）
+        if (!gameObject.scene.isLoaded) return;
+
+        Quaternion rot = matchRotationForDespawnEffect ? transform.rotation : Quaternion.identity;
+        GameObject fx = Instantiate(despawnEffectPrefab, transform.position, rot);
+
+        // 保険：プレハブが自壊しない場合に備えて任意秒で消す（0 なら何もしない＝プレハブ任せ）
+        if (despawnEffectLifetime > 0f) Destroy(fx, despawnEffectLifetime);
     }
 }

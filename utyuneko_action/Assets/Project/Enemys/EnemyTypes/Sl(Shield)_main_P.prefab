@@ -356,6 +356,9 @@ MonoBehaviour:
   baseDamage: 1
   speedDamageMultiplier: 1
   deathFlashThenBlink: 1
+  deathEffectPrefab: {fileID: 1000393680648668903, guid: 1695a6b43c016dd44afc93cc5bad521c, type: 3}
+  matchEnemyRotationForDeathEffect: 0
+  deathEffectLifetime: 0
 --- !u!114 &3162415470922669224
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -401,6 +404,7 @@ MonoBehaviour:
   blinkOnDeath: 1
   blinkInterval: 0.08
   blinkMinAlpha: 0.3
+  hideOutlineOnDeath: 1
   destroyOnGroundHit: 1
   groundLayers:
     serializedVersion: 2
@@ -413,6 +417,9 @@ MonoBehaviour:
   bounceHorizontalKeep: 0.8
   minBounceSpeed: 2
   bouncePushOut: 0.02
+  despawnEffectPrefab: {fileID: 7478517317374021851, guid: b4747239b4cf2394eb149f184c33176e, type: 3}
+  matchRotationForDespawnEffect: 0
+  despawnEffectLifetime: 0
 --- !u!114 &8691343830340302413
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -466,6 +473,8 @@ MonoBehaviour:
   shieldPivot: {fileID: 8654307612867506860}
   shieldDistance: 1
   shieldFlash: {fileID: 0}
+  playBlockFX: 1
+  blockFXType: 2
 --- !u!114 &5865367568271125612
 MonoBehaviour:
   m_ObjectHideFlags: 0
