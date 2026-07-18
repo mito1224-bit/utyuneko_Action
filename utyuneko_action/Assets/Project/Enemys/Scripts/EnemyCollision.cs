@@ -35,6 +35,12 @@ public class EnemyCollision : MonoBehaviour
              "未設定ならこのGameObjectのトリガーColliderを自動採用")]
     public Collider2D pierceDamageTrigger;
 
+    [Tooltip("Pierce: 同じバースト通過で多重ヒットしないための再ヒット間隔（秒）。\n" +
+             "本体コライダーと子のセンサーが別々にトリガーへ入っても1回に集約する")]
+    public float pierceRehitInterval = 0.2f;
+
+    private float lastPierceHitTime = -999f; // 直近に Pierce ダメージを与えた時刻（多重ヒットガード用）
+
     private Collider2D myCol;
     private EnemyHealth enemyHealth;
     private EnemyShield enemyShield; // 盾を持つ敵のみ。無ければ null
@@ -161,26 +167,46 @@ public class EnemyCollision : MonoBehaviour
     }
 
     // =========================================================
-    //  Pierce → OnTriggerEnter（すり抜けつつダメージを与える）
+    //  Pierce → OnTriggerEnter / Stay（すり抜けつつダメージを与える）
     // =========================================================
+    // 高速な縦方向（真上・真下）のバーストは、先頭に来る子コライダー（足元の HoverSensor など）が
+    // 先に入ったり、本体コライダーの単一フレーム Enter を取りこぼしたりして、パスごと抜けることがある。
+    // そこで Enter だけでなく Stay でも拾い、プレイヤー判定は親から解決して堅牢化する。
     void OnTriggerEnter2D(Collider2D other)
     {
+        TryPierceDamage(other);
+    }
+
+    void OnTriggerStay2D(Collider2D other)
+    {
+        // Enter を取りこぼしても、重なっている間に拾う（多重ヒットは pierceRehitInterval でガード）
+        TryPierceDamage(other);
+    }
+
+    private void TryPierceDamage(Collider2D other)
+    {
+        if (collisionType != CollisionType.Pierce) return;
         if (enemyHealth.IsDeadFlg) return;
 
-        if (collisionType != CollisionType.Pierce) return;
-        if (!other.CompareTag(playerTag)) return;
+        // プレイヤーのどのコライダー（本体／子のセンサー等）で当たっても拾えるよう親から解決する。
+        // タグは本体GameObjectにしか付いていないため、GetComponentInParent で「プレイヤー配下か」を判定する。
+        PlayerController p = other.GetComponentInParent<PlayerController>();
+        if (p == null) return;
 
-        // プレイヤーがバースト状態かどうかを状態機械から直接判定（レイヤーに依存しない）
-        PlayerController p = other.gameObject.GetComponent<PlayerController>();
-        bool isBursting = IsBursting(p);
+        // Pierce はバースト中のみ作用（非バーストはすり抜けるだけ）。バースト判定は状態機械を直接参照。
+        if (!IsBursting(p)) return;
 
-        // バースト中に当たったときだけバースト回数の回復を行う
-        if (p && isBursting) p.OnEnemyKilledInBurst();
+        // 同じ通過で本体とセンサーが別々に入っても多重処理しないよう間隔ガード
+        if (Time.time - lastPierceHitTime < pierceRehitInterval) return;
 
-        Rigidbody2D rb = other.GetComponent<Rigidbody2D>();
-        if (rb != null)
-            enemyHealth?.HandleHit(rb.linearVelocity.magnitude, other.transform.position, isBursting);
+        // 速度は当たったコライダー自身ではなく、実体である Rigidbody2D（親）から取る
+        Rigidbody2D rb = other.attachedRigidbody;
+        if (rb == null) return;
 
+        lastPierceHitTime = Time.time;
+
+        p.OnEnemyKilledInBurst(); // バースト回数の回復
+        enemyHealth?.HandleHit(rb.linearVelocity.magnitude, p.transform.position, true);
         TimeManager.Instance.TriggerGlobalHitStop(hitStopTime);
     }
 
