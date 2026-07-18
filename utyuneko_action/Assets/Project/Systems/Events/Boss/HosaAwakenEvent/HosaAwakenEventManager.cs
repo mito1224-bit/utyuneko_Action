@@ -341,29 +341,65 @@ public class HosaAwakenEventManager : BaseEventManager
 
     protected override void OnSkipWarp()
     {
-        if (cameraFollow != null) cameraFollow.ForceStopEventCameraWork();
-        if (bossBubble != null) bossBubble.StartFadeOut();
-        if (playerBubble != null) playerBubble.StartFadeOut();
+        // 1. 【入力ロック解除】プレイヤーが即座に動けるようにイベント終了処理を呼び出す
+        EndEvent();
 
-        if (hosa != null) hosa.gameObject.SetActive(false);
+        // 2. 進行中だったタイムラインコルーチン（演出ループ）を確実に停止
+        if (activeTimelineCoroutine != null) StopCoroutine(activeTimelineCoroutine);
+
+        // 3. 【BGM復旧】正常なボス戦BGM再生をキック
+        SoundManager.Instance.PlayBGM(BgmType.BossBattle, 1.0f);
+
+        // 4. カメラをイベント追従から強制解放し、プレイヤー追従へスナップ
+        if (cameraFollow != null)
+        {
+            cameraFollow.ReturnToPlayerFromEvent(0.0f);
+            cameraFollow.ForceStopEventCameraWork();
+        }
+
+        // 5. 環境オブジェクト・ステージ境界・UIの確定出現
         if (bossWallObject != null) bossWallObject.SetActive(true);
         if (hpBarObject != null) hpBarObject.SetActive(true);
-
         if (stageCamera) stageCamera.gameObject.SetActive(true);
+        if (hosa != null) hosa.gameObject.SetActive(false); // 道中NPCは非アクティブ化
 
-        float centerX = (bossController.stageMinX + bossController.stageMaxX) / 2f;
-        float centerY = Mathf.Lerp(bossController.stageMinY, bossController.stageMaxY, 0.58f);
-        bossController.transform.position = new Vector3(centerX, centerY, 0f);
-
+        // 6. ボス本体のアクティブ化（これでStart()の実行予約が入る）
         bossController.gameObject.SetActive(true);
+
+        // 👑 1フレーム後に戦闘状態を完全確定させるコルーチンを起動
+        StartCoroutine(SkipPostInitializationRoutine());
+    }
+
+    /// <summary>
+    /// 👑 ボス側の Start() 完了直後に、サイズは一切いじらずAIだけを戦闘モードにする
+    /// </summary>
+    private IEnumerator SkipPostInitializationRoutine()
+    {
+        // 💡 ボスの Start()（強制Appear遷移）が走りきるのを1フレームだけ待ちます
+        yield return null;
+
+        // ボス側の演出用コルーチンを全停止
+        bossController.StopAllCoroutines();
+
+        // 👑【戦闘開始】当たり判定を完全解放し、戦闘開始（Idle）へ安全に遷移！
+        // 💡ここを通ることで、ボス自身のTransitionToStateの内部処理が走り、
+        // 本来設定されている正しいサイズ（originalVisualLocalScale）に自動で美しく戻ります[cite: 2]！
         bossController.SetAllCollidersEnabled(true);
         bossController.SetAllDamageSourcesEnabled(true);
         bossController.TransitionToState(bossController.StateIdle);
 
+        // 👑【座標固定】ステート遷移が終わった段階で、中央定位置へ配置[cite: 2]
+        float centerX = (bossController.stageMinX + bossController.stageMaxX) / 2f;
+        float centerY = Mathf.Lerp(bossController.stageMinY, bossController.stageMaxY, 0.58f);
+        bossController.transform.position = new Vector3(centerX, centerY, 0f);
+
+        // ボスHPバーを満タンチャージ起動
         var health = bossController.GetComponent<GlitchHosaHealth>();
         if (health != null && health.bossHpBar != null)
         {
             health.bossHpBar.StartAppearAnimation(health.maxHP, health.maxHP);
         }
+
+        Debug.Log("<color=green>✨ スキップ完全成功：サイズ調整をボス自身に委ね、正常稼働しました！</color>");
     }
 }

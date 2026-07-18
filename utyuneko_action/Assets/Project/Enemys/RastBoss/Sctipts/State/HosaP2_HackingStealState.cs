@@ -64,6 +64,8 @@ public class HosaP2_HackingStealState : GlitchHosaBaseState
         float headOffsetY = 2.8f;
         yield return boss.StartCoroutine(boss.TeleportWithSquashRoutine(player.position + new Vector3(0f, headOffsetY, 0f), 0.2f));
 
+        if(boss.SuctionParticle) boss.SuctionParticle.SetActive(true);
+
         float introTimer = 0f;
         while (introTimer < 1.0f)
         {
@@ -73,6 +75,7 @@ public class HosaP2_HackingStealState : GlitchHosaBaseState
             boss.targetVisualOffset = new Vector3(Random.Range(-0.15f, 0.15f), Random.Range(-0.05f, 0.05f), 0f);
             yield return null;
         }
+        if (boss.SuctionParticle) boss.SuctionParticle.SetActive(false);
         boss.targetVisualOffset = Vector3.zero;
 
         stolenAbilityType = Random.Range(0, 3);

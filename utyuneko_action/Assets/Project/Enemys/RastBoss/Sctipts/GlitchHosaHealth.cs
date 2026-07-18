@@ -26,6 +26,7 @@ public class GlitchHosaHealth : MonoBehaviour
     public float basePlayerDamage = 4f;
     public float playerSpeedDamageMultiplier = 0.4f;
     public float hitStopTime = 0.1f;
+    public GameObject damagekEffect;
 
     [Header("⚙️ 被弾時フラッシュ演出の設定")]
     public float damageFlashDuration = 0.08f;
@@ -69,6 +70,7 @@ public class GlitchHosaHealth : MonoBehaviour
 
     private void Update()
     {
+        if (controller == null) return;
         if (Input.GetKeyDown(KeyCode.P)) TakeDamage(20f);
     }
 
@@ -174,6 +176,8 @@ public class GlitchHosaHealth : MonoBehaviour
 
     public void TakeDamage(float damage)
     {
+        if (controller == null) return;
+
         if (controller != null && controller.currentDebugStateName == "GlitchHosaDeadState") return;
 
         if (controller != null && controller.currentDebugStateName == "GlitchHosaStunState")
@@ -183,6 +187,7 @@ public class GlitchHosaHealth : MonoBehaviour
 
         currentHP -= damage;
         ShakeTarget.Instance.Shake(0.2f, 1.5f);
+        if(damagekEffect) Instantiate(damagekEffect, controller.transform.position, Quaternion.identity);
 
         if (bossHpBar != null)
         {

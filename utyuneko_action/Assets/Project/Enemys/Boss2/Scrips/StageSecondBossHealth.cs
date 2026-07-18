@@ -25,6 +25,7 @@ public class StageSecondBossHealth : MonoBehaviour
     public float basePlayerDamage = 4f;
     public float playerSpeedDamageMultiplier = 0.4f;
     public float hitStopTime = 0.1f;
+    public GameObject damagekEffect;
 
     [Header("⚙️ 被弾インターバル（無敵時間）の設定")]
     public float damageInterval = 0.5f;
@@ -229,6 +230,7 @@ public class StageSecondBossHealth : MonoBehaviour
         currentHP -= damage;
 
         ShakeTarget.Instance.Shake(0.2f, 1.5f);
+        if (damagekEffect) Instantiate(damagekEffect, controller.transform.position, Quaternion.identity);
 
         if (controller != null && controller.currentDebugStateName != "StageSecondBossStunState")
         {

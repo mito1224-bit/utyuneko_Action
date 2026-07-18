@@ -75,7 +75,7 @@ public class StageSecondBossAppearState : StageSecondBossBaseState
 
     public override void Exit()
     {
-        SoundManager.Instance.PlayBGM(BgmType.BossBattle, 1.0f);
+        SoundManager.Instance.PlayBGM(BgmType.Stage2Boss, 1.0f);
 
         // 演出が終わったので、各種ステータスを確実に通常の「戦闘モード」へ復元する鉄壁のセーフティ
         Transform bossVisual = boss.ultVisualOffsetObject != null ? boss.ultVisualOffsetObject : boss.transform;

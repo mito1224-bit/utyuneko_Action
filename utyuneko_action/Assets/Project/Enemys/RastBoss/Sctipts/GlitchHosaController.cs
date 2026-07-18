@@ -32,6 +32,7 @@ public class GlitchHosaController : MonoBehaviour, IEventActor
     public bool isLineStolen = false;
     public bool isReflectionStolen = false;
     public bool isSlowStolen = false;
+    public GameObject SuctionParticle;
 
     [Header("⚙️ スタン・攻撃パラメータ")]
     public float stunDamageMultiplier = 3.0f;
@@ -43,6 +44,7 @@ public class GlitchHosaController : MonoBehaviour, IEventActor
     public float stunPivotOffsetY = 0.6f;
     public float stunGravityAmount = 1.8f;
     public float deadRotationAngle = 90f;
+    public GameObject StunParticle;
 
     [Header("✨ 浮遊（ホバー）アニメーション設定")]
     public float hoverSpeed = 2.2f;

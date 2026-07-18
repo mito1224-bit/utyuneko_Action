@@ -207,6 +207,11 @@ public class HosaDefeatEventManager : BaseEventManager
         // 👑 タイトル画面を指定された一定時間そのままじっくり見せる
         yield return new WaitForSecondsRealtime(titleDisplayDuration);
 
+        if (DataManager.Instance != null)
+        {
+            DataManager.Instance.ProcessStageClear();
+        }
+
         // ===================================================================
         // 👑 5. TransitionManagerを介して、美しいFadeでクレジットシーンへ移行！
         // ===================================================================
@@ -230,6 +235,11 @@ public class HosaDefeatEventManager : BaseEventManager
     /// </summary>
     protected override void OnSkipWarp()
     {
+        if (DataManager.Instance != null)
+        {
+            DataManager.Instance.ProcessStageClear();
+        }
+
         isLookingEachOther = false;
         if (TransitionManager.Instance != null)
         {
