@@ -1,5 +1,5 @@
-﻿using UnityEngine;
-using System.Collections;
+﻿using System.Collections;
+using UnityEngine;
 
 public class GlitchHosaStunState : GlitchHosaBaseState
 {
@@ -45,6 +45,8 @@ public class GlitchHosaStunState : GlitchHosaBaseState
         boss.targetVisualOffset = Vector3.zero;
 
         rb = boss.GetComponent<Rigidbody2D>();
+
+        if(boss.StunParticle) Object.Instantiate(boss.StunParticle, boss.transform.position, Quaternion.identity);
 
         if (startAsGrounded)
         {

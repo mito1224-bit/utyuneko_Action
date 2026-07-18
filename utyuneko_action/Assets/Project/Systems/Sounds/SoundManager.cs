@@ -13,11 +13,15 @@ public enum BgmType
     RescueEvent,
     StageSelect,
     Stage1,
+    Stage1Boss,
     Stage2,
+    Stage2Boss,
     Stage3,
+    Stage3Boss,
     BossBattle,
     Title,
     Result,
+    Rast,
 }
 
 // ===================================================================

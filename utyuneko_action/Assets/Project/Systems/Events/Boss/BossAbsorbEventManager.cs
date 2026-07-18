@@ -194,7 +194,7 @@ public class BossAbsorbEventManager : BaseEventManager
         // ===================================================================
         if (coreCubePrefab != null && hosa != null)
         {
-            SoundManager.Instance.PlaySE(SeType.EnemyRangeAttack); // 投射音
+            SoundManager.Instance.PlaySE(SeType.PlayerIconPop); // 投射音
 
             // ステージの中心X座標の計算（安全ガード付き）
             float stageCenterX = (bossController != null) ? (bossController.stageMinX + bossController.stageMaxX) / 2f : hosa.transform.position.x;

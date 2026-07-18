@@ -86,7 +86,6 @@ public class PlayerHealth : MonoBehaviour
         if (isInvincibleDuringBurst && p != null && p.CurrentState == p.StateBurst)
         {
             Debug.Log("バースト突進中のため、ダメージを弾き返しました！");
-            // ここで「カキィン！」と火花エフェクトを出したりすると最高です！
             return;
         }
 
@@ -96,7 +95,7 @@ public class PlayerHealth : MonoBehaviour
         SoundManager.Instance.FadeBGMVolume(1.0f, 2.0f);
 
         TimeManager.Instance.StopSlowMotion();
-        TimeManager.Instance.TriggerGlobalSlowMotion(0.3f,0.2f);
+        TimeManager.Instance.TriggerGlobalSlowMotion(0.3f, 0.2f);
 
         ShakeTarget.Instance.Shake(0.5f, 2.0f);
 
@@ -115,9 +114,6 @@ public class PlayerHealth : MonoBehaviour
         // 5. 【Stateパターン連携】被弾したらバーストを強制解除してダメージ状態に戻す
         if (p != null)
         {
-            // ※注意: 直近の敵の座標を取得するため、この関数の引数にGameObjectを渡すか、
-            // 面倒なら「現在のdB君の見た目の向き（Y軸が50度なら右向き、310度なら左向きなど）の真後ろ」に飛ばす形にします。
-            // ここでは一番簡単な「dB君が今向いている方向の真後ろ」に吹っ飛ばすロジックにします。
             float currentYAngle = p.visualManager.playerVisual.localRotation.eulerAngles.y;
 
             // 310度付近（右向き）なら左（-1）へ、50度付近（左向き）なら右（1）へ吹っ飛ばす
@@ -132,7 +128,6 @@ public class PlayerHealth : MonoBehaviour
         // 6. 死亡判定
         if (currentHealth <= 0)
         {
-            //p.damageEffect.PlayDamageEffect(DamageType.Player);
             Die();
         }
         else
@@ -144,30 +139,24 @@ public class PlayerHealth : MonoBehaviour
     // 回復するコアメソッド
     public void Heal(int healAmount)
     {
-        // すでに死亡している（あるいは死亡処理中）なら回復しない
         if (currentHealth < 0) return;
 
-        // 回復処理（最大HPを超えないように制限）
         currentHealth += healAmount;
         currentHealth = Mathf.Min(maxHealth, currentHealth);
 
         Debug.Log($"回復！ 回復量: {healAmount} / 残りHP: {currentHealth}");
 
-        // UI（ビット）にHPが変わったことを通知して、センターに整列し直させる
         OnHealthChanged?.Invoke();
-
-        // ここで「キュィィン！」というデータ復旧っぽいSEや緑のパーティクルを出すと最高です！
     }
 
     private void Die()
     {
         if (SoundManager.Instance != null)
         {
+            SoundManager.Instance.StopBGM(0.1f);
             SoundManager.Instance.StopLoopSE(p.gameObject);
             SoundManager.Instance.PlaySE(SeType.PlayerDie);
         }
-
-        
 
         Debug.Log("プレイヤー死亡。ゲームオーバー処理を実行します");
 
@@ -175,14 +164,9 @@ public class PlayerHealth : MonoBehaviour
         var col2D = GetComponent<Collider2D>();
         if (col2D != null) col2D.enabled = false;
 
-        if (visualRenderer != null) visualRenderer.enabled = true; // 点滅が途中で止まっても表示は戻す
+        if (visualRenderer != null) visualRenderer.enabled = true;
 
         StartCoroutine(DeathSequence());
-
-        ////gameObject.SetActive(false);
-
-        //string currentSceneName = SceneManager.GetActiveScene().name;
-        //SceneManager.LoadScene(currentSceneName);
     }
 
     private IEnumerator DeathSequence()
@@ -193,14 +177,32 @@ public class PlayerHealth : MonoBehaviour
         if (p != null && p.damageEffect != null)
             p.damageEffect.PlayDamageEffect(DamageType.Player);
 
-        // 2. 一瞬の赤フラッシュ
-        Color originalColor = default;
-        bool hasColor = false;
-        if (visualRenderer != null)
+        // ===================================================================
+        // 👑【バグ修正箇所】一瞬の赤フラッシュの安全ガード処理
+        // ===================================================================
+        Color originalColor = Color.white;
+        bool hasColorProperty = false;
+        string activeColorPropertyName = "_Color"; // デフォルトの名前
+
+        if (visualRenderer != null && visualRenderer.material != null)
         {
-            originalColor = visualRenderer.material.color;
-            hasColor = true;
-            visualRenderer.material.color = deathFlashColor;
+            Material mat = visualRenderer.material;
+
+            // シェーダーがどのプロパティでメインカラーを保持しているかをチェック
+            if (mat.HasProperty("_BaseColor"))
+            {
+                activeColorPropertyName = "_BaseColor";
+                originalColor = mat.GetColor("_BaseColor");
+                hasColorProperty = true;
+                mat.SetColor("_BaseColor", deathFlashColor);
+            }
+            else if (mat.HasProperty("_Color"))
+            {
+                activeColorPropertyName = "_Color";
+                originalColor = mat.color;
+                hasColorProperty = true;
+                mat.color = deathFlashColor;
+            }
         }
 
         // 3. 強めのシェイク＋タメのスロー
@@ -211,91 +213,76 @@ public class PlayerHealth : MonoBehaviour
         TimeManager.Instance.TriggerGlobalSlowMotion(deathHangTimeScale, deathHangRealDuration);
 
         yield return new WaitForSecondsRealtime(deathFlashDuration);
-        if (hasColor) visualRenderer.material.color = originalColor;
-        //if (visualRenderer != null)
-        //{
-        //    float fallTimer = 0f;
-        //    const float maxFallTime = 2f; // 万が一地面が見つからない時の安全装置
-        //    RaycastHit2D groundHit;
 
-        //    do
-        //    {
-        //        groundHit = Physics2D.Raycast(
-        //            new Vector2(transform.position.x, visualRenderer.bounds.min.y),
-        //            Vector2.down, 0.15f, groundLayerMask);
+        // ===================================================================
+        // 👑【バグ修正箇所】元のマテリアルの色へ安全に戻す処理
+        // ===================================================================
+        if (hasColorProperty && visualRenderer != null && visualRenderer.material != null)
+        {
+            if (activeColorPropertyName == "_BaseColor")
+            {
+                visualRenderer.material.SetColor("_BaseColor", originalColor);
+            }
+            else
+            {
+                visualRenderer.material.color = originalColor;
+            }
+        }
 
-        //        if (groundHit.collider == null)
-        //        {
-        //            transform.position += Vector3.down * deathFallSpeed * Time.unscaledDeltaTime;
-        //            fallTimer += Time.unscaledDeltaTime;
-        //            yield return null;
-        //        }
-        //    } while (groundHit.collider == null && fallTimer < maxFallTime);
-        //}
         yield return new WaitForSecondsRealtime(deathHangRealDuration - deathFlashDuration);
         if (glassShatterPrefab != null)
         {
             Instantiate(glassShatterPrefab, transform.position, transform.rotation);
         }
-        
+
         // 5. 時間を戻してからフェードへバトンタッチ
         TimeManager.Instance.StopSlowMotion();
 
         if (TransitionManager.Instance != null)
             TransitionManager.Instance.ChangeScene(currentSceneName, deathTransitionType);
         else
-            SceneManager.LoadScene(currentSceneName); // 保険
+            SceneManager.LoadScene(currentSceneName);
 
         gameObject.SetActive(false);
     }
 
-    // ─── 2D用の衝突判定（Physics 2D） ───
-
-    // 判定①：物理的にぶつかったとき（Solidな2Dコライダーを持つ敵やトゲ）
+    // ─── 2D用の衝突判定 ───
     private void OnCollisionEnter2D(Collision2D collision)
     {
         HandleDamageCollision(collision.gameObject);
         HandleHealCollision(collision.gameObject);
     }
-    // 無敵時間が切れた瞬間にまだ触れていたらダメージを食らわせるための判定
+
     private void OnCollisionStay2D(Collision2D collision)
     {
-        // 無敵が切れた瞬間にまだ触れていたらダメージを食らわせる
         HandleDamageCollision(collision.gameObject);
     }
 
-    // 判定②：すり抜ける設定のとき（IsTriggerな2Dコライダーを持つセンサーやエフェクト）
     private void OnTriggerEnter2D(Collider2D other)
     {
         HandleDamageCollision(other.gameObject);
         HandleHealCollision(other.gameObject);
     }
-    // 無敵時間が切れた瞬間にまだ触れていたらダメージを食らわせるための判定
+
     private void OnTriggerStay2D(Collider2D other)
     {
-        // 無敵が切れた瞬間にまだ触れていたらダメージを食らわせる
         HandleDamageCollision(other.gameObject);
     }
 
-    // 衝突したオブジェクトからダメージ情報を抜き出す共通処理
     private void HandleDamageCollision(GameObject hitObject)
     {
-        // 当たった相手が「DamageSource」スクリプトを持っているか調べる
         var source = hitObject.GetComponent<DamageSource>();
         var eventEnemy = hitObject.GetComponent<EventEnemy>();
-        if(eventEnemy) if (eventEnemy.isDefeated) return;
+        if (eventEnemy) if (eventEnemy.isDefeated) return;
         var timedBomb = hitObject.GetComponentInParent<StageSecondBossTimedBomb>();
         if (timedBomb) if (timedBomb.IsBlownAway) return;
         var mineBomb = hitObject.GetComponentInParent<StageSecondBossMineBomb>();
         if (mineBomb != null) if (mineBomb.IsBlownAway) return;
 
-
         if (source != null && source.enabled)
         {
-            if (hitObject.CompareTag("Enemy") && 
-                p.CurrentState == p.StateBurst) return;
-
-            // 持っていたら設定されているダメージ量を喰らう
+            if (hitObject.CompareTag("Enemy") && p.CurrentState == p.StateBurst ||
+                hitObject.CompareTag("Enemy") && p.CurrentState == p.StateCharge) return;
             TakeDamage(source.damageAmount);
         }
     }
@@ -308,20 +295,16 @@ public class PlayerHealth : MonoBehaviour
         {
             SoundManager.Instance.PlaySE(SeType.PlayerRecovery);
 
-            // もし「全回復」にチェックが入っていたら
             if (source.isFullHeal)
             {
-                // 最大HP分を回復メソッドに渡す（Healメソッド側で最大HPを超えないようにガードしているのでこれで全回復になります）
                 Heal(maxHealth);
                 Debug.Log("【完全復旧】プレイヤーが全回復しました！");
             }
             else
             {
-                // チェックがなければ、設定された通常の回復量
                 Heal(source.healAmount);
             }
 
-            // もし「消える」にチェックが入っていたら、回復アイテムを消す
             if (source.isDestroy)
                 Destroy(hitObject);
         }
