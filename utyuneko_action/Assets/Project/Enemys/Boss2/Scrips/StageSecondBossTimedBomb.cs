@@ -163,7 +163,8 @@ public class StageSecondBossTimedBomb : MonoBehaviour
         }
 
         fuseTimer += Time.deltaTime;
-        float progress = Mathf.Clamp01(fuseTimer / fuseDuration);
+        float safeDuration = fuseDuration > 0f ? fuseDuration : 0.01f;
+        float progress = Mathf.Clamp01(fuseTimer / safeDuration);
 
         if (redCircleTransform != null) redCircleTransform.localScale = new Vector3(progress, progress, 1f);
 

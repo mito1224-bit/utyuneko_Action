@@ -646,7 +646,7 @@ public class BossChargerController : MonoBehaviour
     /// <summary>戦闘BGMを流す（登場演出の締め。トリガーが開始時に StopBGM しているので、ここで戦闘BGMへ）</summary>
     public void PlayBattleBgm()
     {
-        if (SoundManager.Instance != null) SoundManager.Instance.PlayBGM(BgmType.BossBattle, 1f);
+        if (SoundManager.Instance != null) SoundManager.Instance.PlayBGM(BgmType.Stage1Boss, 1f);
     }
 
     /// <summary>

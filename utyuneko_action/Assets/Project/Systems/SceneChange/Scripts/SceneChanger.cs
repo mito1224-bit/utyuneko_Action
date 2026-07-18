@@ -93,6 +93,7 @@ public class SceneChanger : MonoBehaviour
     {
         if(playerInRange&&!isWarping&&InputManager.Instance.Player.Submit.triggered)
         {
+            SoundManager.Instance.StopBGM(0.5f);
             isWarping = true;
             SoundManager.Instance.PlaySE(SeType.StageGateIn);
             if (buttonPrompt != null) buttonPrompt.Hide();

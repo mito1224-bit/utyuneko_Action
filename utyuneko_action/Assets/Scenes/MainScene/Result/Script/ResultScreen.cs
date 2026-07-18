@@ -41,6 +41,8 @@ public class ResultScreen : MonoBehaviour
     void Start()
     {
 
+        SoundManager.Instance.PlayBGM(BgmType.Result, 1.0f);
+
         if (enterPromptUI != null)
         {
             enterPromptUI.SetActive(false);
@@ -105,6 +107,8 @@ public class ResultScreen : MonoBehaviour
             // ó·: InputManager.Instance.SubmitAction.WasPressedThisFrame() Ç»Ç«
             if (InputManager.Instance.UI.Submit.WasPressedThisFrame())
             {
+                SoundManager.Instance.StopBGM(0.5f);
+
                 // òAë≈ñhé~ÇÃÇΩÇﬂÇ…ÉtÉâÉOÇê‹ÇÈ
                 isResultSequenceFinished = false;
                 SoundManager.Instance.PlaySE(SeType.UiEnter);

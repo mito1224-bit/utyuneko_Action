@@ -9,6 +9,7 @@ public class StoryPhaseSceneController : MonoBehaviour
     [SerializeField] private List<GameObject> tutorialObject = new List<GameObject>();
 
     [Header("ステージセレクト用のオブジェクト群")]
+    [SerializeField] private GameObject Hosa;
     [SerializeField] private GameObject stageSelectWall;
     [SerializeField] private GameObject stage1Portal;
     [SerializeField] private GameObject stage2Portal;
@@ -50,6 +51,8 @@ public class StoryPhaseSceneController : MonoBehaviour
                 if (stage3Portal) stage3Portal.SetActive(false);
                 if (stage4Portal) stage4Portal.SetActive(false);
 
+                if(Hosa) Hosa.SetActive(true);
+
                 break;
 
             // ゲーム開始直後から補佐を助ける前
@@ -76,6 +79,8 @@ public class StoryPhaseSceneController : MonoBehaviour
                 if (stage3Portal) stage3Portal.SetActive(false);
                 if (stage4Portal) stage4Portal.SetActive(false);
 
+                if (Hosa) Hosa.SetActive(true);
+
                 break;
 
             // ゲームセレクトバグ消去後
@@ -89,6 +94,8 @@ public class StoryPhaseSceneController : MonoBehaviour
                 if (stage3Portal) stage3Portal.SetActive(false);
                 if (stage4Portal) stage4Portal.SetActive(false);
 
+                if (Hosa) Hosa.SetActive(true);
+
                 break;
 
             // ステージ1クリア
@@ -100,6 +107,8 @@ public class StoryPhaseSceneController : MonoBehaviour
                 if (stage2Portal) stage2Portal.SetActive(true);
                 if (stage3Portal) stage3Portal.SetActive(false);
                 if (stage4Portal) stage4Portal.SetActive(false);
+
+                if (Hosa) Hosa.SetActive(true);
                 break;
 
             // ステージ2クリア
@@ -111,6 +120,8 @@ public class StoryPhaseSceneController : MonoBehaviour
                 if (stage2Portal) stage2Portal.SetActive(true);
                 if (stage3Portal) stage3Portal.SetActive(true);
                 if (stage4Portal) stage4Portal.SetActive(false);
+
+                if (Hosa) Hosa.SetActive(true);
                 break;
 
             // ステージ3クリア
@@ -122,6 +133,8 @@ public class StoryPhaseSceneController : MonoBehaviour
                 if (stage2Portal) stage2Portal.SetActive(true);
                 if (stage3Portal) stage3Portal.SetActive(true);
                 if (stage4Portal) stage4Portal.SetActive(true);
+
+                if (Hosa) Hosa.SetActive(false);
                 break;
 
             // 全クリア
@@ -133,6 +146,8 @@ public class StoryPhaseSceneController : MonoBehaviour
                 if (stage2Portal) stage2Portal.SetActive(true);
                 if (stage3Portal) stage3Portal.SetActive(true);
                 if (stage4Portal) stage4Portal.SetActive(true);
+
+                if (Hosa) Hosa.SetActive(true);
                 break;
 
             default:

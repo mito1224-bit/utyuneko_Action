@@ -25,7 +25,7 @@ public class BossChargerAppearState : BossChargerBaseState
         // カメラをボスへ寄せる → シェイク＋咆哮SE
         cam = boss.BeginCameraFocus(4.5f, 2.5f);
         boss.PlayShake(boss.appearShakeDuration, boss.appearShakeMagnitude);
-        boss.PlaySE(SeType.EnemyCharge);
+        boss.PlaySE(SeType.EnemyRangeAttack);
     }
 
     public override void Update()

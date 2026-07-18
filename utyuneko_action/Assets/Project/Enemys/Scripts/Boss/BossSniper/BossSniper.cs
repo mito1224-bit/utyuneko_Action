@@ -432,6 +432,8 @@ public class BossSniper : MonoBehaviour
 
     void Start()
     {
+        SoundManager.Instance.PlayBGM(BgmType.Stage3Boss,1.0f);
+
         GameObject p = GameObject.FindGameObjectWithTag(playerTag);
         if (p != null)
         {

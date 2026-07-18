@@ -33,6 +33,7 @@ public class BossSniperHealth : MonoBehaviour
     [Header("被弾ダメージ（速度依存）")]
     [Tooltip("プレイヤーのバースト体当たりの基礎ダメージ")]
     public float basePlayerDamage = 8f;
+    public GameObject damageEffect;
 
     [Tooltip("プレイヤーの速度に掛けてダメージへ加算する係数（速いほど痛い）")]
     public float playerSpeedDamageMultiplier = 0.4f;
@@ -153,6 +154,8 @@ public class BossSniperHealth : MonoBehaviour
         if (refundPlayerBurstOnDamage && pc != null) pc.OnEnemyKilledInBurst();
 
         CurrentHP -= damage;
+
+        if (damageEffect) Instantiate(damageEffect, boss.transform.position, Quaternion.identity);
 
         // ダメージが実際に入った直後は、ボスの無敵時間を開始 / 延長する。
         // 通常ダメージでは TryApplyBurstDamage 側ですでに設定されているが、
