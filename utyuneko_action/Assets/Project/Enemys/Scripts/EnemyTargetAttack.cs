@@ -70,6 +70,9 @@ public class EnemyTargetAttack : MonoBehaviour
             // 弾を生成
             GameObject bullet = Instantiate(bulletPrefab, firePoint.position, firePoint.rotation);
 
+            // 発射SE（テストシーンに SoundManager が無ければスキップ）
+            if (SoundManager.Instance != null) SoundManager.Instance.PlaySE(SeType.EnemyRangeAttack);
+
             // StraightBulletスクリプトを取得して、プレイヤーの方向をセットする
             StraightBullet straightBullet = bullet.GetComponent<StraightBullet>();
             if (straightBullet != null)

@@ -215,6 +215,9 @@ public class EnemyCharger : MonoBehaviour
         HideRayLine();
         phase = Phase.Charge;
         timer = Mathf.Max(0f, maxChargeTime);
+
+        // 突進開始SE（BeginChargeImmediately もここを通る＝両経路で鳴る。SoundManager 無しはスキップ）
+        if (SoundManager.Instance != null) SoundManager.Instance.PlaySE(SeType.EnemyCharge);
     }
 
     // レイ索敵がプレイヤーを捉えた瞬間、Windup（予兆）を挟まずそのまま突進を開始する
@@ -230,6 +233,9 @@ public class EnemyCharger : MonoBehaviour
         if (rb != null) rb.linearVelocity = Vector2.zero; // 突進終了。衝突で得た残留速度を消す
         phase = Phase.Stun;
         timer = Mathf.Max(0f, stunDuration);
+
+        // 壁激突→スタンSE（SoundManager 無しはスキップ）
+        if (SoundManager.Instance != null) SoundManager.Instance.PlaySE(SeType.EnemyChargeWallHit);
         blinkPhase = 0f;
         if (stunBlink)
         {

@@ -156,6 +156,9 @@ public class EnemyAreaAttack : MonoBehaviour
         phase = Phase.Active;
         timer = Mathf.Max(0f, activeTime);
 
+        // 発動SE（テストシーンに SoundManager が無ければスキップ）
+        if (SoundManager.Instance != null) SoundManager.Instance.PlaySE(SeType.EnemyRangeAttack);
+
         if (strikeEffectPrefab != null)
         {
             GameObject fx = Instantiate(strikeEffectPrefab, transform.position, Quaternion.identity);

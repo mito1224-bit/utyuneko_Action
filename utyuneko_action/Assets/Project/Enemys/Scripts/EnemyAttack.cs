@@ -30,6 +30,9 @@ public class EnemyAttack : MonoBehaviour
             // ① 弾を生成し、生成した弾の情報を変数（bullet）に入れる
             GameObject bullet = Instantiate(bulletPrefab, firePoint.position, firePoint.rotation);
 
+            // 発射SE（テストシーンに SoundManager が無ければスキップ）
+            if (SoundManager.Instance != null) SoundManager.Instance.PlaySE(SeType.EnemyRangeAttack);
+
             // ② 生成した弾から StraightBullet スクリプトを取得する
             StraightBullet straightBullet = bullet.GetComponent<StraightBullet>();
 

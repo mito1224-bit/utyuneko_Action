@@ -106,7 +106,9 @@ public class BossChargerRampageState : BossChargerBaseState
 
         if (chargesDone >= Mathf.Max(1, boss.rampageChargeCount))
         {
-            // 乱舞の締め＝壁で自滅スタン（衝撃波・弱点タイムはスタン側で処理）
+            // 乱舞の締め＝壁で自滅スタン（衝撃波・弱点タイムはスタン側で処理）。
+            // 必殺技後なのでスタンを通常の ultimateStunMultiplier 倍に延長する印を立てる（StunState が消費）
+            boss.NextStunIsUltimate = true;
             boss.TransitionToState(boss.StateStun);
             return;
         }
@@ -125,6 +127,14 @@ public class BossChargerRampageState : BossChargerBaseState
 
     private void BeginAim(float duration)
     {
+        // 最初の狙い＝咆哮タメ。「大技が来る」の見せ場としてシェイク＋咆哮SEを一度だけ出す
+        // （2回目以降の狙い直しでは鳴らさない）。被弾ダメージのカットは Health の rampageDamageMultiplier が担当。
+        if (chargesDone == 0)
+        {
+            boss.PlayShake(boss.rampageShakeDuration, boss.rampageShakeMagnitude);
+            boss.PlaySE(SeType.EnemyConfusion);
+        }
+
         phase = Phase.Aim;
         phaseTotal = timer = Mathf.Max(0f, duration) / boss.SpeedMultiplier;
     }

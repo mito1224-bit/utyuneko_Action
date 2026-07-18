@@ -74,16 +74,24 @@ public class EnemySniper : MonoBehaviour
              "Boss_Area（URPHologram）のように頂点カラーを乗算するシェーダーならそのまま効く（ボス2の予兆と見た目が揃う）")]
     public Material beamMaterial;
 
-    [Header("レーザー演出（任意／Particle フォルダの Lazer）")]
-    [Tooltip("発射の瞬間に再生するレーザーパーティクル。Lazer プレハブを子に置いて LaserVisualController を付けたものを割り当てる。\n" +
-             "未指定なら従来どおり LineRenderer のビームだけで動く")]
-    public LaserVisualController laserVisual;
+    [Header("レーザー演出（ラスボスと同じ BarrierManager.SpawnLaser で発射）")]
+    [Tooltip("発射時は原則 BarrierManager.Instance.SpawnLaser（＝ラスボス HosaP1_BeamState と同じ呼び方）を使い、\n" +
+             "プレハブは BarrierManager 側の Lazer を共有するので、この欄は空でもボスと同じ見た目で出る。\n" +
+             "ここに割り当てたプレハブは BarrierManager が無いシーン（テストシーン等）向けのフォールバック生成にだけ使う。\n" +
+             "★どちらの経路でも spawn 時に LaserParticleTrigger を無効化してダメージは出さない（当たり判定は下の CircleCast のまま）")]
+    public GameObject laserPrefab;
 
-    [Tooltip("レーザーパーティクルの太さ倍率（1＝プレハブそのまま）。beamWidth（当たり判定の太さ）とは別物なので見た目だけここで合わせる")]
+    [Tooltip("レーザーパーティクルの太さ倍率（1＝プレハブそのまま）。beamWidth（当たり判定の太さ）とは別物なので見た目だけここで合わせる。\n" +
+             "プレハブに LaserVisualController が付いていれば Configure で長さ＋太さを射線に合わせる。無ければ startSize に倍率だけ掛ける")]
     public float laserVisualWidthMultiplier = 1f;
 
-    [Tooltip("パーティクルを出す間は LineRenderer のビームを隠す（線とパーティクルが二重に見えるのを防ぐ）。射線・ロックの予兆は隠さない")]
+    [Tooltip("レーザー演出を出す間は LineRenderer のビームを隠す（線とパーティクルが二重に見えるのを防ぐ）。射線・ロックの予兆は隠さない")]
     public bool hideLineWhileLaserFX = true;
+
+    [Tooltip("レーザー演出の発生位置オフセット（射線基準のローカル）。+Z=射線方向／+X=射線の左右／+Y=上下。\n" +
+             "Lazer プレハブは銃口フラッシュ(Flash/Flash_tip)が原点より -Z 側に3ユニットあるため、小さい敵だと後ろにズレて見える。\n" +
+             "銃口にピタッと合うようここで微調整する（例: +Z を足すと射線方向へ前進）")]
+    public Vector3 laserSpawnLocalOffset = Vector3.zero;
 
     [Header("銃口（照準追従）")]
     [Tooltip("照準方向に合わせて回転・配置する銃口オブジェクト（バレル等）。firePoint をこの子にすると射線原点も追従する")]
@@ -176,6 +184,9 @@ public class EnemySniper : MonoBehaviour
     private LineRenderer line;
     private Material lineMaterial;
 
+    // 発射中のレーザー演出インスタンス（ボスと同じ Lazer プレハブ）。BeginCooldown / 中断 / OnDestroy で破棄
+    private GameObject spawnedLaser;
+
     void Awake()
     {
         knockback = GetComponent<EnemyKnockback>();
@@ -217,7 +228,7 @@ public class EnemySniper : MonoBehaviour
         {
             if (phase != Phase.Idle && phase != Phase.Cooldown)
             {
-                BeginCooldown(); // 中断時もレーザーを止める（BeginCooldown内でStopLaserVisual）
+                BeginCooldown(); // 中断時もレーザーを止める（BeginCooldown内でDespawnLaserVisual）
             }
             HideBeam();
             return;
@@ -246,7 +257,7 @@ public class EnemySniper : MonoBehaviour
             case Phase.Fire:
                 // レーザー判定＋表示。発射中は毎フレーム当たり判定（無敵は PlayerHealth 側）
                 // パーティクルを出しているなら線は隠す（二重に見えるため）
-                if (laserVisual != null && hideLineWhileLaserFX) HideBeam();
+                if (spawnedLaser != null && hideLineWhileLaserFX) HideBeam();
                 else DrawBeam(lockedDir, fireColor, beamWidth);
                 ApplyBeamDamage();
                 Countdown(BeginCooldown);
@@ -283,40 +294,79 @@ public class EnemySniper : MonoBehaviour
     {
         phase = Phase.Fire;
         timer = Mathf.Max(0f, fireDuration);
-        PlayLaserVisual();  // 発射の瞬間に1回だけ再生（毎フレーム呼ぶと再生し直しになる）
+
+        // 発射SE（テストシーンに SoundManager が無ければスキップ）
+        if (SoundManager.Instance != null) SoundManager.Instance.PlaySE(SeType.EnemySniperAttack);
+
+        SpawnLaserVisual();  // 発射の瞬間に1回だけ spawn（毎フレーム呼ぶと出っぱなしになる）
         ApplyBeamDamage(); // fireDuration=0 でも最低1回は判定
     }
 
-    // レーザーパーティクルを射線に合わせて配置・再生する。
+    // 発射の瞬間にレーザー演出を出す。ラスボス HosaP1_BeamState と同じ呼び方で、
+    // firePoint(Muzzle)ではなく敵の原点(transform.position)から BarrierManager.SpawnLaser で射線方向へ発射する。
+    // ＝Muzzle の配置ズレの影響を受けない（ボスと同じ挙動）。
     // 当たり判定は従来どおり ApplyBeamDamage の CircleCast が担当＝これは見た目だけ。
-    // （Lazer プレハブに付く LaserParticleTrigger は使わない。使うとダメージが二重になる）
-    private void PlayLaserVisual()
+    // そのため spawn したインスタンスの LaserParticleTrigger は無効化してダメージの二重取りを防ぐ。
+    private void SpawnLaserVisual()
     {
-        if (laserVisual == null) return;
+        // 射線方向（+Z が射線を向くように LookRotation で合わせる。Lazer プレハブの Shape は Cone）
+        Vector3 dir3D = new Vector3(lockedDir.x, lockedDir.y, 0f);
+        if (dir3D.sqrMagnitude < 0.0001f) dir3D = Vector3.right;
+        Quaternion rot = Quaternion.LookRotation(dir3D, Vector3.up);
 
-        Vector2 origin = FireOrigin();
-        float len = ComputeBeamLength(origin, lockedDir);
+        // ボスと同じく敵の原点を発生源にする＋射線基準のローカルオフセットで微調整
+        Vector3 muzzle = transform.position + rot * laserSpawnLocalOffset;
+        Vector3 target = muzzle + dir3D * maxBeamLength;
 
-        // レーザーも銃口と同じ z 平面に置く（DrawBeam と同じ理由＝視差ズレ防止）
-        float z = firePoint != null ? firePoint.position.z : transform.position.z;
+        // 前のインスタンスが残っていれば消してから出す（発射は1回だが保険）
+        DespawnLaserVisual();
 
-        Transform t = laserVisual.transform;
-        t.position = new Vector3(origin.x, origin.y, z);
+        if (BarrierManager.Instance != null)
+        {
+            // ★ラスボスと同じ呼び方：マネージャー経由で spawn（プレハブは BarrierManager 側の Lazer を共有＝ボスと完全一致）
+            spawnedLaser = BarrierManager.Instance.SpawnLaser(muzzle, target, fireDuration, transform);
+        }
+        else if (laserPrefab != null)
+        {
+            // BarrierManager が無いシーン（テストシーン等）向けフォールバック：sniper 側の laserPrefab を直接生成
+            spawnedLaser = Instantiate(laserPrefab, muzzle, rot);
+            spawnedLaser.transform.SetParent(transform, true);
+        }
 
-        // Lazer プレハブの Shape は Cone＝粒はローカル +Z へ飛ぶ。
-        // そのため Z軸回転ではなく、+Z が射線方向を向くように LookRotation で合わせる。
-        t.rotation = Quaternion.LookRotation(new Vector3(lockedDir.x, lockedDir.y, 0f), Vector3.up);
+        if (spawnedLaser == null) return;
 
-        laserVisual.Configure(len, laserVisualWidthMultiplier);
+        // ★見た目だけ流用＝プレハブ側のダメージ(LaserParticleTrigger)を無効化。ダメージは CircleCast のまま
+        foreach (var trig in spawnedLaser.GetComponentsInChildren<LaserParticleTrigger>(true))
+        {
+            if (trig != null) Destroy(trig);
+        }
+
+        // 太さ調整（LaserVisualController があれば Configure、無ければ太さ倍率だけ startSize に掛ける）。
+        // 長さはボスと同じくプレハブ固有（SpawnLaser は向きだけ合わせて長さは触らない）
+        LaserVisualController vc = spawnedLaser.GetComponentInChildren<LaserVisualController>(true);
+        if (vc != null)
+        {
+            float len = ComputeBeamLength(FireOrigin(), lockedDir);
+            vc.Configure(len, laserVisualWidthMultiplier);
+        }
+        else if (!Mathf.Approximately(laserVisualWidthMultiplier, 1f))
+        {
+            foreach (var ps in spawnedLaser.GetComponentsInChildren<ParticleSystem>(true))
+            {
+                if (ps == null) continue;
+                var main = ps.main;
+                main.startSizeMultiplier *= laserVisualWidthMultiplier;
+            }
+        }
     }
 
     private void BeginCooldown()
     {
         phase = Phase.Cooldown;
         timer = Mathf.Max(0f, cooldown);
-        // Fire を抜けたらレーザーパーティクルを止める（Lazer は looping なので放置すると出っぱなしになる）。
+        // Fire を抜けたらレーザー演出を消す（Lazer は looping なので放置すると出っぱなしになる）。
         // 正常終了（fireDuration 経過）・中断のどちらもここを通る。
-        StopLaserVisual();
+        DespawnLaserVisual();
     }
 
     // ─── 索敵・方向 ───────────────────────────────
@@ -581,17 +631,20 @@ public class EnemySniper : MonoBehaviour
         if (line != null) line.enabled = false;
     }
 
-    // 再生中のレーザーパーティクルを止めて消す（中断用）
-    private void StopLaserVisual()
+    // spawn 済みのレーザー演出を消す（正常終了・中断のどちらもここを通る）
+    private void DespawnLaserVisual()
     {
-        if (laserVisual == null) return;
-        var ps = laserVisual.GetComponent<ParticleSystem>();
-        if (ps != null) ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        if (spawnedLaser != null)
+        {
+            Destroy(spawnedLaser);
+            spawnedLaser = null;
+        }
     }
 
     void OnDestroy()
     {
         if (lineMaterial != null) Destroy(lineMaterial);
+        DespawnLaserVisual(); // 発射中に敵ごと消えたときの取りこぼし対策
     }
 
     // シーンビューで索敵範囲と現在の射線方向を可視化

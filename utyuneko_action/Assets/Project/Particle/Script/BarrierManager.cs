@@ -3,18 +3,18 @@ using UnityEngine;
 
 public class BarrierManager : MonoBehaviour
 {
-    // ‚Ç‚±‚©‚ç‚Å‚àƒAƒNƒZƒX‚Å‚«‚é‚æ‚¤‚É‚·‚é‚½‚ß‚Ì‡Œ¾—tiƒVƒ“ƒOƒ‹ƒgƒ“j
+    // ï¿½Ç‚ï¿½ï¿½ï¿½ï¿½ï¿½Å‚ï¿½ï¿½Aï¿½Nï¿½Zï¿½Xï¿½Å‚ï¿½ï¿½ï¿½æ‚¤ï¿½É‚ï¿½ï¿½é‚½ï¿½ß‚Ìï¿½ï¿½ï¿½ï¿½tï¿½iï¿½Vï¿½ï¿½ï¿½Oï¿½ï¿½ï¿½gï¿½ï¿½ï¿½j
     public static BarrierManager Instance { get; private set; }
 
-    [Header("ƒoƒŠƒA‚ÌƒvƒŒƒnƒu")]
+    [Header("ï¿½oï¿½ï¿½ï¿½Aï¿½Ìƒvï¿½ï¿½ï¿½nï¿½u")]
     [SerializeField] private GameObject barrierPrefab;
 
-    [Header("ƒŒ[ƒU[‚ÌƒvƒŒƒnƒu")]
+    [Header("ï¿½ï¿½ï¿½[ï¿½Uï¿½[ï¿½Ìƒvï¿½ï¿½ï¿½nï¿½u")]
     [SerializeField] private GameObject laserPrefab;
 
     private void Awake()
     {
-        // ƒV[ƒ““à‚É1‚Â‚¾‚¯‘¶İ‚·‚é‚æ‚¤‚Éİ’è
+        // ï¿½Vï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½1ï¿½Â‚ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½İ‚ï¿½ï¿½ï¿½æ‚¤ï¿½Éİ’ï¿½
         if (Instance == null)
         {
             Instance = this;
@@ -26,57 +26,57 @@ public class BarrierManager : MonoBehaviour
     }
 
     /// <summary>
-    /// ƒoƒŠƒA‚ğ¶¬‚·‚é‹¤’ÊŠÖ”
+    /// ï¿½oï¿½ï¿½ï¿½Aï¿½ğ¶ï¿½ï¿½ï¿½ï¿½é‹¤ï¿½ÊŠÖï¿½
     /// </summary>
-    /// <param name="spawnPosition">¶¬‚·‚éˆÊ’u</param>
-    /// <param name="spawnRotation">¶¬‚·‚é‰ñ“]</param>
-    /// <param name="parent">’Ç]‚³‚¹‚½‚¢eƒIƒuƒWƒFƒNƒgi”CˆÓAw’è‚µ‚È‚¯‚ê‚Î“Æ—§‚µ‚Ä¶¬j</param>
-    // š •ÏX1F–ß‚è’l‚ğ void ‚©‚çuBarrierDestructionv‚É•ÏX
+    /// <param name="spawnPosition">ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê’u</param>
+    /// <param name="spawnRotation">ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½]</param>
+    /// <param name="parent">ï¿½Ç]ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½eï¿½Iï¿½uï¿½Wï¿½Fï¿½Nï¿½gï¿½iï¿½Cï¿½ÓAï¿½wï¿½è‚µï¿½È‚ï¿½ï¿½ï¿½Î“Æ—ï¿½ï¿½ï¿½ï¿½Äï¿½ï¿½ï¿½ï¿½j</param>
+    // ï¿½ï¿½ ï¿½ÏX1ï¿½Fï¿½ß‚ï¿½lï¿½ï¿½ void ï¿½ï¿½ï¿½ï¿½uBarrierDestructionï¿½vï¿½É•ÏX
     public BarrierDestruction SpawnBarrier(Vector3 spawnPosition, Quaternion spawnRotation, Transform parent = null)
     {
         if (barrierPrefab == null)
         {
-            Debug.LogWarning("BarrierManager‚ÉƒoƒŠƒA‚ÌƒvƒŒƒnƒu‚ªİ’è‚³‚ê‚Ä‚¢‚Ü‚¹‚ñI");
-            return null; // š •ÏX2Fvoid‚Å‚Í‚È‚¢‚Ì‚Å null ‚ğ•Ô‚·
+            Debug.LogWarning("BarrierManagerï¿½Éƒoï¿½ï¿½ï¿½Aï¿½Ìƒvï¿½ï¿½ï¿½nï¿½uï¿½ï¿½ï¿½İ’è‚³ï¿½ï¿½Ä‚ï¿½ï¿½Ü‚ï¿½ï¿½ï¿½I");
+            return null; // ï¿½ï¿½ ï¿½ÏX2ï¿½Fvoidï¿½Å‚Í‚È‚ï¿½ï¿½Ì‚ï¿½ null ï¿½ï¿½Ô‚ï¿½
         }
 
         GameObject barrier = Instantiate(barrierPrefab, spawnPosition, spawnRotation);
 
-        // eƒIƒuƒWƒFƒNƒg‚ªw’è‚³‚ê‚Ä‚¢‚½‚çA‚»‚Ìq‚É‚·‚éi’Ç]ƒ‚[ƒhj
+        // ï¿½eï¿½Iï¿½uï¿½Wï¿½Fï¿½Nï¿½gï¿½ï¿½ï¿½wï¿½è‚³ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½ï¿½ï¿½Aï¿½ï¿½ï¿½Ìqï¿½É‚ï¿½ï¿½ï¿½iï¿½Ç]ï¿½ï¿½ï¿½[ï¿½hï¿½j
         if (parent != null)
         {
             barrier.transform.SetParent(parent);
         }
 
-        // š •ÏX3F¶¬‚µ‚½ƒoƒŠƒA‚É‚­‚Á‚Â‚¢‚Ä‚¢‚éƒXƒNƒŠƒvƒg‚ğæ“¾‚µ‚ÄAŒÄ‚Ño‚µŒ³‚É•Ô‚µ‚Ä‚ ‚°‚é
+        // ï¿½ï¿½ ï¿½ÏX3ï¿½Fï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½oï¿½ï¿½ï¿½Aï¿½É‚ï¿½ï¿½ï¿½ï¿½Â‚ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½Xï¿½Nï¿½ï¿½ï¿½vï¿½gï¿½ï¿½ï¿½æ“¾ï¿½ï¿½ï¿½ÄAï¿½Ä‚Ñoï¿½ï¿½ï¿½ï¿½ï¿½É•Ô‚ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½ï¿½ï¿½
         return barrier.GetComponent<BarrierDestruction>();
     }
 
-    public void SpawnLaser(Vector3 muzzlePosition, Vector3 targetPosition, float duration, Transform followParent = null)
+    public GameObject SpawnLaser(Vector3 muzzlePosition, Vector3 targetPosition, float duration, Transform followParent = null)
     {
         if (laserPrefab == null)
         {
-            Debug.LogWarning("BarrierManager‚ÉƒŒ[ƒU[‚ÌƒvƒŒƒnƒu‚ªİ’è‚³‚ê‚Ä‚¢‚Ü‚¹‚ñI");
-            return;
+            Debug.LogWarning("BarrierManagerï¿½Éƒï¿½ï¿½[ï¿½Uï¿½[ï¿½Ìƒvï¿½ï¿½ï¿½nï¿½uï¿½ï¿½ï¿½İ’è‚³ï¿½ï¿½Ä‚ï¿½ï¿½Ü‚ï¿½ï¿½ï¿½I");
+            return null;
         }
 
-        // 1. ”­ËŒû‚©‚çƒ^[ƒQƒbƒg‚Ö‚Ì•ûŒü‚ğŒvZ‚·‚é
+        // 1. ï¿½ï¿½ï¿½ËŒï¿½ï¿½ï¿½ï¿½ï¿½^ï¿½[ï¿½Qï¿½bï¿½gï¿½Ö‚Ì•ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½vï¿½Zï¿½ï¿½ï¿½ï¿½
         Vector3 direction = targetPosition - muzzlePosition;
-        if (direction.sqrMagnitude < 0.0001f) direction = Vector3.forward; // ƒ[ƒƒxƒNƒgƒ‹‘Îô
+        if (direction.sqrMagnitude < 0.0001f) direction = Vector3.forward; // ï¿½[ï¿½ï¿½ï¿½xï¿½Nï¿½gï¿½ï¿½ï¿½Îï¿½
 
-        // 2. ‚»‚Ì•ûŒü‚ğŒü‚­‚½‚ß‚Ì‰ñ“]iRotationj‚ğì¬‚·‚é
+        // 2. ï¿½ï¿½ï¿½Ì•ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß‚Ì‰ï¿½]ï¿½iRotationï¿½jï¿½ï¿½ï¿½ì¬ï¿½ï¿½ï¿½ï¿½
         Quaternion lookRotation = Quaternion.LookRotation(direction);
 
-        // 3. ”­ËŒû‚ÌˆÊ’uEŒvZ‚µ‚½‰ñ“]‚ÅƒŒ[ƒU[‚ğ¶¬‚·‚é
-        //    ¦ ‰ñ“]‚ğŠª‚«‚Ü‚È‚¢‚æ‚¤Ae‚É‚Íİ’è‚µ‚È‚¢iˆÊ’u‚¾‚¯’Ç]‚³‚¹‚½‚¢ê‡‚Í followParent ‚ğg‚¤j
+        // 3. ï¿½ï¿½ï¿½ËŒï¿½ï¿½ÌˆÊ’uï¿½Eï¿½vï¿½Zï¿½ï¿½ï¿½ï¿½ï¿½ï¿½]ï¿½Åƒï¿½ï¿½[ï¿½Uï¿½[ï¿½ğ¶ï¿½ï¿½ï¿½ï¿½ï¿½
+        //    ï¿½ï¿½ ï¿½ï¿½]ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ü‚È‚ï¿½ï¿½æ‚¤ï¿½Aï¿½eï¿½É‚Íİ’è‚µï¿½È‚ï¿½ï¿½iï¿½Ê’uï¿½ï¿½ï¿½ï¿½ï¿½Ç]ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ê‡ï¿½ï¿½ followParent ï¿½ï¿½ï¿½gï¿½ï¿½ï¿½j
         GameObject laser = Instantiate(laserPrefab, muzzlePosition, lookRotation);
 
-        // “G‚ÌˆÚ“®‚ÉˆÊ’u‚¾‚¯’Ç]‚³‚¹‚½‚¢ê‡i‰ñ“]‚Í’Ç]‚³‚¹‚È‚¢j
+        // ï¿½Gï¿½ÌˆÚ“ï¿½ï¿½ÉˆÊ’uï¿½ï¿½ï¿½ï¿½ï¿½Ç]ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ê‡ï¿½iï¿½ï¿½]ï¿½Í’Ç]ï¿½ï¿½ï¿½ï¿½ï¿½È‚ï¿½ï¿½j
         if (followParent != null)
         {
-            laser.transform.SetParent(followParent, true); // ƒ[ƒ‹ƒhÀ•WˆÛ
-                                                           // ’ˆÓ: SetParent‚·‚é‚Æ‰ñ“]‚àe‚É’Ç]‚µ‚Ü‚·B
-                                                           // ˆÊ’u‚¾‚¯’Ç]E‰ñ“]‚ÍŒÅ’è‚É‚µ‚½‚¢ê‡‚Í‰º‹L‚Ì‚æ‚¤‚È’Ç]ê—pƒXƒNƒŠƒvƒg‚ª•K—v‚Å‚·B
+            laser.transform.SetParent(followParent, true); // ï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½hï¿½ï¿½ï¿½Wï¿½Ûï¿½
+                                                           // ï¿½ï¿½ï¿½ï¿½: SetParentï¿½ï¿½ï¿½ï¿½Æ‰ï¿½]ï¿½ï¿½ï¿½eï¿½É’Ç]ï¿½ï¿½ï¿½Ü‚ï¿½ï¿½B
+                                                           // ï¿½Ê’uï¿½ï¿½ï¿½ï¿½ï¿½Ç]ï¿½Eï¿½ï¿½]ï¿½ÍŒÅ’ï¿½É‚ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ê‡ï¿½Í‰ï¿½ï¿½Lï¿½Ì‚æ‚¤ï¿½È’Ç]ï¿½ï¿½pï¿½Xï¿½Nï¿½ï¿½ï¿½vï¿½gï¿½ï¿½ï¿½Kï¿½vï¿½Å‚ï¿½ï¿½B
         }
 
         ParticleSystem ps = laser.GetComponentInChildren<ParticleSystem>();
@@ -94,14 +94,16 @@ public class BarrierManager : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning("ƒV[ƒ““à‚É 'Player' ƒ^ƒO‚Ì‚Â‚¢‚½ƒIƒuƒWƒFƒNƒg‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñI");
+                Debug.LogWarning("ï¿½Vï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 'Player' ï¿½^ï¿½Oï¿½Ì‚Â‚ï¿½ï¿½ï¿½ï¿½Iï¿½uï¿½Wï¿½Fï¿½Nï¿½gï¿½ï¿½ï¿½ï¿½ï¿½Â‚ï¿½ï¿½ï¿½Ü‚ï¿½ï¿½ï¿½I");
             }
         }
 
         StartCoroutine(DestroyLaserAfterTime(laser, duration));
+
+        return laser;
     }
 
-    // ©“®Á–Å—p‚ÌƒRƒ‹[ƒ`ƒ“
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å—pï¿½ÌƒRï¿½ï¿½ï¿½[ï¿½`ï¿½ï¿½
     private IEnumerator DestroyLaserAfterTime(GameObject laserObj, float delay)
     {
         yield return new WaitForSeconds(delay);

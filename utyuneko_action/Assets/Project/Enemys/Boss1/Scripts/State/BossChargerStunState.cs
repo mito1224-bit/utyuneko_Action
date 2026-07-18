@@ -18,7 +18,11 @@ public class BossChargerStunState : BossChargerBaseState
 
     public override void Enter()
     {
-        timer = boss.stunDuration;
+        // 必殺技（乱舞突進）後だけスタンを ultimateStunMultiplier 倍に延長。フラグは一度使ったら消す
+        // （持ち越して通常突進のスタンまで長くならないように）。
+        float mult = boss.NextStunIsUltimate ? Mathf.Max(1f, boss.ultimateStunMultiplier) : 1f;
+        boss.NextStunIsUltimate = false;
+        timer = boss.stunDuration * mult;
         blinkPhase = 0f;
 
         // 壁激突の衝撃波（技④）

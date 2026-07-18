@@ -28,8 +28,7 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 7300000000000000002}
+  m_Children: []
   m_Father: {fileID: 2888522593133479612}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &3342613708304440510
@@ -281,9 +280,10 @@ MonoBehaviour:
   lockColor: {r: 1, g: 0, b: 0, a: 0.8}
   fireColor: {r: 1, g: 0.2, b: 0.2, a: 0.95}
   beamMaterial: {fileID: 2100000, guid: 9d14f1567a1d25248a493dc6367da1f3, type: 2}
-  laserVisual: {fileID: 7300000000000000004}
+  laserPrefab: {fileID: 0}
   laserVisualWidthMultiplier: 1
   hideLineWhileLaserFX: 1
+  laserSpawnLocalOffset: {x: 0, y: 0, z: 0}
   aimPivot: {fileID: 0}
   aimPivotDistance: 0
   aimAngleOffset: 0
@@ -534,85 +534,3 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: c92f2541023e079468d8858425e08eda, type: 3}
   m_PrefabInstance: {fileID: 4184077558389334289}
   m_PrefabAsset: {fileID: 0}
---- !u!1001 &7300000000000000001
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 20591737641958620}
-    m_Modifications:
-    - target: {fileID: 876557665836459113, guid: 3701b2eca4401a3488a4719d3d594abb, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 876557665836459113, guid: 3701b2eca4401a3488a4719d3d594abb, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 876557665836459113, guid: 3701b2eca4401a3488a4719d3d594abb, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 876557665836459113, guid: 3701b2eca4401a3488a4719d3d594abb, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 876557665836459113, guid: 3701b2eca4401a3488a4719d3d594abb, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 876557665836459113, guid: 3701b2eca4401a3488a4719d3d594abb, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 876557665836459113, guid: 3701b2eca4401a3488a4719d3d594abb, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 876557665836459113, guid: 3701b2eca4401a3488a4719d3d594abb, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 876557665836459113, guid: 3701b2eca4401a3488a4719d3d594abb, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 876557665836459113, guid: 3701b2eca4401a3488a4719d3d594abb, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 698281878236100122, guid: 3701b2eca4401a3488a4719d3d594abb, type: 3}
-      propertyPath: playOnAwake
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 6001738325180640993, guid: 3701b2eca4401a3488a4719d3d594abb, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7300000000000000004}
-  m_SourcePrefab: {fileID: 100100000, guid: 3701b2eca4401a3488a4719d3d594abb, type: 3}
---- !u!4 &7300000000000000002 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 876557665836459113, guid: 3701b2eca4401a3488a4719d3d594abb, type: 3}
-  m_PrefabInstance: {fileID: 7300000000000000001}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &7300000000000000003 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 6001738325180640993, guid: 3701b2eca4401a3488a4719d3d594abb, type: 3}
-  m_PrefabInstance: {fileID: 7300000000000000001}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &7300000000000000004
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7300000000000000003}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8fc4ae2c6dbb0834593ba3c935e11f37, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::LaserVisualController
