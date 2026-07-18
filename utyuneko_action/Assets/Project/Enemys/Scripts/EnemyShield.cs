@@ -85,6 +85,9 @@ public class EnemyShield : MonoBehaviour
     {
         shieldFlash?.Flash();
 
+        // 盾ブロックSE（テストシーンに SoundManager が無ければスキップ）
+        if (SoundManager.Instance != null) SoundManager.Instance.PlaySE(SeType.EnemyShieldHit);
+
         // FXManager はシーンに置かれたシングルトン。テストシーンには無いこともあるので null 許容。
         if (playBlockFX && FXManager.Instance != null)
         {

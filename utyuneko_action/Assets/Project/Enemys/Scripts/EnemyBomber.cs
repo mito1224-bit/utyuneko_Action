@@ -241,6 +241,9 @@ public class EnemyBomber : MonoBehaviour
         phase = Phase.Countdown;
         timer = Mathf.Max(0.0001f, fuseTime);
         blinkPhase = 0f;
+
+        // 導火線開始SE（SoundManager 無しはスキップ）
+        if (SoundManager.Instance != null) SoundManager.Instance.PlaySE(SeType.EnemyExplosionDelay);
         blinkFade = new BlinkFade(renderers);
         blinkFade.Begin(); // マテリアルを透明対応の複製へ差し替え
         if (chasePlayer) SuspendPatrol(); // 追尾するので巡回を止める（rb.MovePosition の競合防止）
@@ -266,6 +269,9 @@ public class EnemyBomber : MonoBehaviour
     // 自分中心の範囲へダメージ＋演出（カウントダウン爆発と壁ヒット即爆発で共用）。
     private void DoExplosionDamage()
     {
+        // 爆発SE（カウントダウン爆発／死亡吹き飛び中の壁ヒット爆発で共用。SoundManager 無しはスキップ）
+        if (SoundManager.Instance != null) SoundManager.Instance.PlaySE(SeType.EnemyExplosion);
+
         // 範囲内のプレイヤーへダメージ
         Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, explosionRadius, targetLayers);
         foreach (Collider2D c in hits)

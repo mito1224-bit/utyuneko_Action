@@ -105,6 +105,9 @@ public class EnemyHealth : MonoBehaviour
         isDeadFlg = true; // 撃破フラグを立てる（ノックバック処理より先に立てて同フレーム参照でも拾える）
         Debug.Log($"{gameObject.name} を撃破！");
 
+        // 撃破SE（テストシーンに SoundManager が無ければスキップ）
+        if (SoundManager.Instance != null) SoundManager.Instance.PlaySE(SeType.EnemyDie);
+
         // 白フラッシュ → 終わってから死亡フェード（アルファ点滅）へ。
         // 白とフェードは両方マテリアルを差し替えるので、同時に出さず HitFlash 完了コールバックで直列に繋ぐ
         // （同時実行すると復帰時に破棄済みマテリアルを掴んでピンク化する）。

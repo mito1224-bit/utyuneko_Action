@@ -294,6 +294,10 @@ public class EnemySniper : MonoBehaviour
     {
         phase = Phase.Fire;
         timer = Mathf.Max(0f, fireDuration);
+
+        // 発射SE（テストシーンに SoundManager が無ければスキップ）
+        if (SoundManager.Instance != null) SoundManager.Instance.PlaySE(SeType.EnemySniperAttack);
+
         SpawnLaserVisual();  // 発射の瞬間に1回だけ spawn（毎フレーム呼ぶと出っぱなしになる）
         ApplyBeamDamage(); // fireDuration=0 でも最低1回は判定
     }
