@@ -45,6 +45,7 @@ public class DataCubeController : MonoBehaviour
     [SerializeField] private float popDuration = 0.35f;       // 拡大→戻る時間
     [SerializeField] private float popScaleMultiplier = 1.5f;
 
+    public GameObject RootObject => transform.parent != null ? transform.parent.gameObject : gameObject;
 
     // 将来リザルトやマネージャーに「何番目のデータキューブを取ったか」を伝えるイベント
     public static System.Action<int> OnDataCubeCollected;
@@ -66,7 +67,7 @@ public class DataCubeController : MonoBehaviour
 
             // エフェクトを発生させる（こちらは MainItem になっていますね！）
             FXManager.Instance.Play(FXType.DataGetFlash, transform.position);
-            SoundManager.Instance.PlaySE(SeType.ItemDataGet);
+            SoundManager.Instance.PlaySE(SeType.ItemDataGet,1.0f);
             // 演出を開始し、終了後に消滅させる
             StartCoroutine(DataCubeCollectEventRoutine(collision.transform));
         }
@@ -134,6 +135,8 @@ public class DataCubeController : MonoBehaviour
         {
             BoundTriggerCamera.gameObject.SetActive(true);
         }
+
+        Destroy(RootObject);
 
     }
 
@@ -230,7 +233,8 @@ public class DataCubeController : MonoBehaviour
             yield return null;
         }
 
-        Destroy(targetTransform.gameObject);
+        //Destroy(targetTransform.gameObject);
+        targetTransform.localScale = Vector3.zero;
     }
 
 }
