@@ -205,7 +205,7 @@ private void CleanUpCollectedStarCoins()
     public (int current, int max) GetNormalCoinResult() => (currentBitCubes, maxBitCube);
     public (int current, int max) GetStarCoinResult() => (currentDataCubes, maxDataCube);
     public bool IsStarCoinCollected(int id) => (id >= 0 && id < collectedStarCoinFlags.Length) ? collectedStarCoinFlags[id] : false;
-    public float GetTotalCompletionRate() => (maxBitCube + maxDataCube == 0) ? 100f : ((float)(currentBitCubes + currentDataCubes) / (maxBitCube + maxDataCube)) * 100f;
+    public float GetTotalCompletionRate() =>(maxBitCube + maxDataCube == 0)? 100f: Mathf.Min(((float)(currentBitCubes + currentDataCubes) / (maxBitCube + maxDataCube)) * 100f, 100f);
 
 }
 
