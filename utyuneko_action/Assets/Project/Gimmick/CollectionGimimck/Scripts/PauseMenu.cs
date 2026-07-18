@@ -264,6 +264,7 @@ public class PauseMenu : MonoBehaviour
             Destroy(DataManager.Instance.gameObject);
         }
 
+        SoundManager.Instance.FadeBGMVolume(0.0f, 0.5f);
         SoundManager.Instance.PlaySE(SeType.UiEnter);
 
         // Œ»İ‚ÌƒV[ƒ“‚ğÄ“Ç‚İ‚İ
