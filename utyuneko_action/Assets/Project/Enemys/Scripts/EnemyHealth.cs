@@ -37,6 +37,18 @@ public class EnemyHealth : MonoBehaviour
              "HitFlash が無い／OFF のときは即フェード（従来動作）")]
     public bool deathFlashThenBlink = true;
 
+    [Header("撃破パーティクル")]
+    [Tooltip("撃破された瞬間（Die）に敵の位置へ出すパーティクル（任意）。未設定なら何も出さない。" +
+             "敵本体は消えるので親子付けせず独立生成する")]
+    public GameObject deathEffectPrefab;
+
+    [Tooltip("deathEffectPrefab を敵の向きに合わせて回転させる。OFF なら回転なし（Quaternion.identity＝カメラ正面向き想定）")]
+    public bool matchEnemyRotationForDeathEffect = false;
+
+    [Tooltip("生成したパーティクルを強制的に消すまでの秒数（保険）。" +
+             "プレハブ側で自壊する場合（ParticleSystem の Stop Action=Destroy / AutoDestroy 付き）は 0 でOK")]
+    public float deathEffectLifetime = 0f;
+
     private EnemyKnockback knockback;
     private HitFlash hitFlash;
 
@@ -108,6 +120,9 @@ public class EnemyHealth : MonoBehaviour
         // 撃破SE（テストシーンに SoundManager が無ければスキップ）
         if (SoundManager.Instance != null) SoundManager.Instance.PlaySE(SeType.EnemyDie);
 
+        // 撃破パーティクル（吹き飛ばし演出と同時に、死んだ瞬間の位置へ出す）
+        SpawnDeathEffect();
+
         // 白フラッシュ → 終わってから死亡フェード（アルファ点滅）へ。
         // 白とフェードは両方マテリアルを差し替えるので、同時に出さず HitFlash 完了コールバックで直列に繋ぐ
         // （同時実行すると復帰時に破棄済みマテリアルを掴んでピンク化する）。
@@ -119,6 +134,18 @@ public class EnemyHealth : MonoBehaviour
         {
             StartDeathSequence(lastDamage, hitFromPosition);
         }
+    }
+
+    // 撃破された瞬間にパーティクルを生成する（敵本体は消えるので親子付けせず独立生成）
+    private void SpawnDeathEffect()
+    {
+        if (deathEffectPrefab == null) return;
+
+        Quaternion rot = matchEnemyRotationForDeathEffect ? transform.rotation : Quaternion.identity;
+        GameObject fx = Instantiate(deathEffectPrefab, transform.position, rot);
+
+        // 保険：プレハブが自壊しない場合に備えて任意秒で消す（0 なら何もしない＝プレハブ任せ）
+        if (deathEffectLifetime > 0f) Destroy(fx, deathEffectLifetime);
     }
 
     // 死亡フェード＋吹き飛びを開始する（HitFlash が無い/OFF なら即時、有りなら白フラッシュ完了後に呼ばれる）
