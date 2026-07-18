@@ -153,7 +153,7 @@ public class PlayerHealth : MonoBehaviour
     {
         if (SoundManager.Instance != null)
         {
-            SoundManager.Instance.StopBGM(0.5f);
+            SoundManager.Instance.StopBGM(0.1f);
             SoundManager.Instance.StopLoopSE(p.gameObject);
             SoundManager.Instance.PlaySE(SeType.PlayerDie);
         }

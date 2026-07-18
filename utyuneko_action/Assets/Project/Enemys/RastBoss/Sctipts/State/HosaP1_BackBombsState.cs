@@ -157,7 +157,7 @@ public class HosaP1_BackBombsState : GlitchHosaBaseState
             yield return new WaitForSeconds(0.35f);
             ClearAllWarnings();
 
-            SoundManager.Instance.PlaySE(SeType.EnemyExplosion);
+            SoundManager.Instance.PlaySE(SeType.EnemyRangeAttack);
 
             GameObject b1 = Object.Instantiate(boss.timedBombPrefab, launchPos, Quaternion.identity);
             var bomb1 = b1.GetComponent<GlitchHosaTimedBomb>();

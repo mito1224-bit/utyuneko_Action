@@ -48,7 +48,7 @@ public class StageSecondBossAppearState : StageSecondBossBaseState
         }
 
         // 登場時の目覚ましSE（大咆哮など）を鳴らす！
-        SoundManager.Instance.PlaySE(SeType.EnemyCharge);
+        SoundManager.Instance.PlaySE(SeType.EnemyRangeAttack);
 
         ShakeTarget.Instance.Shake(2.5f, 2.5f);
     }

@@ -76,6 +76,9 @@ public class StageSecondBossStunState : StageSecondBossBaseState
 
         if (boss.bossAnimator != null) boss.bossAnimator.speed = 0f;
         SoundManager.Instance.PlaySE(SeType.EnemyConfusion);
+
+        if (boss.specialDisappearEffect) Object.Instantiate(boss.specialDisappearEffect, boss.transform.position, Quaternion.identity);
+
     }
 
     public override void Update()
