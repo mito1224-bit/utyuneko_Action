@@ -267,7 +267,8 @@ public class PauseMenu : MonoBehaviour
         SoundManager.Instance.PlaySE(SeType.UiEnter);
 
         // Œ»İ‚ÌƒV[ƒ“‚ğÄ“Ç‚İ‚İ
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        //SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        TransitionManager.Instance.ChangeScene(SceneManager.GetActiveScene().name, TransitionType.Fade);
     }
 
     /// <summary>
@@ -397,6 +398,7 @@ public class PauseMenu : MonoBehaviour
         SoundManager.Instance.FadeBGMVolume(0.0f, 0.5f);
         SoundManager.Instance.PlaySE(SeType.UiEnter);
 
+        //SceneManager.LoadScene(titleSceneName);
         TransitionManager.Instance.ChangeScene(titleSceneName, TransitionType.Fade);
     }
 
